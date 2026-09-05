@@ -1,352 +1,535 @@
 // surface any uncaught error instead of failing silently
-  window.addEventListener('error', function(e){
-    const box = document.getElementById('fatalError');
-    box.style.display = 'block';
-    box.textContent = 'Something broke: ' + (e.message || 'unknown error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '');
+window.addEventListener('error', function(e){
+  const box = document.getElementById('fatalError');
+  box.style.display = 'block';
+  box.textContent = 'Something broke: ' + (e.message || 'unknown error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '');
+});
+
+// ================= Supabase connection =================
+const SUPABASE_URL = 'https://okcogufppsubntrchfuf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Z8qgdFjVetqSOfmZKhxkpQ_XX2tYHDp';
+let sb = null;
+
+(function checkEnv(){
+  const box = document.getElementById('fatalError');
+  const problems = [];
+  if(typeof window.supabase === 'undefined') problems.push('The Supabase library failed to load — check your internet connection and reload.');
+  if(typeof L === 'undefined') problems.push('The map library failed to load — check your internet connection and reload.');
+  if(problems.length){ box.style.display = 'block'; box.textContent = problems.join(' '); return; }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+})();
+
+// ================= helpers =================
+function milesBetween(lat1,lon1,lat2,lon2){
+  const R=3958.8;
+  const dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function pinIcon(cls){
+  return L.divIcon({ className:'', html:`<div class="relay-pin ${cls}"></div>`, iconSize:[16,16], iconAnchor:[8,8] });
+}
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ================= data layer =================
+async function fetchMyProfile(userId){
+  const { data, error } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+  if(error){ console.error('fetchMyProfile', error); return null; }
+  return data;
+}
+async function fetchAllMechanics(){
+  const { data, error } = await sb.from('profiles').select('*').eq('role','mechanic');
+  if(error){ console.error('fetchAllMechanics', error); return []; }
+  return data || [];
+}
+async function fetchCompanies(){
+  const { data, error } = await sb.from('profiles').select('company').eq('role','fleet');
+  if(error) return [];
+  return [...new Set((data||[]).map(d=>d.company).filter(Boolean))];
+}
+async function fetchJobs(){
+  const { data, error } = await sb.from('jobs').select('*').order('created_at', { ascending:true });
+  if(error){ console.error('fetchJobs', error); return []; }
+  return data || [];
+}
+async function fetchLocation(mechanicId){
+  const { data, error } = await sb.from('locations').select('*').eq('mechanic_id', mechanicId).maybeSingle();
+  if(error || !data) return null;
+  return { lat:data.lat, lng:data.lng, updatedAt:new Date(data.updated_at).getTime(), status:data.status };
+}
+async function upsertLocation(mechanicId, lat, lng, status){
+  const { error } = await sb.from('locations').upsert(
+    { mechanic_id:mechanicId, lat, lng, status, updated_at:new Date().toISOString() },
+    { onConflict:'mechanic_id' }
+  );
+  if(error){ console.error('upsertLocation', error); return false; }
+  return true;
+}
+async function updateLocationStatus(mechanicId, status){
+  const { error } = await sb.from('locations').update({ status }).eq('mechanic_id', mechanicId);
+  return !error;
+}
+
+// ================= session =================
+let session = null; // { id, name, role, company }
+let watchId = null;
+let mechMapObj = null, mechMarker = null;
+const mechDestMarkers = {};
+let appEntered = false;
+
+// ================= auth ui wiring =================
+const tabLogin = document.getElementById('tabLogin'), tabSignup = document.getElementById('tabSignup');
+const loginForm = document.getElementById('loginForm'), signupForm = document.getElementById('signupForm');
+const completeProfileForm = document.getElementById('completeProfileForm');
+const authError = document.getElementById('authError');
+
+function showAuthForm(which){
+  [loginForm, signupForm, completeProfileForm].forEach(f=>f.classList.add('hidden'));
+  tabLogin.classList.remove('active'); tabSignup.classList.remove('active');
+  authError.textContent = '';
+  if(which === 'login'){ loginForm.classList.remove('hidden'); tabLogin.classList.add('active'); }
+  if(which === 'signup'){ signupForm.classList.remove('hidden'); tabSignup.classList.add('active'); }
+  if(which === 'complete'){ completeProfileForm.classList.remove('hidden'); }
+}
+tabLogin.onclick = ()=> showAuthForm('login');
+tabSignup.onclick = ()=> showAuthForm('signup');
+
+document.getElementById('suRole').onchange = (e)=>{
+  document.getElementById('suCompanyField').style.display = e.target.value === 'fleet' ? 'block' : 'none';
+};
+document.getElementById('suCompanyField').style.display = 'none';
+document.getElementById('cpRole').onchange = (e)=>{
+  document.getElementById('cpCompanyField').style.display = e.target.value === 'fleet' ? 'block' : 'none';
+};
+document.getElementById('cpCompanyField').style.display = 'none';
+
+document.getElementById('signupSubmit').onclick = async (e)=>{
+  const btn = e.target; btn.disabled = true;
+  const name = document.getElementById('suName').value.trim();
+  const email = document.getElementById('suEmail').value.trim();
+  const role = document.getElementById('suRole').value;
+  const company = document.getElementById('suCompany').value.trim();
+  const pass = document.getElementById('suPass').value;
+  authError.textContent = '';
+  if(!name || !email || !pass || (role==='fleet' && !company)){ authError.textContent = 'Fill in all required fields.'; btn.disabled=false; return; }
+  if(pass.length < 6){ authError.textContent = 'Password must be at least 6 characters.'; btn.disabled=false; return; }
+  if(!sb){ authError.textContent = 'Not connected to the database yet — reload and try again.'; btn.disabled=false; return; }
+
+  const { data: nameCheck } = await sb.from('profiles').select('name').ilike('name', name);
+  if(nameCheck && nameCheck.length){ authError.textContent = 'That name is already taken.'; btn.disabled=false; return; }
+
+  const { data, error } = await sb.auth.signUp({ email, password: pass });
+  if(error){ authError.textContent = error.message; btn.disabled=false; return; }
+
+  if(data.session && data.user){
+    const { error: profileErr } = await sb.from('profiles').insert([{ id:data.user.id, name, role, company: role==='fleet'?company:null, active:true }]);
+    if(profileErr){ authError.textContent = 'Account created, but profile setup failed: ' + profileErr.message; btn.disabled=false; return; }
+    onAuthed(data.session.user.id);
+  } else {
+    authError.textContent = '';
+    alert('Account created! Check your email to confirm it, then log in.');
+    showAuthForm('login');
+  }
+  btn.disabled = false;
+};
+
+document.getElementById('loginSubmit').onclick = async (e)=>{
+  const btn = e.target; btn.disabled = true;
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  authError.textContent = '';
+  if(!sb){ authError.textContent = 'Not connected to the database yet — reload and try again.'; btn.disabled=false; return; }
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if(error){ authError.textContent = error.message; btn.disabled=false; return; }
+  await onAuthed(data.user.id);
+  btn.disabled = false;
+};
+
+document.getElementById('forgotPassBtn').onclick = async ()=>{
+  const email = document.getElementById('loginEmail').value.trim();
+  if(!email){ authError.textContent = 'Enter your email above first, then tap "Forgot password?" again.'; return; }
+  const { error } = await sb.auth.resetPasswordForEmail(email);
+  authError.textContent = error ? error.message : '';
+  if(!error) alert('Password reset email sent — check your inbox (and spam folder).');
+};
+
+document.getElementById('completeProfileSubmit').onclick = async (e)=>{
+  const btn = e.target; btn.disabled = true;
+  const name = document.getElementById('cpName').value.trim();
+  const role = document.getElementById('cpRole').value;
+  const company = document.getElementById('cpCompany').value.trim();
+  authError.textContent = '';
+  if(!name || (role==='fleet' && !company)){ authError.textContent = 'Fill in all required fields.'; btn.disabled=false; return; }
+
+  const { data: userData } = await sb.auth.getUser();
+  const { error } = await sb.from('profiles').insert([{ id:userData.user.id, name, role, company: role==='fleet'?company:null, active:true }]);
+  if(error){ authError.textContent = error.message; btn.disabled=false; return; }
+  await onAuthed(userData.user.id);
+  btn.disabled = false;
+};
+
+document.getElementById('changePassBtn').onclick = async ()=>{
+  const newPass = prompt('Enter a new password (at least 6 characters):');
+  if(!newPass) return;
+  if(newPass.length < 6){ alert('Password must be at least 6 characters.'); return; }
+  const { error } = await sb.auth.updateUser({ password: newPass });
+  alert(error ? 'Could not change password: ' + error.message : 'Password updated.');
+};
+
+document.getElementById('logoutBtn').onclick = async ()=>{
+  if(watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+  await sb.auth.signOut();
+  location.reload();
+};
+
+// ================= auth state =================
+async function onAuthed(userId){
+  const profile = await fetchMyProfile(userId);
+  if(!profile){
+    showAuthForm('complete');
+    return;
+  }
+  session = { id:profile.id, name:profile.name, role:profile.role, company:profile.company };
+  enterApp();
+}
+
+if(sb){
+  sb.auth.onAuthStateChange((event, authSession) => {
+    if(event === 'SIGNED_IN' && authSession && !appEntered){
+      onAuthed(authSession.user.id);
+    }
+    if(event === 'SIGNED_OUT'){
+      appEntered = false;
+    }
+  });
+  sb.auth.getSession().then(({ data }) => {
+    if(data.session && !appEntered) onAuthed(data.session.user.id);
+  });
+}
+
+// ================= app entry =================
+function enterApp(){
+  if(appEntered) return;
+  appEntered = true;
+  document.getElementById('authView').classList.add('hidden');
+  document.getElementById('whoBox').classList.remove('hidden');
+  document.getElementById('whoName').textContent = session.name;
+  document.getElementById('whoRole').textContent = session.role === 'shop' ? 'Shop owner' : session.role === 'fleet' ? 'Fleet manager' : 'Mechanic';
+
+  if(session.role === 'mechanic'){ document.getElementById('mechanicView').classList.remove('hidden'); initMechanicView(); }
+  else if(session.role === 'shop'){ document.getElementById('shopView').classList.remove('hidden'); initShopView(); }
+  else { document.getElementById('fleetView').classList.remove('hidden'); initFleetView(); }
+}
+
+// ================= MECHANIC VIEW =================
+function initMechanicView(){
+  mechMapObj = L.map('mechMap', { zoomControl:true, attributionControl:false }).setView([42.45, -83.25], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(mechMapObj);
+
+  document.getElementById('mechStatus').onchange = async (e)=>{
+    await updateLocationStatus(session.id, e.target.value);
+    renderMechJobs();
+  };
+
+  const goLiveBtn = document.getElementById('goLiveBtn');
+  goLiveBtn.onclick = ()=>{ if(watchId === null) startTracking(); else stopTracking(); };
+
+  function startTracking(){
+    if(!navigator.geolocation){ document.getElementById('gpsReadout').textContent = 'Geolocation is not available in this browser.'; return; }
+    goLiveBtn.textContent = 'Go offline';
+    goLiveBtn.classList.remove('offline-state');
+    document.getElementById('liveBadge').className = 'badge live';
+    document.getElementById('liveBadge').innerHTML = '<span class="bd"></span>Live';
+
+    let lastWrite = 0;
+    watchId = navigator.geolocation.watchPosition(async (pos)=>{
+      const { latitude, longitude, accuracy } = pos.coords;
+      document.getElementById('gpsReadout').innerHTML =
+        `Lat <b>${latitude.toFixed(5)}</b> · Lng <b>${longitude.toFixed(5)}</b> · Accuracy <b>±${Math.round(accuracy)}m</b> · Updated <b>${new Date().toLocaleTimeString()}</b>`;
+
+      if(!mechMarker){
+        mechMarker = L.marker([latitude, longitude], { icon: pinIcon('mech') }).addTo(mechMapObj);
+        mechMapObj.setView([latitude, longitude], 13);
+      } else {
+        mechMarker.setLatLng([latitude, longitude]);
+      }
+
+      const now = Date.now();
+      if(now - lastWrite > 4000){
+        lastWrite = now;
+        await upsertLocation(session.id, latitude, longitude, document.getElementById('mechStatus').value);
+      }
+      renderMechJobs();
+    }, (err)=>{
+      document.getElementById('gpsReadout').textContent = 'Location error: ' + err.message + '. Check that location access is allowed for this page.';
+    }, { enableHighAccuracy:true, maximumAge:5000, timeout:15000 });
+  }
+
+  function stopTracking(){
+    if(watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+    goLiveBtn.textContent = 'Go live';
+    goLiveBtn.classList.add('offline-state');
+    document.getElementById('liveBadge').className = 'badge offline';
+    document.getElementById('liveBadge').innerHTML = '<span class="bd"></span>Offline';
+    document.getElementById('gpsReadout').textContent = 'Location sharing stopped.';
+  }
+
+  renderMechJobs();
+  setInterval(renderMechJobs, 6000);
+}
+
+async function renderMechJobs(){
+  const jobs = await fetchJobs();
+  const mine = jobs.filter(j => j.mechanic_id === session.id);
+  const active = mine.filter(j => j.status !== 'complete');
+  const history = mine.filter(j => j.status === 'complete').slice().reverse().slice(0, 15);
+
+  document.getElementById('mechActiveCount').textContent = active.length ? active.length + ' active' : '';
+
+  const loc = await fetchLocation(session.id);
+
+  const activeBox = document.getElementById('mechJobsBox');
+  if(active.length === 0){
+    activeBox.innerHTML = '<div class="empty-note">No jobs assigned right now.</div>';
+  } else {
+    activeBox.innerHTML = active.map(job => {
+      let distText = '—';
+      if(loc){
+        const mi = milesBetween(loc.lat, loc.lng, job.dest_lat, job.dest_lng);
+        distText = mi < 0.1 ? 'Arrived' : mi.toFixed(1) + ' mi away';
+        if(!mechDestMarkers[job.id]) mechDestMarkers[job.id] = L.marker([job.dest_lat, job.dest_lng], { icon: pinIcon('dest') }).addTo(mechMapObj);
+      }
+      return `
+        <div class="job-card" data-job="${job.id}">
+          <div class="job-card-top">
+            <div><b>${esc(job.customer)}</b><div class="meta">${esc(job.vehicle)}</div></div>
+          </div>
+          <div class="row"><span>Distance</span><b>${distText}</b></div>
+          <div class="row"><span>Status</span><b>${job.status.replace('_',' ')}</b></div>
+          <div class="job-actions">
+            <button data-s="en_route" class="${job.status==='en_route'?'active':''}">Heading there</button>
+            <button data-s="on_site" class="${job.status==='on_site'?'active':''}">Mark arrived</button>
+            <button data-s="complete" class="${job.status==='complete'?'active':''}">Mark complete</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    activeBox.querySelectorAll('.job-card').forEach(card=>{
+      const jobId = Number(card.dataset.job);
+      card.querySelectorAll('.job-actions button').forEach(btn=>{
+        btn.onclick = async ()=>{
+          const { error } = await sb.from('jobs').update({ status: btn.dataset.s, updated_at: new Date().toISOString() }).eq('id', jobId);
+          if(!error) renderMechJobs();
+        };
+      });
+    });
+  }
+
+  const historyBox = document.getElementById('mechHistoryBox');
+  historyBox.innerHTML = history.length === 0
+    ? '<div class="empty-note">No completed jobs yet.</div>'
+    : history.map(job => `
+        <div class="job-card">
+          <div class="job-card-top"><div><b>${esc(job.customer)}</b><div class="meta">${esc(job.vehicle)}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>
+        </div>`).join('');
+}
+
+// ================= SHOP OWNER VIEW =================
+let shopMap = null, pinMapObj = null, pinMarker = null, chosenPin = null;
+const shopMarkers = {};
+
+function initShopView(){
+  shopMap = L.map('shopOpsMap', { attributionControl:false }).setView([42.45, -83.25], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(shopMap);
+
+  pinMapObj = L.map('pinMap', { attributionControl:false }).setView([42.45, -83.25], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(pinMapObj);
+  pinMapObj.on('click', (e)=>{
+    chosenPin = e.latlng;
+    if(pinMarker) pinMarker.setLatLng(e.latlng); else pinMarker = L.marker(e.latlng, { icon: pinIcon('dest') }).addTo(pinMapObj);
+    document.getElementById('pinHint').textContent = `Pin set at ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`;
   });
 
-  // ================= Supabase connection =================
-  const SUPABASE_URL = 'https://okcogufppsubntrchfuf.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_Z8qgdFjVetqSOfmZKhxkpQ_XX2tYHDp';
-  let sb = null;
+  populateMechanicSelect();
+  populateCompanyList();
+  refreshShopData();
+  renderTeamList();
+  setInterval(refreshShopData, 5000);
+  setInterval(renderTeamList, 15000);
 
-  (function checkEnv(){
-    const box = document.getElementById('fatalError');
-    const problems = [];
-    if(typeof window.supabase === 'undefined') problems.push('The Supabase library failed to load — check your internet connection and reload.');
-    if(typeof L === 'undefined') problems.push('The map library failed to load — check your internet connection and reload.');
-    if(problems.length){ box.style.display = 'block'; box.textContent = problems.join(' '); return; }
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  })();
+  document.getElementById('createJobBtn').onclick = async ()=>{
+    const customer = document.getElementById('njCustomer').value.trim();
+    const vehicle = document.getElementById('njVehicle').value.trim();
+    const mechanicId = document.getElementById('njMechanic').value;
+    if(!customer || !vehicle || !mechanicId || !chosenPin){ alert('Fill in every field and drop a pin for the breakdown location.'); return; }
 
-  // ================= distance =================
-  function milesBetween(lat1,lon1,lat2,lon2){
-    const R=3958.8;
-    const dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
-    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-  }
+    const { error } = await sb.from('jobs').insert([{ customer, vehicle, mechanic_id:mechanicId, dest_lat:chosenPin.lat, dest_lng:chosenPin.lng, status:'assigned', created_by:session.id }]);
+    if(error){ alert('Could not create job: ' + error.message); return; }
 
-  function pinIcon(cls){
-    return L.divIcon({ className:'', html:`<div class="relay-pin ${cls}"></div>`, iconSize:[16,16], iconAnchor:[8,8] });
-  }
-
-  // ================= data layer (Supabase) =================
-  async function fetchAccounts(){
-    const { data, error } = await sb.from('accounts').select('*');
-    if(error){ console.error('fetchAccounts', error); return []; }
-    return data || [];
-  }
-  async function fetchJobs(){
-    const { data, error } = await sb.from('jobs').select('*').order('created_at', { ascending:true });
-    if(error){ console.error('fetchJobs', error); return []; }
-    return (data || []).map(j => ({ id:j.id, customer:j.customer, vehicle:j.vehicle, mechanic:j.mechanic, destLat:j.dest_lat, destLng:j.dest_lng, status:j.status }));
-  }
-  async function fetchLocation(mechanicName){
-    const { data, error } = await sb.from('locations').select('*').eq('mechanic_name', mechanicName).maybeSingle();
-    if(error || !data) return null;
-    return { lat:data.lat, lng:data.lng, updatedAt:new Date(data.updated_at).getTime(), status:data.status };
-  }
-  async function upsertLocation(mechanicName, lat, lng, status){
-    const { error } = await sb.from('locations').upsert(
-      { mechanic_name:mechanicName, lat, lng, status, updated_at:new Date().toISOString() },
-      { onConflict:'mechanic_name' }
-    );
-    if(error){ console.error('upsertLocation', error); return false; }
-    return true;
-  }
-  async function updateLocationStatus(mechanicName, status){
-    const { error } = await sb.from('locations').update({ status }).eq('mechanic_name', mechanicName);
-    return !error;
-  }
-
-  // ================= session (device-local, not shared with others) =================
-  let session = null;
-  let watchId = null;
-  let mechMapObj = null, mechMarker = null, mechDestMarker = null;
-
-  function restoreSession(){
-    const raw = localStorage.getItem('relay_session');
-    if(raw){ session = JSON.parse(raw); enterApp(); }
-  }
-
-  // ================= auth ui wiring =================
-  const tabLogin = document.getElementById('tabLogin'), tabSignup = document.getElementById('tabSignup');
-  const loginForm = document.getElementById('loginForm'), signupForm = document.getElementById('signupForm');
-  tabLogin.onclick = ()=>{ tabLogin.classList.add('active'); tabSignup.classList.remove('active'); loginForm.classList.remove('hidden'); signupForm.classList.add('hidden'); document.getElementById('authError').textContent=''; };
-  tabSignup.onclick = ()=>{ tabSignup.classList.add('active'); tabLogin.classList.remove('active'); signupForm.classList.remove('hidden'); loginForm.classList.add('hidden'); document.getElementById('authError').textContent=''; };
-  document.getElementById('suRole').onchange = (e)=>{
-    document.getElementById('suCompanyField').style.display = e.target.value === 'fleet' ? 'block' : 'none';
+    document.getElementById('njCustomer').value = ''; document.getElementById('njVehicle').value = '';
+    if(pinMarker){ pinMapObj.removeLayer(pinMarker); pinMarker = null; } chosenPin = null;
+    document.getElementById('pinHint').textContent = 'Click the map to drop a pin at the breakdown location.';
+    refreshShopData();
+    populateCompanyList();
   };
-  document.getElementById('suCompanyField').style.display = 'none';
+}
 
-  document.getElementById('signupSubmit').onclick = async (e)=>{
-    const btn = e.target; btn.disabled = true;
-    const name = document.getElementById('suName').value.trim();
-    const role = document.getElementById('suRole').value;
-    const company = document.getElementById('suCompany').value.trim();
-    const pass = document.getElementById('suPass').value;
-    const err = document.getElementById('authError');
-    err.textContent = '';
-    if(!name || !pass || (role==='fleet' && !company)){ err.textContent = 'Fill in all required fields.'; btn.disabled=false; return; }
-    if(!sb){ err.textContent = 'Not connected to the database yet — reload and try again.'; btn.disabled=false; return; }
+async function populateMechanicSelect(){
+  const mechanics = (await fetchAllMechanics()).filter(m=>m.active);
+  const sel = document.getElementById('njMechanic');
+  sel.innerHTML = mechanics.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('') || '<option value="">No active mechanics yet</option>';
+}
 
-    const { data: existing, error: checkErr } = await sb.from('accounts').select('name').ilike('name', name);
-    if(checkErr){ err.textContent = 'Database error: ' + checkErr.message; btn.disabled=false; return; }
-    if(existing && existing.length){ err.textContent = 'That name is already taken.'; btn.disabled=false; return; }
+async function populateCompanyList(){
+  const companies = await fetchCompanies();
+  document.getElementById('companyList').innerHTML = companies.map(c=>`<option value="${esc(c)}"></option>`).join('');
+}
 
-    const { error } = await sb.from('accounts').insert([{ name, role, company: role==='fleet' ? company : null, passcode: pass }]);
-    if(error){ err.textContent = 'Could not create account: ' + error.message; btn.disabled=false; return; }
-
-    session = { name, role, company: role==='fleet' ? company : null };
-    localStorage.setItem('relay_session', JSON.stringify(session));
-    enterApp();
-  };
-
-  document.getElementById('loginSubmit').onclick = async (e)=>{
-    const btn = e.target; btn.disabled = true;
-    const name = document.getElementById('loginName').value.trim();
-    const pass = document.getElementById('loginPass').value;
-    const err = document.getElementById('authError');
-    err.textContent = '';
-    if(!sb){ err.textContent = 'Not connected to the database yet — reload and try again.'; btn.disabled=false; return; }
-
-    const { data, error } = await sb.from('accounts').select('*').ilike('name', name);
-    if(error){ err.textContent = 'Database error: ' + error.message; btn.disabled=false; return; }
-    if(!data || data.length === 0){ err.textContent = `No account found for "${name}". Check spelling or create an account.`; btn.disabled=false; return; }
-    const account = data[0];
-    if(account.passcode !== pass){ err.textContent = "That passcode doesn't match this account."; btn.disabled=false; return; }
-
-    session = { name:account.name, role:account.role, company:account.company };
-    localStorage.setItem('relay_session', JSON.stringify(session));
-    enterApp();
-  };
-
-  document.getElementById('logoutBtn').onclick = ()=>{
-    if(watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
-    localStorage.removeItem('relay_session');
-    location.reload();
-  };
-
-  // ================= app entry =================
-  function enterApp(){
-    document.getElementById('authView').classList.add('hidden');
-    document.getElementById('whoBox').classList.remove('hidden');
-    document.getElementById('whoName').textContent = session.name;
-    document.getElementById('whoRole').textContent = session.role === 'shop' ? 'Shop owner' : session.role === 'fleet' ? 'Fleet manager' : 'Mechanic';
-
-    if(session.role === 'mechanic'){ document.getElementById('mechanicView').classList.remove('hidden'); initMechanicView(); }
-    else if(session.role === 'shop'){ document.getElementById('shopView').classList.remove('hidden'); initShopView(); }
-    else { document.getElementById('fleetView').classList.remove('hidden'); initFleetView(); }
-  }
-
-  // ================= MECHANIC VIEW =================
-  function initMechanicView(){
-    mechMapObj = L.map('mechMap', { zoomControl:true, attributionControl:false }).setView([42.45, -83.25], 10);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(mechMapObj);
-
-    document.getElementById('mechStatus').onchange = async (e)=>{
-      await updateLocationStatus(session.name, e.target.value);
-      updateMechAssignedJob();
+async function renderTeamList(){
+  const mechanics = await fetchAllMechanics();
+  const box = document.getElementById('teamList');
+  if(mechanics.length === 0){ box.innerHTML = '<div class="empty-note">No mechanics have signed up yet.</div>'; return; }
+  box.innerHTML = mechanics.map(m => `
+    <div class="team-row">
+      <div><div class="tname">${esc(m.name)}</div><div class="tstatus">${m.active ? 'Active' : 'Deactivated'}</div></div>
+      <button class="toggle-btn ${m.active ? 'on' : 'off'}" data-id="${m.id}" data-active="${m.active}">${m.active ? 'Active' : 'Inactive'}</button>
+    </div>`).join('');
+  box.querySelectorAll('.toggle-btn').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const newActive = btn.dataset.active !== 'true';
+      const { error } = await sb.from('profiles').update({ active:newActive }).eq('id', btn.dataset.id);
+      if(!error){ renderTeamList(); populateMechanicSelect(); }
     };
+  });
+}
 
-    const goLiveBtn = document.getElementById('goLiveBtn');
-    goLiveBtn.onclick = ()=>{ if(watchId === null) startTracking(); else stopTracking(); };
+function jobEditRowHtml(job, mechanics){
+  return `
+    <div class="edit-grid">
+      <input type="text" class="ej-customer" value="${esc(job.customer)}" placeholder="Customer">
+      <input type="text" class="ej-vehicle" value="${esc(job.vehicle)}" placeholder="Vehicle">
+      <select class="ej-mechanic">${mechanics.map(m=>`<option value="${m.id}" ${m.id===job.mechanic_id?'selected':''}>${esc(m.name)}</option>`).join('')}</select>
+    </div>
+    <div class="job-actions">
+      <button class="ej-save">Save</button>
+      <button class="ej-cancel">Cancel</button>
+    </div>`;
+}
 
-    function startTracking(){
-      if(!navigator.geolocation){ document.getElementById('gpsReadout').textContent = 'Geolocation is not available in this browser.'; return; }
-      goLiveBtn.textContent = 'Go offline';
-      goLiveBtn.classList.remove('offline-state');
-      document.getElementById('liveBadge').className = 'badge live';
-      document.getElementById('liveBadge').innerHTML = '<span class="bd"></span>Live';
+async function refreshShopData(){
+  const mechanics = await fetchAllMechanics();
+  const jobs = await fetchJobs();
 
-      let lastWrite = 0;
-      watchId = navigator.geolocation.watchPosition(async (pos)=>{
-        const { latitude, longitude, accuracy } = pos.coords;
-        document.getElementById('gpsReadout').innerHTML =
-          `Lat <b>${latitude.toFixed(5)}</b> · Lng <b>${longitude.toFixed(5)}</b> · Accuracy <b>±${Math.round(accuracy)}m</b> · Updated <b>${new Date().toLocaleTimeString()}</b>`;
-
-        if(!mechMarker){
-          mechMarker = L.marker([latitude, longitude], { icon: pinIcon('mech') }).addTo(mechMapObj);
-          mechMapObj.setView([latitude, longitude], 13);
-        } else {
-          mechMarker.setLatLng([latitude, longitude]);
-        }
-
-        const now = Date.now();
-        if(now - lastWrite > 4000){
-          lastWrite = now;
-          await upsertLocation(session.name, latitude, longitude, document.getElementById('mechStatus').value);
-        }
-        updateMechAssignedJob();
-      }, (err)=>{
-        document.getElementById('gpsReadout').textContent = 'Location error: ' + err.message + '. Check that location access is allowed for this page.';
-      }, { enableHighAccuracy:true, maximumAge:5000, timeout:15000 });
-    }
-
-    function stopTracking(){
-      if(watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
-      goLiveBtn.textContent = 'Go live';
-      goLiveBtn.classList.add('offline-state');
-      document.getElementById('liveBadge').className = 'badge offline';
-      document.getElementById('liveBadge').innerHTML = '<span class="bd"></span>Offline';
-      document.getElementById('gpsReadout').textContent = 'Location sharing stopped.';
-    }
-
-    updateMechAssignedJob();
-    setInterval(updateMechAssignedJob, 6000);
+  let liveCount = 0;
+  for(const m of mechanics){
+    const loc = await fetchLocation(m.id);
+    if(!loc) continue;
+    const isLive = Date.now() - loc.updatedAt < 30000;
+    if(isLive) liveCount++;
+    if(shopMarkers[m.id]) shopMarkers[m.id].setLatLng([loc.lat, loc.lng]);
+    else shopMarkers[m.id] = L.marker([loc.lat, loc.lng], { icon: pinIcon(isLive?'mech':'offline') }).addTo(shopMap).bindPopup(esc(m.name));
   }
+  const countBadge = document.getElementById('shopMechCount');
+  countBadge.style.display = 'inline-flex';
+  countBadge.innerHTML = `<span class="bd"></span>${liveCount} live`;
 
-  async function updateMechAssignedJob(){
-    const jobs = await fetchJobs();
-    const myJob = jobs.find(j => j.mechanic === session.name && j.status !== 'complete');
-    const box = document.getElementById('mechJobBox');
-    if(!myJob){ box.textContent = 'No job assigned right now.'; return; }
+  const mechName = id => (mechanics.find(m=>m.id===id) || {}).name || 'Unassigned';
 
-    const loc = await fetchLocation(session.name);
-    let distText = '—';
-    if(loc){
-      const mi = milesBetween(loc.lat, loc.lng, myJob.destLat, myJob.destLng);
-      distText = mi < 0.1 ? 'Arrived' : mi.toFixed(1) + ' mi away';
-      if(mechDestMarker) mechDestMarker.setLatLng([myJob.destLat, myJob.destLng]);
-      else mechDestMarker = L.marker([myJob.destLat, myJob.destLng], { icon: pinIcon('dest') }).addTo(mechMapObj);
-    }
+  const active = jobs.filter(j=>j.status!=='complete');
+  const history = jobs.filter(j=>j.status==='complete').slice().reverse().slice(0,20);
 
-    box.innerHTML = `
-      <div class="assigned-job">
-        <div class="row"><span>Customer</span><b>${myJob.customer}</b></div>
-        <div class="row"><span>Vehicle</span><b>${myJob.vehicle}</b></div>
-        <div class="row"><span>Distance to job</span><b>${distText}</b></div>
-        <div class="row"><span>Status</span><b>${myJob.status.replace('_',' ')}</b></div>
-      </div>
-      <div class="job-actions">
-        <button data-s="en_route" class="${myJob.status==='en_route'?'active':''}">Heading there</button>
-        <button data-s="on_site" class="${myJob.status==='on_site'?'active':''}">Mark arrived</button>
-        <button data-s="complete" class="${myJob.status==='complete'?'active':''}">Mark complete</button>
-      </div>`;
+  const list = document.getElementById('shopJobList');
+  if(active.length === 0){ list.innerHTML = '<div class="empty-note">No active jobs — create one on the right.</div>'; }
+  else {
+    list.innerHTML = active.slice().reverse().map(j => `
+      <div class="job-card" data-job="${j.id}">
+        <div class="job-card-top">
+          <div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div>
+          <span class="badge ${j.status==='on_site'?'arrived':'live'}"><span class="bd"></span>${j.status.replace('_',' ')}</span>
+        </div>
+        <div class="job-actions">
+          <button class="j-edit">Edit</button>
+          <button class="j-delete danger">Delete</button>
+        </div>
+        <div class="j-editbox"></div>
+      </div>`).join('');
 
-    box.querySelectorAll('.job-actions button').forEach(btn=>{
-      btn.onclick = async ()=>{
-        const { error } = await sb.from('jobs').update({ status: btn.dataset.s }).eq('id', myJob.id);
-        if(!error) updateMechAssignedJob();
+    list.querySelectorAll('.job-card').forEach(card=>{
+      const jobId = Number(card.dataset.job);
+      const job = jobs.find(j=>j.id===jobId);
+      card.querySelector('.j-delete').onclick = async ()=>{
+        if(!confirm('Delete this job? This cannot be undone.')) return;
+        const { error } = await sb.from('jobs').delete().eq('id', jobId);
+        if(!error) refreshShopData();
+      };
+      card.querySelector('.j-edit').onclick = ()=>{
+        const box = card.querySelector('.j-editbox');
+        box.innerHTML = jobEditRowHtml(job, mechanics);
+        box.querySelector('.ej-cancel').onclick = ()=>{ box.innerHTML = ''; };
+        box.querySelector('.ej-save').onclick = async ()=>{
+          const customer = box.querySelector('.ej-customer').value.trim();
+          const vehicle = box.querySelector('.ej-vehicle').value.trim();
+          const mechanic_id = box.querySelector('.ej-mechanic').value;
+          if(!customer || !vehicle || !mechanic_id) return;
+          const { error } = await sb.from('jobs').update({ customer, vehicle, mechanic_id, updated_at:new Date().toISOString() }).eq('id', jobId);
+          if(!error) refreshShopData();
+        };
       };
     });
   }
 
-  // ================= SHOP OWNER VIEW =================
-  let shopMap = null, pinMapObj = null, pinMarker = null, chosenPin = null;
-  const shopMarkers = {};
+  const histBox = document.getElementById('shopHistoryList');
+  histBox.innerHTML = history.length === 0
+    ? '<div class="empty-note">No completed jobs yet.</div>'
+    : history.map(j => `
+      <div class="job-card">
+        <div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>
+      </div>`).join('');
+}
 
-  function initShopView(){
-    shopMap = L.map('shopOpsMap', { attributionControl:false }).setView([42.45, -83.25], 10);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(shopMap);
+// ================= FLEET MANAGER VIEW =================
+const fleetMaps = {};
+function initFleetView(){
+  document.getElementById('fleetHint').textContent = `Showing jobs for ${session.company}.`;
+  refreshFleetData();
+  setInterval(refreshFleetData, 5000);
+}
 
-    pinMapObj = L.map('pinMap', { attributionControl:false }).setView([42.45, -83.25], 10);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(pinMapObj);
-    pinMapObj.on('click', (e)=>{
-      chosenPin = e.latlng;
-      if(pinMarker) pinMarker.setLatLng(e.latlng); else pinMarker = L.marker(e.latlng, { icon: pinIcon('dest') }).addTo(pinMapObj);
-      document.getElementById('pinHint').textContent = `Pin set at ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`;
-    });
+async function refreshFleetData(){
+  // RLS already restricts this to only this fleet manager's company jobs
+  const jobs = await fetchJobs();
+  const active = jobs.filter(j=>j.status!=='complete');
+  const history = jobs.filter(j=>j.status==='complete').slice().reverse().slice(0,15);
 
-    populateMechanicSelect();
-    refreshShopData();
-    setInterval(refreshShopData, 5000);
-
-    document.getElementById('createJobBtn').onclick = async ()=>{
-      const customer = document.getElementById('njCustomer').value.trim();
-      const vehicle = document.getElementById('njVehicle').value.trim();
-      const mechanic = document.getElementById('njMechanic').value;
-      if(!customer || !vehicle || !mechanic || !chosenPin){ alert('Fill in every field and drop a pin for the breakdown location.'); return; }
-
-      const { error } = await sb.from('jobs').insert([{ customer, vehicle, mechanic, dest_lat:chosenPin.lat, dest_lng:chosenPin.lng, status:'assigned' }]);
-      if(error){ alert('Could not create job: ' + error.message); return; }
-
-      document.getElementById('njCustomer').value = ''; document.getElementById('njVehicle').value = '';
-      if(pinMarker){ pinMapObj.removeLayer(pinMarker); pinMarker = null; } chosenPin = null;
-      document.getElementById('pinHint').textContent = 'Click the map to drop a pin at the breakdown location.';
-      refreshShopData();
-    };
-  }
-
-  async function populateMechanicSelect(){
-    const accounts = await fetchAccounts();
-    const sel = document.getElementById('njMechanic');
-    sel.innerHTML = accounts.filter(a=>a.role==='mechanic').map(a=>`<option value="${a.name}">${a.name}</option>`).join('') || '<option value="">No mechanics registered yet</option>';
-  }
-
-  async function refreshShopData(){
-    const accounts = await fetchAccounts();
-    const jobs = await fetchJobs();
-    const mechanics = accounts.filter(a=>a.role==='mechanic');
-
-    let liveCount = 0;
-    for(const m of mechanics){
-      const loc = await fetchLocation(m.name);
-      if(!loc) continue;
-      const isLive = Date.now() - loc.updatedAt < 30000;
-      if(isLive) liveCount++;
-      if(shopMarkers[m.name]) shopMarkers[m.name].setLatLng([loc.lat, loc.lng]);
-      else shopMarkers[m.name] = L.marker([loc.lat, loc.lng], { icon: pinIcon(isLive?'mech':'offline') }).addTo(shopMap).bindPopup(m.name);
-    }
-    const countBadge = document.getElementById('shopMechCount');
-    countBadge.style.display = 'inline-flex';
-    countBadge.innerHTML = `<span class="bd"></span>${liveCount} live`;
-
-    const list = document.getElementById('shopJobList');
-    if(jobs.length === 0){ list.innerHTML = '<div class="card">No jobs yet — create one on the right.</div>'; return; }
-    let rows = '';
-    for(const j of jobs.slice().reverse()){
-      const loc = await fetchLocation(j.mechanic);
-      let distText = '—';
-      if(loc){ const mi = milesBetween(loc.lat, loc.lng, j.destLat, j.destLng); distText = mi < 0.1 ? 'Arrived' : mi.toFixed(1)+' mi'; }
-      rows += `<div class="job-row">
-        <div class="job-row-top"><b>${j.customer} — ${j.vehicle}</b><span class="badge ${j.status==='on_site'||j.status==='complete'?'arrived':'live'}"><span class="bd"></span>${j.status.replace('_',' ')}</span></div>
-        <div class="meta"><span>Mechanic: ${j.mechanic}</span><span>${distText}</span></div>
-      </div>`;
-    }
-    list.innerHTML = rows;
-  }
-
-  // ================= FLEET MANAGER VIEW =================
-  const fleetMaps = {};
-  function initFleetView(){
-    document.getElementById('fleetHint').textContent = `Showing live jobs for ${session.company}.`;
-    refreshFleetData();
-    setInterval(refreshFleetData, 5000);
-  }
-
-  async function refreshFleetData(){
-    const jobs = await fetchJobs();
-    const myJobs = jobs.filter(j => j.customer.toLowerCase() === (session.company||'').toLowerCase());
-    const box = document.getElementById('fleetJobs');
-
-    if(myJobs.length === 0){ box.innerHTML = '<div class="card">No active jobs for your company right now.</div>'; return; }
-
+  const box = document.getElementById('fleetJobs');
+  if(active.length === 0){ box.innerHTML = '<div class="card empty-note">No active jobs for your company right now.</div>'; }
+  else {
     let html = '';
-    for(const j of myJobs){
-      html += `<div class="section"><div class="card">
-        <div class="job-row-top"><b>${j.vehicle}</b><span class="badge ${j.status==='on_site'||j.status==='complete'?'arrived':'live'}"><span class="bd"></span>${j.status.replace('_',' ')}</span></div>
-        <div class="meta" style="margin-top:6px;">Mechanic: ${j.mechanic}</div>
+    for(const j of active){
+      html += `<div class="card" style="margin-bottom:14px;">
+        <div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge ${j.status==='on_site'?'arrived':'live'}"><span class="bd"></span>${j.status.replace('_',' ')}</span></div>
         <div class="ops-map" style="height:280px; margin-top:12px;" id="fleetMap${j.id}"></div>
         <div class="gps-readout" id="fleetDist${j.id}" style="margin-top:10px;"></div>
-      </div></div>`;
+      </div>`;
     }
     box.innerHTML = html;
 
-    for(const j of myJobs){
-      const loc = await fetchLocation(j.mechanic);
+    for(const j of active){
+      const loc = await fetchLocation(j.mechanic_id);
       if(!fleetMaps[j.id]){
-        const m = L.map('fleetMap'+j.id, { attributionControl:false }).setView([j.destLat, j.destLng], 12);
+        const m = L.map('fleetMap'+j.id, { attributionControl:false }).setView([j.dest_lat, j.dest_lng], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(m);
-        L.marker([j.destLat, j.destLng], { icon: pinIcon('dest') }).addTo(m);
+        L.marker([j.dest_lat, j.dest_lng], { icon: pinIcon('dest') }).addTo(m);
         fleetMaps[j.id] = { map:m, mechMarker:null };
       }
       const entry = fleetMaps[j.id];
       if(loc){
         if(entry.mechMarker) entry.mechMarker.setLatLng([loc.lat, loc.lng]);
         else entry.mechMarker = L.marker([loc.lat, loc.lng], { icon: pinIcon('mech') }).addTo(entry.map);
-        const mi = milesBetween(loc.lat, loc.lng, j.destLat, j.destLng);
+        const mi = milesBetween(loc.lat, loc.lng, j.dest_lat, j.dest_lng);
         const distEl = document.getElementById('fleetDist'+j.id);
         if(distEl) distEl.innerHTML = mi < 0.1
           ? `<b style="color:var(--done);">Technician has arrived at the location.</b>`
@@ -358,4 +541,8 @@
     }
   }
 
-  restoreSession();
+  const histBox = document.getElementById('fleetHistory');
+  histBox.innerHTML = history.length === 0
+    ? '<div class="card empty-note">No completed jobs yet.</div>'
+    : history.map(j => `<div class="job-card"><div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge arrived"><span class="bd"></span>complete</span></div></div>`).join('');
+}
