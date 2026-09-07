@@ -1,1 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relay — Live GPS Tracking for Fleets &amp; Service Providers</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link rel="stylesheet" href="style.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+</style>
+</head>
+<body>
 
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12h11M15 12l-3.5-3.5M15 12l-3.5 3.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="19" cy="12" r="2" fill="#fff"/></svg></div>
+      <div class="brand-text"><b>Relay</b><span>Live GPS tracking</span></div>
+    </div>
+    <div id="whoBox" class="who hidden">
+      <span class="name" id="whoName"></span>
+      <span class="role" id="whoRole"></span>
+      <button class="text-btn" id="changePassBtn">Change password</button>
+      <button class="logout" id="logoutBtn">Log out</button>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <!-- ================= AUTH ================= -->
+  <div id="authView">
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button id="tabLogin" class="active">Log in</button>
+          <button id="tabSignup">Create account</button>
+        </div>
+
+        <div id="loginForm">
+          <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="username"></div>
+          <div class="field"><label>Password</label><input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"></div>
+          <button class="auth-submit" id="loginSubmit">Log in</button>
+          <button class="text-btn" id="forgotPassBtn" style="margin-top:10px;">Forgot password?</button>
+        </div>
+
+        <div id="signupForm" class="hidden">
+          <div class="field"><label>Name</label><input type="text" id="suName" placeholder="Your name"></div>
+          <div class="field"><label>Email</label><input type="email" id="suEmail" placeholder="you@example.com"></div>
+          <div class="field"><label>Role</label>
+            <select id="suRole">
+              <option value="mechanic">Mechanic</option>
+              <option value="shop">Shop owner</option>
+              <option value="fleet">Fleet manager</option>
+            </select>
+          </div>
+          <div class="field" id="suCompanyField">
+            <label>Company (fleet managers only)</label>
+            <input type="text" id="suCompany" placeholder="e.g. Amazon, FedEx">
+          </div>
+          <div class="field"><label>Choose a password</label><input type="password" id="suPass" placeholder="At least 6 characters"></div>
+          <button class="auth-submit" id="signupSubmit">Create account</button>
+        </div>
+
+        <!-- Shown when a logged-in user has no profile row yet (e.g. after email confirmation) -->
+        <div id="completeProfileForm" class="hidden">
+          <p class="auth-note" style="margin-top:0;">Almost there — finish setting up your account.</p>
+          <div class="field"><label>Name</label><input type="text" id="cpName" placeholder="Your name"></div>
+          <div class="field"><label>Role</label>
+            <select id="cpRole">
+              <option value="mechanic">Mechanic</option>
+              <option value="shop">Shop owner</option>
+              <option value="fleet">Fleet manager</option>
+            </select>
+          </div>
+          <div class="field" id="cpCompanyField">
+            <label>Company (fleet managers only)</label>
+            <input type="text" id="cpCompany" placeholder="e.g. Amazon, FedEx">
+          </div>
+          <button class="auth-submit" id="completeProfileSubmit">Finish setup</button>
+        </div>
+
+        <div class="auth-error" id="authError"></div>
+        <p class="auth-note">Your account is protected with encrypted passwords, and password resets are sent by email.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MECHANIC ================= -->
+  <div id="mechanicView" class="hidden">
+    <div class="section">
+      <div class="card">
+        <div class="go-live-row">
+          <div>
+            <button id="goLiveBtn" class="go-live-btn offline-state">Go live</button>
+            <span class="badge offline" id="liveBadge" style="margin-left:10px;"><span class="bd"></span>Offline</span>
+          </div>
+          <select class="status-select" id="mechStatus">
+            <option value="available">Available</option>
+            <option value="en_route">Heading to job</option>
+            <option value="on_site">On site</option>
+            <option value="returning">Returning to shop</option>
+          </select>
+        </div>
+        <div class="gps-readout" id="gpsReadout">Turn on "Go live" and allow location access to start sharing your position.</div>
+        <div class="map-box" id="mechMap"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Your active jobs</h2><span class="count" id="mechActiveCount"></span></div>
+      <div id="mechJobsBox" class="job-list">No jobs assigned right now.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Completed history</h2></div>
+      <div id="mechHistoryBox" class="job-list"></div>
+    </div>
+  </div>
+
+  <!-- ================= SHOP OWNER ================= -->
+  <div id="shopView" class="hidden">
+    <div class="section">
+      <div class="section-head"><h2>Live ops map</h2><span id="shopMechCount" class="badge live" style="display:none;"></span></div>
+      <div class="ops-map" id="shopOpsMap"></div>
+    </div>
+
+    <div class="grid-2 section">
+      <div>
+        <div class="section-head"><h2>Active jobs</h2></div>
+        <div class="job-list" id="shopJobList"></div>
+        <div class="section-head" style="margin-top:26px;"><h2>Completed history</h2></div>
+        <div class="job-list" id="shopHistoryList"></div>
+      </div>
+      <div>
+        <div class="card new-job-form">
+          <h3>Create a job</h3>
+          <div class="field"><label>Customer / company</label>
+            <input type="text" id="njCustomer" list="companyList" placeholder="e.g. FedEx">
+            <datalist id="companyList"></datalist>
+          </div>
+          <div class="field"><label>Vehicle / unit</label><input type="text" id="njVehicle" placeholder="e.g. Trailer #7790"></div>
+          <div class="field"><label>Assign mechanic</label><select id="njMechanic"></select></div>
+          <div class="field">
+            <label>Breakdown location</label>
+            <div class="pin-map" id="pinMap"></div>
+            <div class="pin-hint" id="pinHint">Click the map to drop a pin at the breakdown location.</div>
+          </div>
+          <button id="createJobBtn">Create job</button>
+        </div>
+
+        <div class="card" style="margin-top:18px;">
+          <h3 style="font-family:var(--font-display); font-size:0.92rem; margin-bottom:12px;">Team</h3>
+          <div id="teamList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FLEET MANAGER ================= -->
+  <div id="fleetView" class="hidden">
+    <div class="hint-banner" id="fleetHint"></div>
+    <div class="section-head"><h2>Active</h2></div>
+    <div id="fleetJobs"></div>
+    <div class="section-head" style="margin-top:26px;"><h2>Completed history</h2></div>
+    <div id="fleetHistory"></div>
+  </div>
+
+</main>
+
+<footer>© 2026 Relay — Live tracking for fleets &amp; service providers</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<div id="fatalError" style="display:none; position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:999; background:#FFEAE4; color:#C23A1E; border:1px solid #F3B7A8; padding:12px 18px; border-radius:10px; font-family:'JetBrains Mono',monospace; font-size:0.8rem; max-width:90vw; box-shadow:0 8px 24px rgba(0,0,0,0.12);"></div>
+<script src="script.js"></script>
+
+</body>
+</html>
