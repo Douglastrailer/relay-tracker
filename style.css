@@ -379,3 +379,23 @@ main{ padding-top:36px; }
 .dash-panel{ animation:panelIn .2s ease; }
 @keyframes panelIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
 @media (max-width:600px){ .dash-tabs{ width:100%; } .dash-tab{ flex:1; text-align:center; padding:10px 8px; } }
+
+/* ===== more menu (matches reference: compact icon buttons) ===== */
+.icon-btn{
+  width:34px; height:34px; border-radius:9px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
+  color:#fff; font-size:1.1rem; font-weight:800; display:flex; align-items:center; justify-content:center;
+  line-height:1;
+}
+.icon-btn:hover{ background:rgba(255,255,255,0.16); }
+.more-menu-wrap{ position:relative; }
+.more-menu{
+  position:absolute; top:calc(100% + 8px); right:0; background:var(--panel); border:1px solid var(--line);
+  border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.18); padding:6px; min-width:170px; z-index:200;
+}
+[data-theme="dark"] .more-menu{ box-shadow:0 10px 30px rgba(0,0,0,0.5); }
+.more-menu button{
+  display:block; width:100%; text-align:left; background:none; border:none; padding:10px 12px; border-radius:8px;
+  font-size:0.85rem; font-weight:600; color:var(--ink);
+}
+.more-menu button:hover{ background:var(--panel-2); }
+.more-menu #logoutBtn{ color:var(--live); }
