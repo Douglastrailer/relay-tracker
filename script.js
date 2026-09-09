@@ -408,7 +408,6 @@ function initMechanicView(){
 }
 
 async function renderMechJobs(){
-  const _inputState = preserveOpenInputs();
   const jobs = await fetchJobs();
   const mine = jobs.filter(j => j.mechanic_id === session.id);
   const active = mine.filter(j => j.status !== 'complete');
@@ -419,6 +418,7 @@ async function renderMechJobs(){
   const loc = await fetchLocation(session.id);
 
   const activeBox = document.getElementById('mechJobsBox');
+  const _s1 = preserveOpenInputs();
   if(active.length === 0){
     activeBox.innerHTML = '<div class="empty-note">No jobs assigned right now.</div>';
   } else {
@@ -461,8 +461,10 @@ async function renderMechJobs(){
       });
     });
   }
+  restoreOpenInputs(_s1);
 
   const historyBox = document.getElementById('mechHistoryBox');
+  const _s2 = preserveOpenInputs();
   historyBox.innerHTML = history.length === 0
     ? '<div class="empty-note">No completed jobs yet.</div>'
     : history.map(job => `
@@ -471,7 +473,7 @@ async function renderMechJobs(){
           ${commentsBlockHtml(job.id)}
         </div>`).join('');
   wireCommentToggles(historyBox);
-  restoreOpenInputs(_inputState);
+  restoreOpenInputs(_s2);
 }
 
 // ================= SHOP OWNER VIEW =================
@@ -633,7 +635,6 @@ function renderAnalytics(jobs, mechanics, mechName){
 }
 
 async function refreshShopData(){
-  const _inputState = preserveOpenInputs();
   const mechanics = await fetchAllMechanics();
   const jobs = await fetchJobs();
 
@@ -666,6 +667,7 @@ async function refreshShopData(){
   renderAnalytics(jobs, mechanics, mechName);
 
   const list = document.getElementById('shopJobList');
+  const _s1 = preserveOpenInputs();
   if(active.length === 0){ list.innerHTML = '<div class="empty-note">No active jobs — create one on the right.</div>'; }
   else {
     list.innerHTML = active.slice().reverse().map(j => `
@@ -706,8 +708,10 @@ async function refreshShopData(){
       };
     });
   }
+  restoreOpenInputs(_s1);
 
   const histBox = document.getElementById('shopHistoryList');
+  const _s2 = preserveOpenInputs();
   histBox.innerHTML = history.length === 0
     ? '<div class="empty-note">No completed jobs yet.</div>'
     : history.map(j => `
@@ -716,7 +720,7 @@ async function refreshShopData(){
         ${commentsBlockHtml(j.id)}
       </div>`).join('');
   wireCommentToggles(histBox);
-  restoreOpenInputs(_inputState);
+  restoreOpenInputs(_s2);
 }
 
 // ================= FLEET MANAGER VIEW =================
@@ -728,13 +732,13 @@ function initFleetView(){
 }
 
 async function refreshFleetData(){
-  const _inputState = preserveOpenInputs();
   // RLS already restricts this to only this fleet manager's company jobs
   const jobs = await fetchJobs();
   const active = jobs.filter(j=>j.status!=='complete');
   const history = jobs.filter(j=>j.status==='complete').slice().reverse().slice(0,15);
 
   const box = document.getElementById('fleetJobs');
+  const _s1 = preserveOpenInputs();
   if(active.length === 0){ box.innerHTML = '<div class="card empty-note">No active jobs for your company right now.</div>'; }
   else {
     let html = '';
@@ -748,6 +752,7 @@ async function refreshFleetData(){
     }
     box.innerHTML = html;
     wireCommentToggles(box);
+    restoreOpenInputs(_s1);
 
     for(const j of active){
       const loc = await fetchLocation(j.mechanic_id);
@@ -774,11 +779,12 @@ async function refreshFleetData(){
   }
 
   const histBox = document.getElementById('fleetHistory');
+  const _s2 = preserveOpenInputs();
   histBox.innerHTML = history.length === 0
     ? '<div class="card empty-note">No completed jobs yet.</div>'
     : history.map(j => `<div class="job-card"><div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}</div>`).join('');
   wireCommentToggles(histBox);
-  restoreOpenInputs(_inputState);
+  restoreOpenInputs(_s2);
 }
 
 // ================= ADMIN VIEW =================
@@ -794,7 +800,6 @@ function initAdminView(){
 }
 
 async function refreshAdminData(){
-  const _inputState = preserveOpenInputs();
   const profiles = await fetchAllProfiles();
   const jobs = await fetchJobs();
   const mechanics = profiles.filter(p=>p.role==='mechanic');
@@ -862,6 +867,7 @@ async function refreshAdminData(){
   const history = jobs.filter(j=>j.status==='complete').slice().reverse().slice(0,30);
 
   const list = document.getElementById('adminJobList');
+  const _s1 = preserveOpenInputs();
   list.innerHTML = active.length === 0 ? '<div class="empty-note">No active jobs.</div>' : active.slice().reverse().map(j => `
     <div class="job-card" data-job="${j.id}">
       <div class="job-card-top">
@@ -874,6 +880,7 @@ async function refreshAdminData(){
       ${commentsBlockHtml(j.id)}
     </div>`).join('');
   wireCommentToggles(list);
+  restoreOpenInputs(_s1);
   list.querySelectorAll('.j-delete').forEach(btn=>{
     btn.onclick = async ()=>{
       const jobId = Number(btn.closest('.job-card').dataset.job);
@@ -884,11 +891,12 @@ async function refreshAdminData(){
   });
 
   const adminHistBox = document.getElementById('adminHistoryList');
+  const _s2 = preserveOpenInputs();
   adminHistBox.innerHTML = history.length === 0
     ? '<div class="empty-note">No completed jobs yet.</div>'
     : history.map(j => `<div class="job-card"><div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}</div>`).join('');
   wireCommentToggles(adminHistBox);
-  restoreOpenInputs(_inputState);
+  restoreOpenInputs(_s2);
 }
 
 // ================= theme toggle =================
