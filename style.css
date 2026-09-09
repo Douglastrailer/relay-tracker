@@ -330,3 +330,37 @@ main{ padding-top:36px; }
 .comment-form{ display:flex; gap:8px; margin-top:10px; }
 .comment-form input{ flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:0.82rem; background:var(--panel-2); color:var(--ink); }
 .comment-form button{ background:var(--accent); color:#fff; border:none; padding:0 14px; border-radius:8px; font-size:0.78rem; font-weight:700; }
+
+/* ===== public nav + landing page ===== */
+.public-nav{ display:flex; gap:4px; background:rgba(255,255,255,0.08); border-radius:999px; padding:4px; }
+.public-nav .nav-link{ background:none; border:none; color:#B9C4EA; padding:8px 16px; border-radius:999px; font-size:0.85rem; font-weight:700; }
+.public-nav .nav-link.active{ background:var(--accent); color:#fff; }
+.public-nav .nav-link:hover:not(.active){ color:#fff; }
+@media (max-width:760px){ .public-nav{ display:none; } }
+
+.landing-hero{ text-align:center; max-width:700px; margin:70px auto 50px; }
+.landing-hero h1{ font-family:var(--font-display); font-weight:800; font-size:clamp(1.9rem,4.5vw,3rem); line-height:1.12; margin:14px 0 16px; }
+.landing-hero p{ color:var(--ink-soft); font-size:1.02rem; max-width:50ch; margin:0 auto; }
+.hero-cta{ display:flex; gap:12px; justify-content:center; margin-top:28px; flex-wrap:wrap; }
+.landing-cta{ padding:15px 28px !important; font-size:0.95rem !important; }
+.btn-ghost{ background:transparent; border:1px solid var(--line); color:var(--ink); padding:15px 28px; border-radius:9px; font-weight:700; font-size:0.95rem; }
+.btn-ghost:hover{ border-color:var(--accent); color:var(--accent); }
+
+.feature-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; max-width:1000px; margin:50px auto; }
+.feature-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:26px; }
+.feature-card h3{ font-family:var(--font-display); font-size:1.02rem; margin-bottom:10px; }
+.feature-card p{ color:var(--ink-soft); font-size:0.88rem; line-height:1.5; }
+@media (max-width:760px){ .feature-grid{ grid-template-columns:1fr; } }
+
+.landing-cta-band{
+  max-width:700px; margin:0 auto 70px; text-align:center; background:var(--navy); color:#fff;
+  border-radius:20px; padding:44px 32px;
+}
+.landing-cta-band h2{ font-family:var(--font-display); font-size:1.5rem; font-weight:800; }
+.landing-cta-band p{ color:#B9C4EA; margin-top:10px; max-width:44ch; margin-left:auto; margin-right:auto; }
+.landing-cta-band .auth-submit{ margin-top:22px; }
+
+/* ===== invite code ===== */
+.invite-code-box{ display:flex; align-items:center; gap:10px; background:var(--panel-2); border:1px dashed var(--line); border-radius:10px; padding:14px; }
+.invite-code-box .code{ font-family:var(--font-mono); font-size:1.1rem; font-weight:700; letter-spacing:0.1em; color:var(--accent); }
+.invite-code-box button{ margin-left:auto; background:var(--accent); color:#fff; border:none; padding:7px 12px; border-radius:7px; font-size:0.76rem; font-weight:700; }
