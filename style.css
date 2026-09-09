@@ -311,13 +311,22 @@ main{ padding-top:36px; }
 .bar-row .bar-fill{ height:100%; background:var(--accent); border-radius:6px; }
 .bar-row .bar-count{ font-family:var(--font-mono); font-size:0.78rem; color:var(--ink-soft); width:24px; text-align:right; }
 
-/* ===== job comments ===== */
+/* ===== job chat ===== */
 .comments-toggle{ background:none; border:none; color:var(--accent); font-size:0.78rem; font-weight:700; padding:6px 0; margin-top:8px; }
 .comments-box{ margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; }
-.comment-item{ font-size:0.82rem; margin-bottom:8px; }
-.comment-item .cauthor{ font-weight:700; }
-.comment-item .ctime{ color:var(--ink-faint); font-size:0.7rem; margin-left:6px; }
-.comment-item .cbody{ color:var(--ink-soft); margin-top:2px; }
-.comment-form{ display:flex; gap:8px; margin-top:8px; }
+.comment-list{ max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:2px; }
+.comment-item{ display:flex; }
+.comment-item.mine{ justify-content:flex-end; }
+.comment-item .cbubble{
+  max-width:78%; background:var(--panel-2); border:1px solid var(--line); border-radius:12px 12px 12px 4px;
+  padding:8px 12px; font-size:0.82rem;
+}
+.comment-item.mine .cbubble{
+  background:var(--accent-soft); border-color:transparent; border-radius:12px 12px 4px 12px;
+}
+.comment-item .cauthor{ font-weight:700; font-size:0.74rem; display:block; margin-bottom:2px; color:var(--ink-soft); }
+.comment-item .cbody{ color:var(--ink); }
+.comment-item .ctime{ color:var(--ink-faint); font-size:0.68rem; display:block; margin-top:3px; }
+.comment-form{ display:flex; gap:8px; margin-top:10px; }
 .comment-form input{ flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:0.82rem; background:var(--panel-2); color:var(--ink); }
 .comment-form button{ background:var(--accent); color:#fff; border:none; padding:0 14px; border-radius:8px; font-size:0.78rem; font-weight:700; }
