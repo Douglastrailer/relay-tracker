@@ -32,6 +32,19 @@ function pinIcon(cls){
 function esc(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+function showCompleteToast(job){
+  const el = document.getElementById('completeToast');
+  const sub = document.getElementById('completeToastSub');
+  let durText = '';
+  if(job && job.created_at){
+    const mins = Math.round((Date.now() - new Date(job.created_at).getTime()) / 60000);
+    durText = mins < 60 ? `${mins} min` : `${(mins/60).toFixed(1)} hrs`;
+  }
+  sub.textContent = job ? `${job.customer} — ${job.vehicle}` + (durText ? ` · ${durText}` : '') : '';
+  el.classList.remove('hidden');
+  clearTimeout(showCompleteToast._t);
+  showCompleteToast._t = setTimeout(()=> el.classList.add('hidden'), 4500);
+}
 
 // ================= data layer =================
 async function fetchMyProfile(userId){
@@ -318,6 +331,7 @@ async function renderMechJobs(){
           </div>
           <div class="row"><span>Distance</span><b>${distText}</b></div>
           <div class="row"><span>Status</span><b>${job.status.replace('_',' ')}</b></div>
+          <a class="directions-btn" href="https://www.google.com/maps/dir/?api=1&destination=${job.dest_lat},${job.dest_lng}" target="_blank" rel="noopener">🧭 Get directions</a>
           <div class="job-actions">
             <button data-s="en_route" class="${job.status==='en_route'?'active':''}">Heading there</button>
             <button data-s="on_site" class="${job.status==='on_site'?'active':''}">Mark arrived</button>
@@ -328,10 +342,14 @@ async function renderMechJobs(){
 
     activeBox.querySelectorAll('.job-card').forEach(card=>{
       const jobId = Number(card.dataset.job);
+      const job = active.find(j=>j.id===jobId);
       card.querySelectorAll('.job-actions button').forEach(btn=>{
         btn.onclick = async ()=>{
           const { error } = await sb.from('jobs').update({ status: btn.dataset.s, updated_at: new Date().toISOString() }).eq('id', jobId);
-          if(!error) renderMechJobs();
+          if(!error){
+            if(btn.dataset.s === 'complete') showCompleteToast(job);
+            renderMechJobs();
+          }
         };
       });
     });
@@ -357,10 +375,45 @@ function initShopView(){
   pinMapObj = L.map('pinMap', { attributionControl:false }).setView([42.45, -83.25], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(pinMapObj);
   pinMapObj.on('click', (e)=>{
-    chosenPin = e.latlng;
-    if(pinMarker) pinMarker.setLatLng(e.latlng); else pinMarker = L.marker(e.latlng, { icon: pinIcon('dest') }).addTo(pinMapObj);
-    document.getElementById('pinHint').textContent = `Pin set at ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`;
+    setPin(e.latlng.lat, e.latlng.lng, `Pin set at ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`);
   });
+
+  function setPin(lat, lng, hintText){
+    chosenPin = { lat, lng };
+    const latlng = [lat, lng];
+    if(pinMarker) pinMarker.setLatLng(latlng); else pinMarker = L.marker(latlng, { icon: pinIcon('dest') }).addTo(pinMapObj);
+    pinMapObj.setView(latlng, 15);
+    document.getElementById('pinHint').textContent = hintText;
+  }
+
+  const addressInput = document.getElementById('addressInput');
+  const addressBtn = document.getElementById('addressSearchBtn');
+
+  async function searchAddress(){
+    const query = addressInput.value.trim();
+    if(!query) return;
+    addressBtn.disabled = true;
+    addressBtn.textContent = 'Searching…';
+    document.getElementById('pinHint').textContent = 'Looking up that address...';
+    try{
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+      const results = await res.json();
+      if(!results || results.length === 0){
+        document.getElementById('pinHint').textContent = `Couldn't find "${query}" — try adding city and state, or drop the pin manually.`;
+      } else {
+        const r = results[0];
+        setPin(parseFloat(r.lat), parseFloat(r.lon), `Found: ${r.display_name}`);
+      }
+    }catch(e){
+      document.getElementById('pinHint').textContent = 'Address lookup failed — check your connection or drop the pin manually.';
+    }
+    addressBtn.disabled = false;
+    addressBtn.textContent = 'Find';
+  }
+
+  addressBtn.onclick = searchAddress;
+  addressInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); searchAddress(); } });
 
   populateMechanicSelect();
   populateCompanyList();
@@ -373,14 +426,14 @@ function initShopView(){
     const customer = document.getElementById('njCustomer').value.trim();
     const vehicle = document.getElementById('njVehicle').value.trim();
     const mechanicId = document.getElementById('njMechanic').value;
-    if(!customer || !vehicle || !mechanicId || !chosenPin){ alert('Fill in every field and drop a pin for the breakdown location.'); return; }
+    if(!customer || !vehicle || !mechanicId || !chosenPin){ alert('Fill in every field and set a breakdown location (address or pin).'); return; }
 
     const { error } = await sb.from('jobs').insert([{ customer, vehicle, mechanic_id:mechanicId, dest_lat:chosenPin.lat, dest_lng:chosenPin.lng, status:'assigned', created_by:session.id }]);
     if(error){ alert('Could not create job: ' + error.message); return; }
 
-    document.getElementById('njCustomer').value = ''; document.getElementById('njVehicle').value = '';
+    document.getElementById('njCustomer').value = ''; document.getElementById('njVehicle').value = ''; addressInput.value = '';
     if(pinMarker){ pinMapObj.removeLayer(pinMarker); pinMarker = null; } chosenPin = null;
-    document.getElementById('pinHint').textContent = 'Click the map to drop a pin at the breakdown location.';
+    document.getElementById('pinHint').textContent = 'Type an address and hit Find, or click the map to drop a pin directly.';
     refreshShopData();
     populateCompanyList();
   };
@@ -449,6 +502,14 @@ async function refreshShopData(){
 
   const active = jobs.filter(j=>j.status!=='complete');
   const history = jobs.filter(j=>j.status==='complete').slice().reverse().slice(0,20);
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const completedToday = jobs.filter(j => j.status==='complete' && j.updated_at && new Date(j.updated_at) >= today).length;
+  document.getElementById('shopStats').innerHTML = `
+    <div class="stat-box"><b>${active.length}</b><span>Active jobs</span></div>
+    <div class="stat-box"><b>${liveCount}</b><span>Mechanics live now</span></div>
+    <div class="stat-box"><b>${mechanics.filter(m=>m.active).length}</b><span>Active mechanics</span></div>
+    <div class="stat-box"><b>${completedToday}</b><span>Completed today</span></div>`;
 
   const list = document.getElementById('shopJobList');
   if(active.length === 0){ list.innerHTML = '<div class="empty-note">No active jobs — create one on the right.</div>'; }
