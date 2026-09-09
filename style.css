@@ -52,7 +52,7 @@
   .auth-tabs button.active{ background:var(--accent); color:#fff; }
   .field{ margin-bottom:12px; }
   .field label{ display:block; font-size:0.78rem; font-weight:700; color:var(--ink-soft); margin-bottom:6px; }
-  .field input, .field select{ width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:9px; font-size:0.9rem; background:var(--panel-2); color:var(--ink); }
+  .field input, .field select, .field textarea{ width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:9px; font-size:0.9rem; background:var(--panel-2); color:var(--ink); font-family:inherit; resize:vertical; }
   .field input:focus, .field select:focus{ outline:2px solid var(--accent); outline-offset:1px; }
   .auth-submit{ width:100%; background:var(--accent); color:#fff; border:none; padding:13px; border-radius:9px; font-weight:700; font-size:0.9rem; margin-top:6px; }
   .auth-submit:hover{ opacity:0.9; }
