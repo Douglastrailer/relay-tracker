@@ -288,3 +288,36 @@ main{ padding-top:36px; }
   margin-top:6px;
 }
 .directions-btn:hover{ opacity:0.9; }
+
+/* ===== how it works ===== */
+.how-it-works{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:16px;
+  max-width:640px; margin:0 auto 32px;
+}
+.hiw-step{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; text-align:center; }
+.hiw-num{
+  width:28px; height:28px; border-radius:50%; background:var(--accent); color:#fff; font-weight:800;
+  display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:0.85rem;
+}
+.hiw-title{ font-weight:800; font-size:0.88rem; margin-bottom:6px; }
+.hiw-desc{ font-size:0.76rem; color:var(--ink-soft); line-height:1.4; }
+@media (max-width:640px){ .how-it-works{ grid-template-columns:1fr; } }
+
+/* ===== analytics ===== */
+.analytics-grid{ display:grid; grid-template-columns:1.3fr 1fr; gap:18px; }
+.bar-row{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.bar-row .bar-label{ width:100px; font-size:0.82rem; font-weight:700; flex-shrink:0; }
+.bar-row .bar-track{ flex:1; height:20px; background:var(--panel-2); border-radius:6px; overflow:hidden; }
+.bar-row .bar-fill{ height:100%; background:var(--accent); border-radius:6px; }
+.bar-row .bar-count{ font-family:var(--font-mono); font-size:0.78rem; color:var(--ink-soft); width:24px; text-align:right; }
+
+/* ===== job comments ===== */
+.comments-toggle{ background:none; border:none; color:var(--accent); font-size:0.78rem; font-weight:700; padding:6px 0; margin-top:8px; }
+.comments-box{ margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; }
+.comment-item{ font-size:0.82rem; margin-bottom:8px; }
+.comment-item .cauthor{ font-weight:700; }
+.comment-item .ctime{ color:var(--ink-faint); font-size:0.7rem; margin-left:6px; }
+.comment-item .cbody{ color:var(--ink-soft); margin-top:2px; }
+.comment-form{ display:flex; gap:8px; margin-top:8px; }
+.comment-form input{ flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:0.82rem; background:var(--panel-2); color:var(--ink); }
+.comment-form button{ background:var(--accent); color:#fff; border:none; padding:0 14px; border-radius:8px; font-size:0.78rem; font-weight:700; }
