@@ -44,6 +44,11 @@ async function fetchAllMechanics(){
   if(error){ console.error('fetchAllMechanics', error); return []; }
   return data || [];
 }
+async function fetchAllProfiles(){
+  const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending:true });
+  if(error){ console.error('fetchAllProfiles', error); return []; }
+  return data || [];
+}
 async function fetchCompanies(){
   const { data, error } = await sb.from('profiles').select('company').eq('role','fleet');
   if(error) return [];
@@ -193,6 +198,10 @@ async function onAuthed(userId){
     return;
   }
   session = { id:profile.id, name:profile.name, role:profile.role, company:profile.company };
+  // TEMP DEBUG — remove once the role mismatch is diagnosed
+  const dbg = document.getElementById('fatalError');
+  dbg.style.display = 'block';
+  dbg.textContent = 'DEBUG raw profile: ' + JSON.stringify(profile);
   enterApp();
 }
 
@@ -217,10 +226,14 @@ function enterApp(){
   document.getElementById('authView').classList.add('hidden');
   document.getElementById('whoBox').classList.remove('hidden');
   document.getElementById('whoName').textContent = session.name;
-  document.getElementById('whoRole').textContent = session.role === 'shop' ? 'Shop owner' : session.role === 'fleet' ? 'Fleet manager' : 'Mechanic';
+  document.getElementById('whoRole').textContent =
+    session.role === 'admin' ? 'Admin' :
+    session.role === 'shop' ? 'Shop owner' :
+    session.role === 'fleet' ? 'Fleet manager' : 'Mechanic';
 
   if(session.role === 'mechanic'){ document.getElementById('mechanicView').classList.remove('hidden'); initMechanicView(); }
   else if(session.role === 'shop'){ document.getElementById('shopView').classList.remove('hidden'); initShopView(); }
+  else if(session.role === 'admin'){ document.getElementById('adminView').classList.remove('hidden'); initAdminView(); }
   else { document.getElementById('fleetView').classList.remove('hidden'); initFleetView(); }
 }
 
@@ -545,6 +558,110 @@ async function refreshFleetData(){
   histBox.innerHTML = history.length === 0
     ? '<div class="card empty-note">No completed jobs yet.</div>'
     : history.map(j => `<div class="job-card"><div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge arrived"><span class="bd"></span>complete</span></div></div>`).join('');
+}
+
+// ================= ADMIN VIEW =================
+let adminOpsMap = null;
+const adminMarkers = {};
+
+function initAdminView(){
+  adminOpsMap = L.map('adminOpsMap', { attributionControl:false }).setView([42.45, -83.25], 9);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(adminOpsMap);
+
+  refreshAdminData();
+  setInterval(refreshAdminData, 6000);
+}
+
+async function refreshAdminData(){
+  const profiles = await fetchAllProfiles();
+  const jobs = await fetchJobs();
+  const mechanics = profiles.filter(p=>p.role==='mechanic');
+
+  // stats
+  let liveCount = 0;
+  for(const m of mechanics){
+    const loc = await fetchLocation(m.id);
+    if(loc && Date.now() - loc.updatedAt < 30000) liveCount++;
+  }
+  const activeJobs = jobs.filter(j=>j.status!=='complete');
+  const completeJobs = jobs.filter(j=>j.status==='complete');
+  document.getElementById('adminStats').innerHTML = `
+    <div class="stat-box"><b>${profiles.length}</b><span>Total accounts</span></div>
+    <div class="stat-box"><b>${liveCount}</b><span>Mechanics live now</span></div>
+    <div class="stat-box"><b>${activeJobs.length}</b><span>Active jobs</span></div>
+    <div class="stat-box"><b>${completeJobs.length}</b><span>Completed jobs</span></div>`;
+
+  // live map
+  for(const m of mechanics){
+    const loc = await fetchLocation(m.id);
+    if(!loc) continue;
+    const isLive = Date.now() - loc.updatedAt < 30000;
+    if(adminMarkers[m.id]) adminMarkers[m.id].setLatLng([loc.lat, loc.lng]);
+    else adminMarkers[m.id] = L.marker([loc.lat, loc.lng], { icon: pinIcon(isLive?'mech':'offline') }).addTo(adminOpsMap).bindPopup(esc(m.name));
+  }
+
+  // accounts
+  const accBox = document.getElementById('adminAccounts');
+  accBox.innerHTML = profiles.map(p => `
+    <div class="account-row" data-id="${p.id}">
+      <div class="aname">${esc(p.name)}</div>
+      <select class="arole-select">
+        <option value="mechanic" ${p.role==='mechanic'?'selected':''}>Mechanic</option>
+        <option value="shop" ${p.role==='shop'?'selected':''}>Shop owner</option>
+        <option value="fleet" ${p.role==='fleet'?'selected':''}>Fleet manager</option>
+        <option value="admin" ${p.role==='admin'?'selected':''}>Admin</option>
+      </select>
+      <input type="text" class="acompany-input" placeholder="Company (fleet only)" value="${esc(p.company||'')}">
+      <div style="display:flex; gap:8px;">
+        <button class="toggle-btn ${p.active?'on':'off'}" data-active="${p.active}">${p.active?'Active':'Inactive'}</button>
+        <button class="j-edit acc-save">Save</button>
+      </div>
+    </div>`).join('');
+
+  accBox.querySelectorAll('.account-row').forEach(row=>{
+    const id = row.dataset.id;
+    row.querySelector('.toggle-btn').onclick = async (e)=>{
+      const btn = e.target;
+      const newActive = btn.dataset.active !== 'true';
+      const { error } = await sb.from('profiles').update({ active:newActive }).eq('id', id);
+      if(!error) refreshAdminData();
+    };
+    row.querySelector('.acc-save').onclick = async ()=>{
+      const role = row.querySelector('.arole-select').value;
+      const company = row.querySelector('.acompany-input').value.trim();
+      const { error } = await sb.from('profiles').update({ role, company: role==='fleet' ? company : null }).eq('id', id);
+      if(error) alert('Could not update: ' + error.message); else refreshAdminData();
+    };
+  });
+
+  // jobs
+  const mechName = id => (profiles.find(p=>p.id===id) || {}).name || 'Unassigned';
+  const active = jobs.filter(j=>j.status!=='complete');
+  const history = jobs.filter(j=>j.status==='complete').slice().reverse().slice(0,30);
+
+  const list = document.getElementById('adminJobList');
+  list.innerHTML = active.length === 0 ? '<div class="empty-note">No active jobs.</div>' : active.slice().reverse().map(j => `
+    <div class="job-card" data-job="${j.id}">
+      <div class="job-card-top">
+        <div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div>
+        <span class="badge ${j.status==='on_site'?'arrived':'live'}"><span class="bd"></span>${j.status.replace('_',' ')}</span>
+      </div>
+      <div class="job-actions">
+        <button class="j-delete danger">Delete</button>
+      </div>
+    </div>`).join('');
+  list.querySelectorAll('.j-delete').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const jobId = Number(btn.closest('.job-card').dataset.job);
+      if(!confirm('Delete this job?')) return;
+      const { error } = await sb.from('jobs').delete().eq('id', jobId);
+      if(!error) refreshAdminData();
+    };
+  });
+
+  document.getElementById('adminHistoryList').innerHTML = history.length === 0
+    ? '<div class="empty-note">No completed jobs yet.</div>'
+    : history.map(j => `<div class="job-card"><div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div></div>`).join('');
 }
 
 // ================= theme toggle =================
