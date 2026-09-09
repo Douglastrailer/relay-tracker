@@ -546,3 +546,22 @@ async function refreshFleetData(){
     ? '<div class="card empty-note">No completed jobs yet.</div>'
     : history.map(j => `<div class="job-card"><div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge arrived"><span class="bd"></span>complete</span></div></div>`).join('');
 }
+
+// ================= theme toggle =================
+(function initTheme(){
+  const root = document.documentElement;
+  const saved = localStorage.getItem('relay_theme');
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = saved || (prefersDark ? 'dark' : 'light');
+  if(theme === 'dark') root.setAttribute('data-theme', 'dark');
+
+  const btn = document.getElementById('themeToggle');
+  const knob = btn.querySelector('.knob');
+  knob.textContent = theme === 'dark' ? '🌙' : '☀️';
+
+  btn.onclick = ()=>{
+    const isDark = root.getAttribute('data-theme') === 'dark';
+    if(isDark){ root.removeAttribute('data-theme'); knob.textContent = '☀️'; localStorage.setItem('relay_theme','light'); }
+    else{ root.setAttribute('data-theme','dark'); knob.textContent = '🌙'; localStorage.setItem('relay_theme','dark'); }
+  };
+})();
