@@ -339,7 +339,21 @@ document.getElementById('completeProfileSubmit').onclick = async (e)=>{
   btn.disabled = false;
 };
 
+// ================= more menu (change password / log out) =================
+const moreMenuBtn = document.getElementById('moreMenuBtn');
+const moreMenu = document.getElementById('moreMenu');
+moreMenuBtn.onclick = (e)=>{
+  e.stopPropagation();
+  moreMenu.classList.toggle('hidden');
+};
+document.addEventListener('click', (e)=>{
+  if(!moreMenu.classList.contains('hidden') && !moreMenu.contains(e.target) && e.target !== moreMenuBtn){
+    moreMenu.classList.add('hidden');
+  }
+});
+
 document.getElementById('changePassBtn').onclick = async ()=>{
+  moreMenu.classList.add('hidden');
   const newPass = prompt('Enter a new password (at least 6 characters):');
   if(!newPass) return;
   if(newPass.length < 6){ alert('Password must be at least 6 characters.'); return; }
@@ -382,11 +396,12 @@ if(sb){
 // ================= dashboard tabs =================
 function wireDashTabs(container){
   const tabs = container.querySelectorAll('.dash-tab');
+  const panelParent = container.parentElement; // the view div that holds both the tab bar and the panels
   tabs.forEach(tab=>{
     tab.onclick = ()=>{
       tabs.forEach(t=>t.classList.remove('active'));
       tab.classList.add('active');
-      container.querySelectorAll('.dash-panel').forEach(p=>p.classList.add('hidden'));
+      panelParent.querySelectorAll(':scope > .dash-panel').forEach(p=>p.classList.add('hidden'));
       const target = document.getElementById(tab.dataset.target);
       if(target) target.classList.remove('hidden');
     };
