@@ -195,11 +195,32 @@ async function updateLocationStatus(mechanicId, status){
 }
 
 // ================= session =================
-let session = null; // { id, name, role, company }
+let session = null; // { id, name, role, company, orgId }
 let watchId = null;
 let mechMapObj = null, mechMarker = null;
 const mechDestMarkers = {};
 let appEntered = false;
+
+// ================= public nav (Home / Sign in / Contact) =================
+const homeView = document.getElementById('homeView');
+const contactView = document.getElementById('contactView');
+const publicAuthView = document.getElementById('authView');
+const navHome = document.getElementById('navHome'), navSignin = document.getElementById('navSignin'), navContact = document.getElementById('navContact');
+
+function showPublicView(which){
+  [homeView, contactView, publicAuthView].forEach(v=>v.classList.add('hidden'));
+  [navHome, navSignin, navContact].forEach(b=>b.classList.remove('active'));
+  if(which === 'home'){ homeView.classList.remove('hidden'); navHome.classList.add('active'); }
+  if(which === 'contact'){ contactView.classList.remove('hidden'); navContact.classList.add('active'); }
+  if(which === 'signin'){ publicAuthView.classList.remove('hidden'); navSignin.classList.add('active'); }
+}
+navHome.onclick = ()=> showPublicView('home');
+navContact.onclick = ()=> showPublicView('contact');
+navSignin.onclick = ()=> { showPublicView('signin'); showAuthForm('login'); };
+document.getElementById('brandHome').onclick = ()=> showPublicView('home');
+document.getElementById('landingLogin').onclick = ()=> { showPublicView('signin'); showAuthForm('login'); };
+document.getElementById('landingSignup').onclick = ()=> { showPublicView('signin'); showAuthForm('signup'); };
+document.getElementById('landingSignup2').onclick = ()=> { showPublicView('signin'); showAuthForm('signup'); };
 
 // ================= auth ui wiring =================
 const tabLogin = document.getElementById('tabLogin'), tabSignup = document.getElementById('tabSignup');
@@ -218,20 +239,38 @@ function showAuthForm(which){
 tabLogin.onclick = ()=> showAuthForm('login');
 tabSignup.onclick = ()=> showAuthForm('signup');
 
-document.getElementById('suRole').onchange = (e)=>{
-  document.getElementById('suCompanyField').style.display = e.target.value === 'fleet' ? 'block' : 'none';
-};
-document.getElementById('suCompanyField').style.display = 'none';
-document.getElementById('cpRole').onchange = (e)=>{
-  document.getElementById('cpCompanyField').style.display = e.target.value === 'fleet' ? 'block' : 'none';
-};
-document.getElementById('cpCompanyField').style.display = 'none';
+function updateRoleFields(prefix){
+  const role = document.getElementById(prefix+'Role').value;
+  document.getElementById(prefix+'ShopNameField').classList.toggle('hidden', role !== 'shop');
+  document.getElementById(prefix+'InviteField').classList.toggle('hidden', role === 'shop');
+  document.getElementById(prefix+'CompanyField').classList.toggle('hidden', role !== 'fleet');
+}
+document.getElementById('suRole').onchange = ()=> updateRoleFields('su');
+document.getElementById('cpRole').onchange = ()=> updateRoleFields('cp');
+updateRoleFields('su'); updateRoleFields('cp');
+
+// resolves { orgId, error } for a signup based on role + shop name / invite code
+async function resolveOrgForSignup(role, shopName, inviteCode){
+  if(role === 'shop'){
+    if(!shopName) return { error: 'Enter your company / shop name.' };
+    const { data, error } = await sb.from('organizations').insert([{ name: shopName }]).select();
+    if(error) return { error: 'Could not create your company: ' + error.message };
+    return { orgId: data[0].id };
+  } else {
+    if(!inviteCode) return { error: 'Enter the invite code from your shop owner.' };
+    const { data, error } = await sb.from('organizations').select('id').eq('invite_code', inviteCode.trim().toUpperCase()).maybeSingle();
+    if(error || !data) return { error: 'Invite code not found — double check it with your shop owner.' };
+    return { orgId: data.id };
+  }
+}
 
 document.getElementById('signupSubmit').onclick = async (e)=>{
   const btn = e.target; btn.disabled = true;
   const name = document.getElementById('suName').value.trim();
   const email = document.getElementById('suEmail').value.trim();
   const role = document.getElementById('suRole').value;
+  const shopName = document.getElementById('suShopName').value.trim();
+  const inviteCode = document.getElementById('suInvite').value.trim();
   const company = document.getElementById('suCompany').value.trim();
   const pass = document.getElementById('suPass').value;
   authError.textContent = '';
@@ -246,7 +285,9 @@ document.getElementById('signupSubmit').onclick = async (e)=>{
   if(error){ authError.textContent = error.message; btn.disabled=false; return; }
 
   if(data.session && data.user){
-    const { error: profileErr } = await sb.from('profiles').insert([{ id:data.user.id, name, role, company: role==='fleet'?company:null, active:true }]);
+    const orgResult = await resolveOrgForSignup(role, shopName, inviteCode);
+    if(orgResult.error){ authError.textContent = orgResult.error; btn.disabled=false; return; }
+    const { error: profileErr } = await sb.from('profiles').insert([{ id:data.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true }]);
     if(profileErr){ authError.textContent = 'Account created, but profile setup failed: ' + profileErr.message; btn.disabled=false; return; }
     onAuthed(data.session.user.id);
   } else {
@@ -282,12 +323,17 @@ document.getElementById('completeProfileSubmit').onclick = async (e)=>{
   const btn = e.target; btn.disabled = true;
   const name = document.getElementById('cpName').value.trim();
   const role = document.getElementById('cpRole').value;
+  const shopName = document.getElementById('cpShopName').value.trim();
+  const inviteCode = document.getElementById('cpInvite').value.trim();
   const company = document.getElementById('cpCompany').value.trim();
   authError.textContent = '';
   if(!name || (role==='fleet' && !company)){ authError.textContent = 'Fill in all required fields.'; btn.disabled=false; return; }
 
+  const orgResult = await resolveOrgForSignup(role, shopName, inviteCode);
+  if(orgResult.error){ authError.textContent = orgResult.error; btn.disabled=false; return; }
+
   const { data: userData } = await sb.auth.getUser();
-  const { error } = await sb.from('profiles').insert([{ id:userData.user.id, name, role, company: role==='fleet'?company:null, active:true }]);
+  const { error } = await sb.from('profiles').insert([{ id:userData.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true }]);
   if(error){ authError.textContent = error.message; btn.disabled=false; return; }
   await onAuthed(userData.user.id);
   btn.disabled = false;
@@ -311,10 +357,11 @@ document.getElementById('logoutBtn').onclick = async ()=>{
 async function onAuthed(userId){
   const profile = await fetchMyProfile(userId);
   if(!profile){
+    showPublicView('signin');
     showAuthForm('complete');
     return;
   }
-  session = { id:profile.id, name:profile.name, role:profile.role, company:profile.company };
+  session = { id:profile.id, name:profile.name, role:profile.role, company:profile.company, orgId:profile.org_id };
   enterApp();
 }
 
@@ -336,7 +383,10 @@ if(sb){
 function enterApp(){
   if(appEntered) return;
   appEntered = true;
-  document.getElementById('authView').classList.add('hidden');
+  document.getElementById('publicNav').classList.add('hidden');
+  homeView.classList.add('hidden');
+  contactView.classList.add('hidden');
+  publicAuthView.classList.add('hidden');
   document.getElementById('whoBox').classList.remove('hidden');
   document.getElementById('whoName').textContent = session.name;
   document.getElementById('whoRole').textContent =
@@ -480,9 +530,24 @@ async function renderMechJobs(){
 let shopMap = null, pinMapObj = null, pinMarker = null, chosenPin = null;
 const shopMarkers = {};
 
+async function loadInviteCode(){
+  const box = document.getElementById('inviteCodeBox');
+  if(!box || !session.orgId) return;
+  const { data, error } = await sb.from('organizations').select('invite_code, name').eq('id', session.orgId).maybeSingle();
+  if(error || !data){ box.innerHTML = '<div class="empty-note">Could not load invite code.</div>'; return; }
+  box.innerHTML = `<span class="code">${esc(data.invite_code)}</span><button id="copyInviteBtn">Copy</button>`;
+  document.getElementById('copyInviteBtn').onclick = ()=>{
+    navigator.clipboard.writeText(data.invite_code);
+    const b = document.getElementById('copyInviteBtn');
+    b.textContent = 'Copied!'; setTimeout(()=>{ b.textContent = 'Copy'; }, 1500);
+  };
+}
+
 function initShopView(){
   shopMap = L.map('shopOpsMap', { attributionControl:false }).setView([42.45, -83.25], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(shopMap);
+
+  loadInviteCode();
 
   pinMapObj = L.map('pinMap', { attributionControl:false }).setView([42.45, -83.25], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(pinMapObj);
@@ -541,7 +606,7 @@ function initShopView(){
     const mechanicId = document.getElementById('njMechanic').value;
     if(!customer || !vehicle || !mechanicId || !chosenPin){ alert('Fill in every field and set a breakdown location (address or pin).'); return; }
 
-    const { data, error } = await sb.from('jobs').insert([{ customer, vehicle, mechanic_id:mechanicId, dest_lat:chosenPin.lat, dest_lng:chosenPin.lng, status:'assigned', created_by:session.id }]).select();
+    const { data, error } = await sb.from('jobs').insert([{ customer, vehicle, mechanic_id:mechanicId, dest_lat:chosenPin.lat, dest_lng:chosenPin.lng, status:'assigned', created_by:session.id, org_id:session.orgId }]).select();
     if(error){ alert('Could not create job: ' + error.message); return; }
 
     if(issue && data && data[0]){
