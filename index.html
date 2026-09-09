@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=12"/>
+<link rel="stylesheet" href="style.css?v=13"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 </style>
@@ -224,48 +224,61 @@
 
   <!-- ================= SHOP OWNER ================= -->
   <div id="shopView" class="hidden">
-    <div class="stat-strip" id="shopStats"></div>
-
-    <div class="section">
-      <div class="section-head"><h2>Live ops map</h2><span id="shopMechCount" class="badge live" style="display:none;"></span></div>
-      <div class="ops-map" id="shopOpsMap"></div>
+    <div class="dash-tabs">
+      <button class="dash-tab active" data-target="shop-overview">Overview</button>
+      <button class="dash-tab" data-target="shop-jobs">Jobs</button>
+      <button class="dash-tab" data-target="shop-team">Team</button>
+      <button class="dash-tab" data-target="shop-analytics">Analytics</button>
     </div>
 
-    <div class="grid-2 section">
-      <div>
-        <div class="section-head"><h2>Active jobs</h2></div>
-        <div class="job-list" id="shopJobList"></div>
-        <div class="section-head" style="margin-top:26px;"><h2>Completed history</h2></div>
-        <div class="job-list" id="shopHistoryList"></div>
+    <div class="dash-panel" id="shop-overview">
+      <div class="stat-strip" id="shopStats"></div>
+      <div class="section">
+        <div class="section-head"><h2>Live ops map</h2><span id="shopMechCount" class="badge live" style="display:none;"></span></div>
+        <div class="ops-map" id="shopOpsMap"></div>
       </div>
-      <div>
-        <div class="card new-job-form">
-          <h3>Create a job</h3>
-          <div class="field"><label>Customer / company</label>
-            <input type="text" id="njCustomer" list="companyList" placeholder="e.g. FedEx">
-            <datalist id="companyList"></datalist>
-          </div>
-          <div class="field"><label>Vehicle / unit</label><input type="text" id="njVehicle" placeholder="e.g. Trailer #7790"></div>
-          <div class="field"><label>Describe the issue</label><textarea id="njIssue" rows="3" placeholder="e.g. Customer says it's making a grinding noise when braking"></textarea></div>
-          <div class="field"><label>Assign mechanic</label><select id="njMechanic"></select></div>
-          <div class="field">
-            <label>Breakdown location</label>
-            <div class="address-search">
-              <input type="text" id="addressInput" placeholder="Enter a street address...">
-              <button type="button" id="addressSearchBtn">Find</button>
-            </div>
-            <div class="pin-map" id="pinMap"></div>
-            <div class="pin-hint" id="pinHint">Type an address and hit Find, or click the map to drop a pin directly.</div>
-          </div>
-          <button id="createJobBtn">Create job</button>
-        </div>
+    </div>
 
-        <div class="card" style="margin-top:18px;">
+    <div class="dash-panel hidden" id="shop-jobs">
+      <div class="grid-2 section">
+        <div>
+          <div class="section-head"><h2>Active jobs</h2></div>
+          <div class="job-list" id="shopJobList"></div>
+          <div class="section-head" style="margin-top:26px;"><h2>Completed history</h2></div>
+          <div class="job-list" id="shopHistoryList"></div>
+        </div>
+        <div>
+          <div class="card new-job-form">
+            <h3>Create a job</h3>
+            <div class="field"><label>Customer / company</label>
+              <input type="text" id="njCustomer" list="companyList" placeholder="e.g. FedEx">
+              <datalist id="companyList"></datalist>
+            </div>
+            <div class="field"><label>Vehicle / unit</label><input type="text" id="njVehicle" placeholder="e.g. Trailer #7790"></div>
+            <div class="field"><label>Describe the issue</label><textarea id="njIssue" rows="3" placeholder="e.g. Customer says it's making a grinding noise when braking"></textarea></div>
+            <div class="field"><label>Assign mechanic</label><select id="njMechanic"></select></div>
+            <div class="field">
+              <label>Breakdown location</label>
+              <div class="address-search">
+                <input type="text" id="addressInput" placeholder="Enter a street address...">
+                <button type="button" id="addressSearchBtn">Find</button>
+              </div>
+              <div class="pin-map" id="pinMap"></div>
+              <div class="pin-hint" id="pinHint">Type an address and hit Find, or click the map to drop a pin directly.</div>
+            </div>
+            <button id="createJobBtn">Create job</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-panel hidden" id="shop-team">
+      <div class="section">
+        <div class="card">
           <h3 style="font-family:var(--font-display); font-size:0.92rem; margin-bottom:6px;">Your invite code</h3>
           <p style="font-size:0.8rem; color:var(--ink-soft); margin-bottom:10px;">Share this with mechanics and fleet managers so they join <em>your</em> company, not someone else's.</p>
           <div class="invite-code-box" id="inviteCodeBox">Loading...</div>
         </div>
-
         <div class="card" style="margin-top:18px;">
           <h3 style="font-family:var(--font-display); font-size:0.92rem; margin-bottom:12px;">Team</h3>
           <div id="teamList"></div>
@@ -273,14 +286,16 @@
       </div>
     </div>
 
-    <div class="section">
-      <div class="section-head"><h2>Analytics</h2></div>
-      <div class="analytics-grid">
-        <div class="card">
-          <h3 style="font-family:var(--font-display); font-size:0.9rem; margin-bottom:14px;">Jobs completed per mechanic</h3>
-          <div id="analyticsBars"><div class="empty-note">No completed jobs yet.</div></div>
+    <div class="dash-panel hidden" id="shop-analytics">
+      <div class="section">
+        <div class="section-head"><h2>Analytics</h2></div>
+        <div class="analytics-grid">
+          <div class="card">
+            <h3 style="font-family:var(--font-display); font-size:0.9rem; margin-bottom:14px;">Jobs completed per mechanic</h3>
+            <div id="analyticsBars"><div class="empty-note">No completed jobs yet.</div></div>
+          </div>
+          <div class="stat-strip" id="analyticsStats" style="grid-template-columns:1fr; gap:14px;"></div>
         </div>
-        <div class="stat-strip" id="analyticsStats" style="grid-template-columns:1fr; gap:14px;"></div>
       </div>
     </div>
   </div>
@@ -296,23 +311,34 @@
 
   <!-- ================= ADMIN ================= -->
   <div id="adminView" class="hidden">
-    <div class="stat-strip" id="adminStats"></div>
-
-    <div class="section">
-      <div class="section-head"><h2>Live ops map</h2></div>
-      <div class="ops-map" id="adminOpsMap"></div>
+    <div class="dash-tabs">
+      <button class="dash-tab active" data-target="admin-overview">Overview</button>
+      <button class="dash-tab" data-target="admin-accounts">Accounts</button>
+      <button class="dash-tab" data-target="admin-jobs">Jobs</button>
     </div>
 
-    <div class="section">
-      <div class="section-head"><h2>All accounts</h2></div>
-      <div id="adminAccounts"></div>
+    <div class="dash-panel" id="admin-overview">
+      <div class="stat-strip" id="adminStats"></div>
+      <div class="section">
+        <div class="section-head"><h2>Live ops map</h2></div>
+        <div class="ops-map" id="adminOpsMap"></div>
+      </div>
     </div>
 
-    <div class="section">
-      <div class="section-head"><h2>All jobs</h2></div>
-      <div class="job-list" id="adminJobList"></div>
-      <div class="section-head" style="margin-top:26px;"><h2>Completed history</h2></div>
-      <div class="job-list" id="adminHistoryList"></div>
+    <div class="dash-panel hidden" id="admin-accounts">
+      <div class="section">
+        <div class="section-head"><h2>All accounts</h2></div>
+        <div id="adminAccounts"></div>
+      </div>
+    </div>
+
+    <div class="dash-panel hidden" id="admin-jobs">
+      <div class="section">
+        <div class="section-head"><h2>All jobs</h2></div>
+        <div class="job-list" id="adminJobList"></div>
+        <div class="section-head" style="margin-top:26px;"><h2>Completed history</h2></div>
+        <div class="job-list" id="adminHistoryList"></div>
+      </div>
     </div>
   </div>
 
