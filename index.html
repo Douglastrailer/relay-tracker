@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=5"/>
+<link rel="stylesheet" href="style.css?v=6"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 </style>
@@ -43,6 +43,25 @@
         <h1>Know where your team is.<br>Every job, every mile.</h1>
         <p>Real GPS, real accounts, one shared view for mechanics, shop owners, and the fleets they serve.</p>
       </div>
+
+      <div class="how-it-works">
+        <div class="hiw-step">
+          <div class="hiw-num">1</div>
+          <div class="hiw-title">Create a job</div>
+          <div class="hiw-desc">A shop owner logs the breakdown location and picks a mechanic.</div>
+        </div>
+        <div class="hiw-step">
+          <div class="hiw-num">2</div>
+          <div class="hiw-title">Go live</div>
+          <div class="hiw-desc">The mechanic shares real GPS location the moment they head out.</div>
+        </div>
+        <div class="hiw-step">
+          <div class="hiw-num">3</div>
+          <div class="hiw-title">Track live</div>
+          <div class="hiw-desc">Everyone involved sees the same real-time status — no phone calls needed.</div>
+        </div>
+      </div>
+
       <div class="auth-card">
         <div class="auth-tabs">
           <button id="tabLogin" class="active">Log in</button>
@@ -172,6 +191,17 @@
           <h3 style="font-family:var(--font-display); font-size:0.92rem; margin-bottom:12px;">Team</h3>
           <div id="teamList"></div>
         </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Analytics</h2></div>
+      <div class="analytics-grid">
+        <div class="card">
+          <h3 style="font-family:var(--font-display); font-size:0.9rem; margin-bottom:14px;">Jobs completed per mechanic</h3>
+          <div id="analyticsBars"><div class="empty-note">No completed jobs yet.</div></div>
+        </div>
+        <div class="stat-strip" id="analyticsStats" style="grid-template-columns:1fr; gap:14px;"></div>
       </div>
     </div>
   </div>
