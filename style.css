@@ -16,7 +16,7 @@
   button{ font-family:inherit; cursor:pointer; }
   input, select{ font-family:inherit; }
 
-  .topbar{ position:sticky; top:0; z-index:60; background:var(--navy); border-bottom:1px solid rgba(255,255,255,0.08); }
+  .topbar{ position:sticky; top:0; z-index:1000; background:var(--navy); border-bottom:1px solid rgba(255,255,255,0.08); }
   .topbar-inner{ max-width:1240px; margin:0 auto; padding:18px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
   .brand-text b{ color:#fff; }
   .brand-text span{ color:#8B96B8; }
@@ -250,3 +250,6 @@ main{ padding-top:36px; }
   padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:0.82rem; background:var(--panel-2); color:var(--ink);
 }
 @media (max-width:760px){ .account-row{ grid-template-columns:1fr; } .stat-strip{ grid-template-columns:1fr 1fr; } }
+
+/* ===== fix: contain Leaflet's internal z-index so it can never cover the sticky header ===== */
+.map-box, .ops-map, .pin-map{ position:relative; z-index:0; isolation:isolate; }
