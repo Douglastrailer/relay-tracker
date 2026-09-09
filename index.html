@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=11"/>
+<link rel="stylesheet" href="style.css?v=12"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 </style>
@@ -17,10 +17,15 @@
 
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="brand">
+    <div class="brand" id="brandHome" style="cursor:pointer;">
       <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12h11M15 12l-3.5-3.5M15 12l-3.5 3.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="19" cy="12" r="2" fill="#fff"/></svg></div>
       <div class="brand-text"><b>Relay</b><span>Live GPS tracking</span></div>
     </div>
+    <nav class="public-nav" id="publicNav">
+      <button class="nav-link active" id="navHome">Home</button>
+      <button class="nav-link" id="navSignin">Sign in</button>
+      <button class="nav-link" id="navContact">Contact</button>
+    </nav>
     <div class="topbar-right-group">
       <button class="theme-toggle" id="themeToggle" title="Toggle dark mode" aria-label="Toggle dark mode"><span class="knob">☀️</span></button>
       <div id="whoBox" class="who hidden">
@@ -35,31 +40,81 @@
 
 <main>
 
+  <!-- ================= PUBLIC HOME ================= -->
+  <div id="homeView">
+    <div class="landing-hero">
+      <span class="auth-eyebrow">RELAY · LIVE TRACKING FOR SERVICE COMPANIES</span>
+      <h1>Live GPS tracking, built for<br>mobile service businesses.</h1>
+      <p>Relay connects your mechanics, your dispatch team, and the customers you serve — one shared, real-time view of every job, from breakdown to completion. No more phone calls just to ask "where's my truck?"</p>
+      <div class="hero-cta">
+        <button class="auth-submit landing-cta" id="landingSignup">Get started</button>
+        <button class="btn-ghost" id="landingLogin">I already have an account</button>
+      </div>
+    </div>
+
+    <div class="how-it-works" style="max-width:900px;">
+      <div class="hiw-step">
+        <div class="hiw-num">1</div>
+        <div class="hiw-title">Create a job</div>
+        <div class="hiw-desc">Log the breakdown location and pick a technician.</div>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-num">2</div>
+        <div class="hiw-title">Go live</div>
+        <div class="hiw-desc">The technician shares real GPS location the moment they head out.</div>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-num">3</div>
+        <div class="hiw-title">Track live</div>
+        <div class="hiw-desc">Everyone involved sees the same real-time status, together.</div>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>For shop owners</h3>
+        <p>See your whole team on one live map, assign jobs, and track completion times — without a single phone call.</p>
+      </div>
+      <div class="feature-card">
+        <h3>For mechanics</h3>
+        <p>One tap to go live. Turn-by-turn directions to every job, and a direct line to dispatch when you need it.</p>
+      </div>
+      <div class="feature-card">
+        <h3>For fleet managers</h3>
+        <p>Know exactly when help will arrive — real distance, real ETA, not a guess from a dispatcher.</p>
+      </div>
+    </div>
+
+    <div class="landing-cta-band">
+      <h2>Each company gets its own private workspace.</h2>
+      <p>Your team, your jobs, your data — completely separate from every other business using Relay.</p>
+      <button class="auth-submit landing-cta" id="landingSignup2">Set up your company</button>
+    </div>
+  </div>
+
+  <!-- ================= CONTACT ================= -->
+  <div id="contactView" class="hidden">
+    <div class="auth-wrap">
+      <div class="auth-hero">
+        <span class="auth-eyebrow">GET IN TOUCH</span>
+        <h1>Questions about Relay?</h1>
+        <p>We're happy to help you get your company set up.</p>
+      </div>
+      <div class="auth-card">
+        <div class="field"><label>Email</label><p style="margin-top:4px;"><a href="mailto:hello@relayfleet.us" style="color:var(--accent); font-weight:700;">hello@relayfleet.us</a></p></div>
+        <div class="field"><label>Phone</label><p style="margin-top:4px; color:var(--ink-soft);">Add your business number here</p></div>
+        <p class="auth-note">Prefer email — we'll get back to you as soon as we can.</p>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= AUTH ================= -->
-  <div id="authView">
+  <div id="authView" class="hidden">
     <div class="auth-wrap">
       <div class="auth-hero">
         <span class="auth-eyebrow">RELAY · LIVE TRACKING</span>
         <h1>Know where your team is.<br>Every job, every mile.</h1>
         <p>Real GPS, real accounts, one shared view for mechanics, shop owners, and the fleets they serve.</p>
-      </div>
-
-      <div class="how-it-works">
-        <div class="hiw-step">
-          <div class="hiw-num">1</div>
-          <div class="hiw-title">Create a job</div>
-          <div class="hiw-desc">A shop owner logs the breakdown location and picks a mechanic.</div>
-        </div>
-        <div class="hiw-step">
-          <div class="hiw-num">2</div>
-          <div class="hiw-title">Go live</div>
-          <div class="hiw-desc">The mechanic shares real GPS location the moment they head out.</div>
-        </div>
-        <div class="hiw-step">
-          <div class="hiw-num">3</div>
-          <div class="hiw-title">Track live</div>
-          <div class="hiw-desc">Everyone involved sees the same real-time status — no phone calls needed.</div>
-        </div>
       </div>
 
       <div class="auth-card">
@@ -80,13 +135,21 @@
           <div class="field"><label>Email</label><input type="email" id="suEmail" placeholder="you@example.com"></div>
           <div class="field"><label>Role</label>
             <select id="suRole">
-              <option value="mechanic">Mechanic</option>
-              <option value="shop">Shop owner</option>
-              <option value="fleet">Fleet manager</option>
+              <option value="shop">Shop owner (setting up a new company)</option>
+              <option value="mechanic">Mechanic (joining an existing company)</option>
+              <option value="fleet">Fleet manager (joining an existing company)</option>
             </select>
           </div>
-          <div class="field" id="suCompanyField">
-            <label>Company (fleet managers only)</label>
+          <div class="field" id="suShopNameField">
+            <label>Your company / shop name</label>
+            <input type="text" id="suShopName" placeholder="e.g. Unlimited Truck Repair">
+          </div>
+          <div class="field hidden" id="suInviteField">
+            <label>Invite code (from your shop owner)</label>
+            <input type="text" id="suInvite" placeholder="e.g. A1B2C3D4">
+          </div>
+          <div class="field hidden" id="suCompanyField">
+            <label>Your company name</label>
             <input type="text" id="suCompany" placeholder="e.g. Amazon, FedEx">
           </div>
           <div class="field"><label>Choose a password</label><input type="password" id="suPass" placeholder="At least 6 characters"></div>
@@ -99,13 +162,21 @@
           <div class="field"><label>Name</label><input type="text" id="cpName" placeholder="Your name"></div>
           <div class="field"><label>Role</label>
             <select id="cpRole">
-              <option value="mechanic">Mechanic</option>
-              <option value="shop">Shop owner</option>
-              <option value="fleet">Fleet manager</option>
+              <option value="shop">Shop owner (setting up a new company)</option>
+              <option value="mechanic">Mechanic (joining an existing company)</option>
+              <option value="fleet">Fleet manager (joining an existing company)</option>
             </select>
           </div>
-          <div class="field" id="cpCompanyField">
-            <label>Company (fleet managers only)</label>
+          <div class="field" id="cpShopNameField">
+            <label>Your company / shop name</label>
+            <input type="text" id="cpShopName" placeholder="e.g. Unlimited Truck Repair">
+          </div>
+          <div class="field hidden" id="cpInviteField">
+            <label>Invite code (from your shop owner)</label>
+            <input type="text" id="cpInvite" placeholder="e.g. A1B2C3D4">
+          </div>
+          <div class="field hidden" id="cpCompanyField">
+            <label>Your company name</label>
             <input type="text" id="cpCompany" placeholder="e.g. Amazon, FedEx">
           </div>
           <button class="auth-submit" id="completeProfileSubmit">Finish setup</button>
@@ -116,6 +187,7 @@
       </div>
     </div>
   </div>
+
 
   <!-- ================= MECHANIC ================= -->
   <div id="mechanicView" class="hidden">
@@ -186,6 +258,12 @@
             <div class="pin-hint" id="pinHint">Type an address and hit Find, or click the map to drop a pin directly.</div>
           </div>
           <button id="createJobBtn">Create job</button>
+        </div>
+
+        <div class="card" style="margin-top:18px;">
+          <h3 style="font-family:var(--font-display); font-size:0.92rem; margin-bottom:6px;">Your invite code</h3>
+          <p style="font-size:0.8rem; color:var(--ink-soft); margin-bottom:10px;">Share this with mechanics and fleet managers so they join <em>your</em> company, not someone else's.</p>
+          <div class="invite-code-box" id="inviteCodeBox">Loading...</div>
         </div>
 
         <div class="card" style="margin-top:18px;">
