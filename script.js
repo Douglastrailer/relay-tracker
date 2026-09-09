@@ -83,51 +83,70 @@ async function addJobComment(jobId, body){
 }
 function commentsBlockHtml(jobId){
   return `
-    <button class="comments-toggle" data-job="${jobId}">💬 Notes</button>
-    <div class="comments-box hidden" id="comments-${jobId}"></div>`;
-}
-async function toggleComments(jobId, box){
-  if(!box.classList.contains('hidden')){ box.classList.add('hidden'); return; }
-  box.classList.remove('hidden');
-  await loadCommentsInto(jobId, box);
-}
-async function loadCommentsInto(jobId, box){
-  box.innerHTML = '<div class="empty-note">Loading...</div>';
-  const comments = await fetchJobComments(jobId);
-  box.innerHTML = (comments.length === 0 ? '<div class="empty-note">No notes yet.</div>' :
-    comments.map(c => `
-      <div class="comment-item">
-        <span class="cauthor">${esc(c.profiles ? c.profiles.name : 'Someone')}</span>
-        <span class="ctime">${new Date(c.created_at).toLocaleString()}</span>
-        <div class="cbody">${esc(c.body)}</div>
-      </div>`).join('')
-  ) + `
-    <div class="comment-form">
-      <input type="text" placeholder="Add a note...">
-      <button>Send</button>
+    <button class="comments-toggle" data-job="${jobId}">💬 Chat</button>
+    <div class="comments-box hidden" id="comments-${jobId}">
+      <div class="comment-list" id="comment-list-${jobId}"></div>
+      <div class="comment-form">
+        <input type="text" id="comment-input-${jobId}" placeholder="Message...">
+        <button id="comment-send-${jobId}">Send</button>
+      </div>
     </div>`;
-  const input = box.querySelector('.comment-form input');
-  const send = box.querySelector('.comment-form button');
+}
+const openCommentThreads = new Set();
+async function renderCommentList(jobId){
+  const listEl = document.getElementById('comment-list-'+jobId);
+  if(!listEl) return;
+  const comments = await fetchJobComments(jobId);
+  listEl.innerHTML = comments.length === 0 ? '<div class="empty-note">No messages yet.</div>' :
+    comments.map(c => {
+      const mine = c.author_id === session.id;
+      return `<div class="comment-item ${mine?'mine':''}">
+        <div class="cbubble">
+          <span class="cauthor">${esc(c.profiles ? c.profiles.name : 'Someone')}</span>
+          <div class="cbody">${esc(c.body)}</div>
+          <span class="ctime">${new Date(c.created_at).toLocaleTimeString()}</span>
+        </div>
+      </div>`;
+    }).join('');
+  listEl.scrollTop = listEl.scrollHeight;
+}
+function wireCommentToggles(container){
+  container.querySelectorAll('.comments-toggle').forEach(btn=>{
+    const jobId = btn.dataset.job;
+    btn.onclick = ()=>{
+      const box = document.getElementById('comments-'+jobId);
+      if(box.classList.contains('hidden')) openThread(jobId); else closeThread(jobId);
+    };
+    if(openCommentThreads.has(jobId)) openThread(jobId);
+  });
+}
+function openThread(jobId){
+  const box = document.getElementById('comments-'+jobId);
+  if(!box) return;
+  box.classList.remove('hidden');
+  openCommentThreads.add(jobId);
+  renderCommentList(jobId);
+  const input = document.getElementById('comment-input-'+jobId);
+  const send = document.getElementById('comment-send-'+jobId);
   const submit = async ()=>{
     const val = input.value.trim();
     if(!val) return;
     send.disabled = true;
     const ok = await addJobComment(jobId, val);
     send.disabled = false;
-    if(ok){ await loadCommentsInto(jobId, box); }
+    if(ok){ input.value = ''; renderCommentList(jobId); }
   };
   send.onclick = submit;
-  input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') submit(); });
+  input.onkeydown = (e)=>{ if(e.key === 'Enter') submit(); };
 }
-function wireCommentToggles(container){
-  container.querySelectorAll('.comments-toggle').forEach(btn=>{
-    btn.onclick = ()=>{
-      const jobId = btn.dataset.job;
-      const box = document.getElementById('comments-'+jobId);
-      toggleComments(jobId, box);
-    };
-  });
+function closeThread(jobId){
+  const box = document.getElementById('comments-'+jobId);
+  if(box) box.classList.add('hidden');
+  openCommentThreads.delete(jobId);
 }
+setInterval(()=>{
+  openCommentThreads.forEach(jobId => renderCommentList(jobId));
+}, 5000);
 
 async function fetchLocation(mechanicId){
   const { data, error } = await sb.from('locations').select('*').eq('mechanic_id', mechanicId).maybeSingle();
@@ -682,9 +701,11 @@ async function refreshFleetData(){
         <div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge ${j.status==='on_site'?'arrived':'live'}"><span class="bd"></span>${j.status.replace('_',' ')}</span></div>
         <div class="ops-map" style="height:280px; margin-top:12px;" id="fleetMap${j.id}"></div>
         <div class="gps-readout" id="fleetDist${j.id}" style="margin-top:10px;"></div>
+        ${commentsBlockHtml(j.id)}
       </div>`;
     }
     box.innerHTML = html;
+    wireCommentToggles(box);
 
     for(const j of active){
       const loc = await fetchLocation(j.mechanic_id);
