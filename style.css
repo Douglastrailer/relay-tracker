@@ -364,3 +364,18 @@ main{ padding-top:36px; }
 .invite-code-box{ display:flex; align-items:center; gap:10px; background:var(--panel-2); border:1px dashed var(--line); border-radius:10px; padding:14px; }
 .invite-code-box .code{ font-family:var(--font-mono); font-size:1.1rem; font-weight:700; letter-spacing:0.1em; color:var(--accent); }
 .invite-code-box button{ margin-left:auto; background:var(--accent); color:#fff; border:none; padding:7px 12px; border-radius:7px; font-size:0.76rem; font-weight:700; }
+
+/* ===== dashboard tabs ===== */
+.dash-tabs{
+  display:flex; gap:4px; background:var(--panel-2); border:1px solid var(--line); border-radius:999px;
+  padding:4px; margin-bottom:28px; width:fit-content; max-width:100%; overflow-x:auto;
+}
+.dash-tab{
+  background:none; border:none; color:var(--ink-soft); padding:10px 20px; border-radius:999px;
+  font-size:0.85rem; font-weight:700; white-space:nowrap; transition:background .15s ease, color .15s ease;
+}
+.dash-tab.active{ background:var(--accent); color:#fff; }
+.dash-tab:hover:not(.active){ color:var(--ink); }
+.dash-panel{ animation:panelIn .2s ease; }
+@keyframes panelIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
+@media (max-width:600px){ .dash-tabs{ width:100%; } .dash-tab{ flex:1; text-align:center; padding:10px 8px; } }
