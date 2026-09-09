@@ -110,6 +110,31 @@ async function renderCommentList(jobId){
     }).join('');
   listEl.scrollTop = listEl.scrollHeight;
 }
+function preserveOpenInputs(){
+  const preserved = {};
+  document.querySelectorAll('[id^="comment-input-"]').forEach(inp=>{
+    const jobId = inp.id.replace('comment-input-', '');
+    preserved[jobId] = {
+      value: inp.value,
+      hadFocus: document.activeElement === inp,
+      selStart: inp.selectionStart,
+      selEnd: inp.selectionEnd
+    };
+  });
+  return preserved;
+}
+function restoreOpenInputs(preserved){
+  Object.keys(preserved).forEach(jobId=>{
+    const inp = document.getElementById('comment-input-'+jobId);
+    const saved = preserved[jobId];
+    if(!inp || !saved) return;
+    inp.value = saved.value;
+    if(saved.hadFocus){
+      inp.focus();
+      try{ inp.setSelectionRange(saved.selStart, saved.selEnd); }catch(e){}
+    }
+  });
+}
 function wireCommentToggles(container){
   container.querySelectorAll('.comments-toggle').forEach(btn=>{
     const jobId = btn.dataset.job;
@@ -383,6 +408,7 @@ function initMechanicView(){
 }
 
 async function renderMechJobs(){
+  const _inputState = preserveOpenInputs();
   const jobs = await fetchJobs();
   const mine = jobs.filter(j => j.mechanic_id === session.id);
   const active = mine.filter(j => j.status !== 'complete');
@@ -445,6 +471,7 @@ async function renderMechJobs(){
           ${commentsBlockHtml(job.id)}
         </div>`).join('');
   wireCommentToggles(historyBox);
+  restoreOpenInputs(_inputState);
 }
 
 // ================= SHOP OWNER VIEW =================
@@ -606,6 +633,7 @@ function renderAnalytics(jobs, mechanics, mechName){
 }
 
 async function refreshShopData(){
+  const _inputState = preserveOpenInputs();
   const mechanics = await fetchAllMechanics();
   const jobs = await fetchJobs();
 
@@ -688,6 +716,7 @@ async function refreshShopData(){
         ${commentsBlockHtml(j.id)}
       </div>`).join('');
   wireCommentToggles(histBox);
+  restoreOpenInputs(_inputState);
 }
 
 // ================= FLEET MANAGER VIEW =================
@@ -699,6 +728,7 @@ function initFleetView(){
 }
 
 async function refreshFleetData(){
+  const _inputState = preserveOpenInputs();
   // RLS already restricts this to only this fleet manager's company jobs
   const jobs = await fetchJobs();
   const active = jobs.filter(j=>j.status!=='complete');
@@ -748,6 +778,7 @@ async function refreshFleetData(){
     ? '<div class="card empty-note">No completed jobs yet.</div>'
     : history.map(j => `<div class="job-card"><div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}</div>`).join('');
   wireCommentToggles(histBox);
+  restoreOpenInputs(_inputState);
 }
 
 // ================= ADMIN VIEW =================
@@ -763,6 +794,7 @@ function initAdminView(){
 }
 
 async function refreshAdminData(){
+  const _inputState = preserveOpenInputs();
   const profiles = await fetchAllProfiles();
   const jobs = await fetchJobs();
   const mechanics = profiles.filter(p=>p.role==='mechanic');
@@ -856,6 +888,7 @@ async function refreshAdminData(){
     ? '<div class="empty-note">No completed jobs yet.</div>'
     : history.map(j => `<div class="job-card"><div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}</div>`).join('');
   wireCommentToggles(adminHistBox);
+  restoreOpenInputs(_inputState);
 }
 
 // ================= theme toggle =================
