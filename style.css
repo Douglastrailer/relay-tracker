@@ -1,11 +1,13 @@
 :root{
     --bg:#EEF1F5; --panel:#FFFFFF; --panel-2:#F6F8FA; --ink:#161B22; --ink-soft:#5C6672; --ink-faint:#93A0AC;
-    --line:#E1E6EB; --live:#FF4D2E; --pending:#E8A93B; --done:#22A06B; --accent:#3457D5; --accent-soft:#EAEFFC;
+    --line:#E1E6EB; --live:#FF4D2E; --pending:#E8A93B; --done:#22A06B; --accent:#3457D5; --accent-2:#6E8BFF; --accent-soft:#EAEFFC;
+    --bg-rgb:238,241,245;
     --font-display:'Sora', sans-serif; --font-body:'Manrope', -apple-system, sans-serif; --font-mono:'JetBrains Mono','Courier New', monospace;
   }
   [data-theme="dark"]{
     --bg:#12161D; --panel:#1B212B; --panel-2:#212836; --ink:#EDEFF3; --ink-soft:#A2ACBA; --ink-faint:#6E7889;
-    --line:#2C3444; --live:#FF7A5C; --pending:#F4BE6B; --done:#3ED9A0; --accent:#7C97FF; --accent-soft:#232B4A;
+    --line:#2C3444; --live:#FF7A5C; --pending:#F4BE6B; --done:#3ED9A0; --accent:#7C97FF; --accent-2:#9CB1FF; --accent-soft:#232B4A;
+    --bg-rgb:18,22,29;
   }
   body{ transition:background .2s ease, color .2s ease; }
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
@@ -14,8 +16,8 @@
   button{ font-family:inherit; cursor:pointer; }
   input, select{ font-family:inherit; }
 
-  .topbar{ position:sticky; top:0; z-index:60; background:rgba(238,241,245,0.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }
-  .topbar-inner{ max-width:1240px; margin:0 auto; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .topbar{ position:sticky; top:0; z-index:60; background:rgba(var(--bg-rgb),0.85); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .topbar-inner{ max-width:1240px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
   .brand{ display:flex; align-items:center; gap:10px; }
   .brand-mark{ width:32px; height:32px; border-radius:9px; background:var(--accent); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .brand-mark svg{ width:18px; height:18px; }
@@ -175,3 +177,50 @@
 
 .brand-mark{ width:36px; height:36px; }
 .brand-mark svg{ width:20px; height:20px; }
+
+/* ===== v4 real design pass ===== */
+body{ background-image:radial-gradient(circle at 15% -10%, rgba(124,151,255,0.10), transparent 45%); background-attachment:fixed; }
+
+.brand-mark{
+  background:linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow:0 3px 10px rgba(52,87,213,0.35);
+}
+
+.section-head h2{ font-size:1.28rem; font-weight:800; letter-spacing:-0.01em; }
+
+.card, .job-card, .van-card, .bay-card, .auth-card{
+  box-shadow:0 1px 2px rgba(16,24,40,0.05), 0 1px 1px rgba(16,24,40,0.03);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+[data-theme="dark"] .card, [data-theme="dark"] .job-card, [data-theme="dark"] .van-card,
+[data-theme="dark"] .bay-card, [data-theme="dark"] .auth-card{
+  box-shadow:0 2px 8px rgba(0,0,0,0.35);
+}
+.job-card:hover, .van-card:hover{ transform:translateY(-2px); box-shadow:0 6px 18px rgba(16,24,40,0.08); }
+[data-theme="dark"] .job-card:hover, [data-theme="dark"] .van-card:hover{ box-shadow:0 8px 22px rgba(0,0,0,0.45); }
+
+.auth-card{ border-radius:20px; padding:36px; }
+.auth-wrap{ margin:80px auto; }
+
+.go-live-btn{
+  background:linear-gradient(135deg, var(--live), #FF8A6E) !important;
+  box-shadow:0 4px 14px rgba(255,77,46,0.3) !important;
+  border:none;
+}
+.go-live-btn.offline-state{
+  background:linear-gradient(135deg, #2A3140, #384259) !important;
+  box-shadow:0 4px 14px rgba(0,0,0,0.25) !important;
+}
+.auth-submit, .btn-primary{
+  background:linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+  box-shadow:0 4px 14px rgba(52,87,213,0.28);
+}
+
+.job-card{ border-left:3px solid var(--line); }
+.job-card:has(.badge.live){ border-left-color:var(--live); }
+.job-card:has(.badge.arrived){ border-left-color:var(--done); }
+
+.section{ margin-bottom:44px; }
+main{ padding-top:36px; }
+
+::selection{ background:var(--accent-soft); color:var(--accent); }
