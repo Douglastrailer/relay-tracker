@@ -217,7 +217,7 @@ function showPublicView(which){
 navHome.onclick = ()=> showPublicView('home');
 navContact.onclick = ()=> showPublicView('contact');
 navSignin.onclick = ()=> { showPublicView('signin'); showAuthForm('login'); };
-document.getElementById('brandHome').onclick = ()=> showPublicView('home');
+document.getElementById('brandHome').onclick = ()=>{ if(!appEntered) showPublicView('home'); };
 document.getElementById('landingLogin').onclick = ()=> { showPublicView('signin'); showAuthForm('login'); };
 document.getElementById('landingSignup').onclick = ()=> { showPublicView('signin'); showAuthForm('signup'); };
 document.getElementById('landingSignup2').onclick = ()=> { showPublicView('signin'); showAuthForm('signup'); };
