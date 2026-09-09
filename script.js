@@ -379,6 +379,21 @@ if(sb){
   });
 }
 
+// ================= dashboard tabs =================
+function wireDashTabs(container){
+  const tabs = container.querySelectorAll('.dash-tab');
+  tabs.forEach(tab=>{
+    tab.onclick = ()=>{
+      tabs.forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      container.querySelectorAll('.dash-panel').forEach(p=>p.classList.add('hidden'));
+      const target = document.getElementById(tab.dataset.target);
+      if(target) target.classList.remove('hidden');
+    };
+  });
+}
+document.querySelectorAll('.dash-tabs').forEach(wireDashTabs);
+
 // ================= app entry =================
 function enterApp(){
   if(appEntered) return;
