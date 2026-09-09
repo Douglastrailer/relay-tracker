@@ -72,6 +72,63 @@ async function fetchJobs(){
   if(error){ console.error('fetchJobs', error); return []; }
   return data || [];
 }
+async function fetchJobComments(jobId){
+  const { data, error } = await sb.from('job_comments').select('*, profiles:author_id(name)').eq('job_id', jobId).order('created_at', { ascending:true });
+  if(error){ console.error('fetchJobComments', error); return []; }
+  return data || [];
+}
+async function addJobComment(jobId, body){
+  const { error } = await sb.from('job_comments').insert([{ job_id:jobId, author_id:session.id, body }]);
+  return !error;
+}
+function commentsBlockHtml(jobId){
+  return `
+    <button class="comments-toggle" data-job="${jobId}">💬 Notes</button>
+    <div class="comments-box hidden" id="comments-${jobId}"></div>`;
+}
+async function toggleComments(jobId, box){
+  if(!box.classList.contains('hidden')){ box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  await loadCommentsInto(jobId, box);
+}
+async function loadCommentsInto(jobId, box){
+  box.innerHTML = '<div class="empty-note">Loading...</div>';
+  const comments = await fetchJobComments(jobId);
+  box.innerHTML = (comments.length === 0 ? '<div class="empty-note">No notes yet.</div>' :
+    comments.map(c => `
+      <div class="comment-item">
+        <span class="cauthor">${esc(c.profiles ? c.profiles.name : 'Someone')}</span>
+        <span class="ctime">${new Date(c.created_at).toLocaleString()}</span>
+        <div class="cbody">${esc(c.body)}</div>
+      </div>`).join('')
+  ) + `
+    <div class="comment-form">
+      <input type="text" placeholder="Add a note...">
+      <button>Send</button>
+    </div>`;
+  const input = box.querySelector('.comment-form input');
+  const send = box.querySelector('.comment-form button');
+  const submit = async ()=>{
+    const val = input.value.trim();
+    if(!val) return;
+    send.disabled = true;
+    const ok = await addJobComment(jobId, val);
+    send.disabled = false;
+    if(ok){ await loadCommentsInto(jobId, box); }
+  };
+  send.onclick = submit;
+  input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') submit(); });
+}
+function wireCommentToggles(container){
+  container.querySelectorAll('.comments-toggle').forEach(btn=>{
+    btn.onclick = ()=>{
+      const jobId = btn.dataset.job;
+      const box = document.getElementById('comments-'+jobId);
+      toggleComments(jobId, box);
+    };
+  });
+}
+
 async function fetchLocation(mechanicId){
   const { data, error } = await sb.from('locations').select('*').eq('mechanic_id', mechanicId).maybeSingle();
   if(error || !data) return null;
@@ -337,9 +394,11 @@ async function renderMechJobs(){
             <button data-s="on_site" class="${job.status==='on_site'?'active':''}">Mark arrived</button>
             <button data-s="complete" class="${job.status==='complete'?'active':''}">Mark complete</button>
           </div>
+          ${commentsBlockHtml(job.id)}
         </div>`;
     }).join('');
 
+    wireCommentToggles(activeBox);
     activeBox.querySelectorAll('.job-card').forEach(card=>{
       const jobId = Number(card.dataset.job);
       const job = active.find(j=>j.id===jobId);
@@ -481,6 +540,42 @@ function jobEditRowHtml(job, mechanics){
     </div>`;
 }
 
+function renderAnalytics(jobs, mechanics, mechName){
+  const completed = jobs.filter(j => j.status === 'complete');
+  const barsBox = document.getElementById('analyticsBars');
+  const statsBox = document.getElementById('analyticsStats');
+  if(!barsBox || !statsBox) return;
+
+  if(completed.length === 0){
+    barsBox.innerHTML = '<div class="empty-note">No completed jobs yet.</div>';
+    statsBox.innerHTML = `<div class="stat-box"><b>0</b><span>Total completed</span></div>`;
+    return;
+  }
+
+  const counts = {};
+  completed.forEach(j => { counts[j.mechanic_id] = (counts[j.mechanic_id]||0) + 1; });
+  const maxCount = Math.max(...Object.values(counts));
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  barsBox.innerHTML = sorted.map(([id,count]) => `
+    <div class="bar-row">
+      <div class="bar-label">${esc(mechName(id))}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(count/maxCount*100).toFixed(0)}%"></div></div>
+      <div class="bar-count">${count}</div>
+    </div>`).join('');
+
+  const durations = completed
+    .filter(j => j.created_at && j.updated_at)
+    .map(j => (new Date(j.updated_at) - new Date(j.created_at)) / 60000);
+  const avgMin = durations.length ? Math.round(durations.reduce((a,b)=>a+b,0) / durations.length) : 0;
+  const avgText = avgMin < 60 ? `${avgMin} min` : `${(avgMin/60).toFixed(1)} hrs`;
+  const busiest = sorted[0] ? mechName(sorted[0][0]) : '—';
+
+  statsBox.innerHTML = `
+    <div class="stat-box"><b>${completed.length}</b><span>Total completed</span></div>
+    <div class="stat-box"><b>${avgText}</b><span>Avg. time to complete</span></div>
+    <div class="stat-box"><b>${esc(busiest)}</b><span>Busiest mechanic</span></div>`;
+}
+
 async function refreshShopData(){
   const mechanics = await fetchAllMechanics();
   const jobs = await fetchJobs();
@@ -511,6 +606,8 @@ async function refreshShopData(){
     <div class="stat-box"><b>${mechanics.filter(m=>m.active).length}</b><span>Active mechanics</span></div>
     <div class="stat-box"><b>${completedToday}</b><span>Completed today</span></div>`;
 
+  renderAnalytics(jobs, mechanics, mechName);
+
   const list = document.getElementById('shopJobList');
   if(active.length === 0){ list.innerHTML = '<div class="empty-note">No active jobs — create one on the right.</div>'; }
   else {
@@ -525,8 +622,10 @@ async function refreshShopData(){
           <button class="j-delete danger">Delete</button>
         </div>
         <div class="j-editbox"></div>
+        ${commentsBlockHtml(j.id)}
       </div>`).join('');
 
+    wireCommentToggles(list);
     list.querySelectorAll('.job-card').forEach(card=>{
       const jobId = Number(card.dataset.job);
       const job = jobs.find(j=>j.id===jobId);
@@ -706,7 +805,9 @@ async function refreshAdminData(){
       <div class="job-actions">
         <button class="j-delete danger">Delete</button>
       </div>
+      ${commentsBlockHtml(j.id)}
     </div>`).join('');
+  wireCommentToggles(list);
   list.querySelectorAll('.j-delete').forEach(btn=>{
     btn.onclick = async ()=>{
       const jobId = Number(btn.closest('.job-card').dataset.job);
