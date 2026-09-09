@@ -120,6 +120,7 @@ function wireCommentToggles(container){
     if(openCommentThreads.has(jobId)) openThread(jobId);
   });
 }
+const commentDrafts = {};
 function openThread(jobId){
   const box = document.getElementById('comments-'+jobId);
   if(!box) return;
@@ -128,13 +129,15 @@ function openThread(jobId){
   renderCommentList(jobId);
   const input = document.getElementById('comment-input-'+jobId);
   const send = document.getElementById('comment-send-'+jobId);
+  if(commentDrafts[jobId]) input.value = commentDrafts[jobId];
+  input.oninput = ()=>{ commentDrafts[jobId] = input.value; };
   const submit = async ()=>{
     const val = input.value.trim();
     if(!val) return;
     send.disabled = true;
     const ok = await addJobComment(jobId, val);
     send.disabled = false;
-    if(ok){ input.value = ''; renderCommentList(jobId); }
+    if(ok){ input.value = ''; delete commentDrafts[jobId]; renderCommentList(jobId); }
   };
   send.onclick = submit;
   input.onkeydown = (e)=>{ if(e.key === 'Enter') submit(); };
