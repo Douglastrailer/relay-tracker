@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Relay — Live GPS Tracking for Fleets &amp; Service Providers</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=3"/>
+<link rel="stylesheet" href="style.css?v=5"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 </style>
@@ -112,6 +112,7 @@
           </select>
         </div>
         <div class="gps-readout" id="gpsReadout">Turn on "Go live" and allow location access to start sharing your position.</div>
+        <p class="privacy-note">Your location is only shared while you're marked live — visible to your shop and to the customer you're currently assigned to. Nobody else can see it, and it stops the moment you go offline.</p>
         <div class="map-box" id="mechMap"></div>
       </div>
     </div>
@@ -129,6 +130,8 @@
 
   <!-- ================= SHOP OWNER ================= -->
   <div id="shopView" class="hidden">
+    <div class="stat-strip" id="shopStats"></div>
+
     <div class="section">
       <div class="section-head"><h2>Live ops map</h2><span id="shopMechCount" class="badge live" style="display:none;"></span></div>
       <div class="ops-map" id="shopOpsMap"></div>
@@ -152,8 +155,12 @@
           <div class="field"><label>Assign mechanic</label><select id="njMechanic"></select></div>
           <div class="field">
             <label>Breakdown location</label>
+            <div class="address-search">
+              <input type="text" id="addressInput" placeholder="Enter a street address...">
+              <button type="button" id="addressSearchBtn">Find</button>
+            </div>
             <div class="pin-map" id="pinMap"></div>
-            <div class="pin-hint" id="pinHint">Click the map to drop a pin at the breakdown location.</div>
+            <div class="pin-hint" id="pinHint">Type an address and hit Find, or click the map to drop a pin directly.</div>
           </div>
           <button id="createJobBtn">Create job</button>
         </div>
@@ -194,6 +201,14 @@
       <div class="job-list" id="adminJobList"></div>
       <div class="section-head" style="margin-top:26px;"><h2>Completed history</h2></div>
       <div class="job-list" id="adminHistoryList"></div>
+    </div>
+  </div>
+
+  <div id="completeToast" class="complete-toast hidden">
+    <div class="complete-toast-icon">✓</div>
+    <div>
+      <div class="complete-toast-title">Job complete</div>
+      <div class="complete-toast-sub" id="completeToastSub"></div>
     </div>
   </div>
 
