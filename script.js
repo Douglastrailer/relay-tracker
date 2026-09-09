@@ -439,7 +439,9 @@ async function renderMechJobs(){
     : history.map(job => `
         <div class="job-card">
           <div class="job-card-top"><div><b>${esc(job.customer)}</b><div class="meta">${esc(job.vehicle)}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>
+          ${commentsBlockHtml(job.id)}
         </div>`).join('');
+  wireCommentToggles(historyBox);
 }
 
 // ================= SHOP OWNER VIEW =================
@@ -503,13 +505,18 @@ function initShopView(){
   document.getElementById('createJobBtn').onclick = async ()=>{
     const customer = document.getElementById('njCustomer').value.trim();
     const vehicle = document.getElementById('njVehicle').value.trim();
+    const issue = document.getElementById('njIssue').value.trim();
     const mechanicId = document.getElementById('njMechanic').value;
     if(!customer || !vehicle || !mechanicId || !chosenPin){ alert('Fill in every field and set a breakdown location (address or pin).'); return; }
 
-    const { error } = await sb.from('jobs').insert([{ customer, vehicle, mechanic_id:mechanicId, dest_lat:chosenPin.lat, dest_lng:chosenPin.lng, status:'assigned', created_by:session.id }]);
+    const { data, error } = await sb.from('jobs').insert([{ customer, vehicle, mechanic_id:mechanicId, dest_lat:chosenPin.lat, dest_lng:chosenPin.lng, status:'assigned', created_by:session.id }]).select();
     if(error){ alert('Could not create job: ' + error.message); return; }
 
-    document.getElementById('njCustomer').value = ''; document.getElementById('njVehicle').value = ''; addressInput.value = '';
+    if(issue && data && data[0]){
+      await addJobComment(data[0].id, issue);
+    }
+
+    document.getElementById('njCustomer').value = ''; document.getElementById('njVehicle').value = ''; document.getElementById('njIssue').value = ''; addressInput.value = '';
     if(pinMarker){ pinMapObj.removeLayer(pinMarker); pinMarker = null; } chosenPin = null;
     document.getElementById('pinHint').textContent = 'Type an address and hit Find, or click the map to drop a pin directly.';
     refreshShopData();
@@ -675,7 +682,9 @@ async function refreshShopData(){
     : history.map(j => `
       <div class="job-card">
         <div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>
+        ${commentsBlockHtml(j.id)}
       </div>`).join('');
+  wireCommentToggles(histBox);
 }
 
 // ================= FLEET MANAGER VIEW =================
@@ -734,7 +743,8 @@ async function refreshFleetData(){
   const histBox = document.getElementById('fleetHistory');
   histBox.innerHTML = history.length === 0
     ? '<div class="card empty-note">No completed jobs yet.</div>'
-    : history.map(j => `<div class="job-card"><div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge arrived"><span class="bd"></span>complete</span></div></div>`).join('');
+    : history.map(j => `<div class="job-card"><div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}</div>`).join('');
+  wireCommentToggles(histBox);
 }
 
 // ================= ADMIN VIEW =================
@@ -838,9 +848,11 @@ async function refreshAdminData(){
     };
   });
 
-  document.getElementById('adminHistoryList').innerHTML = history.length === 0
+  const adminHistBox = document.getElementById('adminHistoryList');
+  adminHistBox.innerHTML = history.length === 0
     ? '<div class="empty-note">No completed jobs yet.</div>'
-    : history.map(j => `<div class="job-card"><div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div></div>`).join('');
+    : history.map(j => `<div class="job-card"><div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}</div>`).join('');
+  wireCommentToggles(adminHistBox);
 }
 
 // ================= theme toggle =================
