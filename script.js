@@ -250,17 +250,25 @@ document.getElementById('cpRole').onchange = ()=> updateRoleFields('cp');
 updateRoleFields('su'); updateRoleFields('cp');
 
 // resolves { orgId, error } for a signup based on role + shop name / invite code
+function generateInviteCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars (0/O, 1/I)
+  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+async function rotateInviteCode(orgId){
+  await sb.from('organizations').update({ invite_code: generateInviteCode() }).eq('id', orgId);
+}
+
 async function resolveOrgForSignup(role, shopName, inviteCode){
   if(role === 'shop'){
     if(!shopName) return { error: 'Enter your company / shop name.' };
     const { data, error } = await sb.from('organizations').insert([{ name: shopName }]).select();
     if(error) return { error: 'Could not create your company: ' + error.message };
-    return { orgId: data[0].id };
+    return { orgId: data[0].id, joinedViaInvite: false };
   } else {
     if(!inviteCode) return { error: 'Enter the invite code from your shop owner.' };
     const { data, error } = await sb.from('organizations').select('id').eq('invite_code', inviteCode.trim().toUpperCase()).maybeSingle();
-    if(error || !data) return { error: 'Invite code not found — double check it with your shop owner.' };
-    return { orgId: data.id };
+    if(error || !data) return { error: 'Invite code not found or already used — ask your shop owner for a fresh one.' };
+    return { orgId: data.id, joinedViaInvite: true };
   }
 }
 
@@ -289,6 +297,7 @@ document.getElementById('signupSubmit').onclick = async (e)=>{
     if(orgResult.error){ authError.textContent = orgResult.error; btn.disabled=false; return; }
     const { error: profileErr } = await sb.from('profiles').insert([{ id:data.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true }]);
     if(profileErr){ authError.textContent = 'Account created, but profile setup failed: ' + profileErr.message; btn.disabled=false; return; }
+    if(orgResult.joinedViaInvite) rotateInviteCode(orgResult.orgId);
     onAuthed(data.session.user.id);
   } else {
     authError.textContent = '';
@@ -335,6 +344,7 @@ document.getElementById('completeProfileSubmit').onclick = async (e)=>{
   const { data: userData } = await sb.auth.getUser();
   const { error } = await sb.from('profiles').insert([{ id:userData.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true }]);
   if(error){ authError.textContent = error.message; btn.disabled=false; return; }
+  if(orgResult.joinedViaInvite) rotateInviteCode(orgResult.orgId);
   await onAuthed(userData.user.id);
   btn.disabled = false;
 };
@@ -572,6 +582,13 @@ async function loadInviteCode(){
     b.textContent = 'Copied!'; setTimeout(()=>{ b.textContent = 'Copy'; }, 1500);
   };
 }
+
+document.getElementById('regenerateInviteBtn').onclick = async ()=>{
+  if(!session || !session.orgId) return;
+  if(!confirm('This will make the current invite code stop working immediately. Continue?')) return;
+  await rotateInviteCode(session.orgId);
+  loadInviteCode();
+};
 
 function initShopView(){
   shopMap = L.map('shopOpsMap', { attributionControl:false }).setView([42.45, -83.25], 10);
