@@ -57,6 +57,11 @@ async function fetchAllMechanics(){
   if(error){ console.error('fetchAllMechanics', error); return []; }
   return data || [];
 }
+async function fetchOrgMembers(){
+  const { data, error } = await sb.from('profiles').select('*').in('role', ['mechanic','fleet']).eq('org_id', session.orgId);
+  if(error){ console.error('fetchOrgMembers', error); return []; }
+  return data || [];
+}
 async function fetchAllProfiles(){
   const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending:true });
   if(error){ console.error('fetchAllProfiles', error); return []; }
@@ -367,6 +372,17 @@ document.addEventListener('click', (e)=>{
   }
 });
 
+document.getElementById('editCompanyBtn').onclick = async ()=>{
+  moreMenu.classList.add('hidden');
+  const newName = prompt('Enter your new company / shop name:', session.orgName || '');
+  if(!newName || !newName.trim()) return;
+  const { error } = await sb.from('organizations').update({ name: newName.trim() }).eq('id', session.orgId);
+  if(error){ alert('Could not update company name: ' + error.message); return; }
+  session.orgName = newName.trim();
+  document.getElementById('whoOrg').textContent = '· ' + session.orgName;
+  alert('Company name updated.');
+};
+
 document.getElementById('changePassBtn').onclick = async ()=>{
   moreMenu.classList.add('hidden');
   const newPass = prompt('Enter a new password (at least 6 characters):');
@@ -444,6 +460,7 @@ function enterApp(){
     session.role === 'shop' ? 'Shop owner' :
     session.role === 'fleet' ? 'Fleet manager' : 'Mechanic';
   document.getElementById('whoOrg').textContent = session.orgName ? '· ' + session.orgName : '';
+  document.getElementById('editCompanyBtn').classList.toggle('hidden', session.role !== 'shop');
 
   if(session.role === 'mechanic'){ document.getElementById('mechanicView').classList.remove('hidden'); initMechanicView(); }
   else if(session.role === 'shop'){ document.getElementById('shopView').classList.remove('hidden'); initShopView(); }
@@ -691,14 +708,29 @@ async function populateCompanyList(){
 }
 
 async function renderTeamList(){
-  const mechanics = await fetchAllMechanics();
+  const members = await fetchOrgMembers();
+  const mechanics = members.filter(m=>m.role==='mechanic');
+  const fleets = members.filter(m=>m.role==='fleet');
   const box = document.getElementById('teamList');
-  if(mechanics.length === 0){ box.innerHTML = '<div class="empty-note">No mechanics have signed up yet.</div>'; return; }
-  box.innerHTML = mechanics.map(m => `
+
+  function rowHtml(m){
+    const sub = m.role === 'fleet'
+      ? `Fleet manager · ${esc(m.company || 'no company set')}`
+      : 'Mechanic';
+    return `
     <div class="team-row">
-      <div><div class="tname">${esc(m.name)}</div><div class="tstatus">${m.active ? 'Active' : 'Deactivated'}</div></div>
+      <div><div class="tname">${esc(m.name)}</div><div class="tstatus">${sub} — ${m.active ? 'Active' : 'Deactivated'}</div></div>
       <button class="toggle-btn ${m.active ? 'on' : 'off'}" data-id="${m.id}" data-active="${m.active}">${m.active ? 'Active' : 'Inactive'}</button>
-    </div>`).join('');
+    </div>`;
+  }
+
+  box.innerHTML = `
+    <div class="team-subhead">Mechanics</div>
+    ${mechanics.length ? mechanics.map(rowHtml).join('') : '<div class="empty-note">No mechanics have signed up yet.</div>'}
+    <div class="team-subhead">Fleet managers</div>
+    ${fleets.length ? fleets.map(rowHtml).join('') : '<div class="empty-note">No fleet managers have signed up yet.</div>'}
+  `;
+
   box.querySelectorAll('.toggle-btn').forEach(btn=>{
     btn.onclick = async ()=>{
       const newActive = btn.dataset.active !== 'true';
