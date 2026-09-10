@@ -399,3 +399,7 @@ main{ padding-top:36px; }
 }
 .more-menu button:hover{ background:var(--panel-2); }
 .more-menu #logoutBtn{ color:var(--live); }
+
+/* ===== org badge in topbar ===== */
+.org-badge{ font-size:0.75rem; color:#8B96B8; font-weight:600; }
+@media (max-width:700px){ .org-badge{ display:none; } }
