@@ -62,6 +62,11 @@ async function fetchAllProfiles(){
   if(error){ console.error('fetchAllProfiles', error); return []; }
   return data || [];
 }
+async function fetchAllOrganizations(){
+  const { data, error } = await sb.from('organizations').select('id, name');
+  if(error){ console.error('fetchAllOrganizations', error); return []; }
+  return data || [];
+}
 async function fetchCompanies(){
   const { data, error } = await sb.from('profiles').select('company').eq('role','fleet');
   if(error) return [];
@@ -385,7 +390,12 @@ async function onAuthed(userId){
     showAuthForm('complete');
     return;
   }
-  session = { id:profile.id, name:profile.name, role:profile.role, company:profile.company, orgId:profile.org_id };
+  let orgName = null;
+  if(profile.org_id){
+    const { data: orgData } = await sb.from('organizations').select('name').eq('id', profile.org_id).maybeSingle();
+    orgName = orgData ? orgData.name : null;
+  }
+  session = { id:profile.id, name:profile.name, role:profile.role, company:profile.company, orgId:profile.org_id, orgName };
   enterApp();
 }
 
@@ -433,6 +443,7 @@ function enterApp(){
     session.role === 'admin' ? 'Admin' :
     session.role === 'shop' ? 'Shop owner' :
     session.role === 'fleet' ? 'Fleet manager' : 'Mechanic';
+  document.getElementById('whoOrg').textContent = session.orgName ? '· ' + session.orgName : '';
 
   if(session.role === 'mechanic'){ document.getElementById('mechanicView').classList.remove('hidden'); initMechanicView(); }
   else if(session.role === 'shop'){ document.getElementById('shopView').classList.remove('hidden'); initShopView(); }
@@ -914,7 +925,9 @@ function initAdminView(){
 async function refreshAdminData(){
   const profiles = await fetchAllProfiles();
   const jobs = await fetchJobs();
+  const orgs = await fetchAllOrganizations();
   const mechanics = profiles.filter(p=>p.role==='mechanic');
+  const orgName = id => (orgs.find(o=>o.id===id) || {}).name || '—';
 
   // stats
   let liveCount = 0;
@@ -943,7 +956,7 @@ async function refreshAdminData(){
   const accBox = document.getElementById('adminAccounts');
   accBox.innerHTML = profiles.map(p => `
     <div class="account-row" data-id="${p.id}">
-      <div class="aname">${esc(p.name)}</div>
+      <div class="aname">${esc(p.name)}<div class="meta" style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-faint); margin-top:2px;">${esc(orgName(p.org_id))}</div></div>
       <select class="arole-select">
         <option value="mechanic" ${p.role==='mechanic'?'selected':''}>Mechanic</option>
         <option value="shop" ${p.role==='shop'?'selected':''}>Shop owner</option>
@@ -983,7 +996,7 @@ async function refreshAdminData(){
   list.innerHTML = active.length === 0 ? '<div class="empty-note">No active jobs.</div>' : active.slice().reverse().map(j => `
     <div class="job-card" data-job="${j.id}">
       <div class="job-card-top">
-        <div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div>
+        <div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))} · Company: ${esc(orgName(j.org_id))}</div></div>
         <span class="badge ${j.status==='on_site'?'arrived':'live'}"><span class="bd"></span>${j.status.replace('_',' ')}</span>
       </div>
       <div class="job-actions">
@@ -1006,7 +1019,7 @@ async function refreshAdminData(){
   const _s2 = preserveOpenInputs();
   adminHistBox.innerHTML = history.length === 0
     ? '<div class="empty-note">No completed jobs yet.</div>'
-    : history.map(j => `<div class="job-card"><div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}</div>`).join('');
+    : history.map(j => `<div class="job-card"><div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))} · Company: ${esc(orgName(j.org_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}</div>`).join('');
   wireCommentToggles(adminHistBox);
   restoreOpenInputs(_s2);
 }
