@@ -403,3 +403,10 @@ main{ padding-top:36px; }
 /* ===== org badge in topbar ===== */
 .org-badge{ font-size:0.75rem; color:#8B96B8; font-weight:600; }
 @media (max-width:700px){ .org-badge{ display:none; } }
+
+/* ===== team subheadings ===== */
+.team-subhead{
+  font-family:var(--font-display); font-weight:700; font-size:0.78rem; text-transform:uppercase;
+  letter-spacing:0.05em; color:var(--ink-faint); margin:18px 0 8px;
+}
+.team-subhead:first-child{ margin-top:0; }
