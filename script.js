@@ -191,6 +191,20 @@ async function fetchLocation(mechanicId){
   if(error || !data) return null;
   return { lat:data.lat, lng:data.lng, updatedAt:new Date(data.updated_at).getTime(), status:data.status };
 }
+// Fetches locations for MANY mechanics in a single request instead of
+// one request per mechanic — critical once you have more than a
+// handful of mechanics, since the old per-mechanic loop meant every
+// dashboard refresh did N sequential network round-trips.
+async function fetchLocationsFor(mechanicIds){
+  const map = {};
+  if(!mechanicIds || mechanicIds.length === 0) return map;
+  const { data, error } = await sb.from('locations').select('*').in('mechanic_id', mechanicIds);
+  if(error){ console.error('fetchLocationsFor', error); return map; }
+  (data || []).forEach(row=>{
+    map[row.mechanic_id] = { lat:row.lat, lng:row.lng, updatedAt:new Date(row.updated_at).getTime(), status:row.status };
+  });
+  return map;
+}
 async function upsertLocation(mechanicId, lat, lng, status){
   const { error } = await sb.from('locations').upsert(
     { mechanic_id:mechanicId, lat, lng, status, updated_at:new Date().toISOString() },
@@ -882,10 +896,11 @@ function renderAnalytics(jobs, mechanics, mechName){
 async function refreshShopData(){
   const mechanics = await fetchAllMechanics();
   const jobs = await fetchJobs();
+  const locByMechanic = await fetchLocationsFor(mechanics.map(m=>m.id));
 
   let liveCount = 0;
   for(const m of mechanics){
-    const loc = await fetchLocation(m.id);
+    const loc = locByMechanic[m.id];
     if(!loc) continue;
     const isLive = Date.now() - loc.updatedAt < 30000;
     if(isLive) liveCount++;
@@ -981,6 +996,7 @@ async function refreshFleetData(){
   const jobs = await fetchJobs();
   const active = jobs.filter(j=>j.status!=='complete');
   const history = jobs.filter(j=>j.status==='complete').slice().reverse().slice(0,15);
+  const locByMechanic = await fetchLocationsFor(active.map(j=>j.mechanic_id));
 
   const box = document.getElementById('fleetJobs');
   const _s1 = preserveOpenInputs();
@@ -1000,7 +1016,7 @@ async function refreshFleetData(){
     restoreOpenInputs(_s1);
 
     for(const j of active){
-      const loc = await fetchLocation(j.mechanic_id);
+      const loc = locByMechanic[j.mechanic_id];
       if(!fleetMaps[j.id]){
         const m = L.map('fleetMap'+j.id, { attributionControl:false }).setView([j.dest_lat, j.dest_lng], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(m);
@@ -1050,11 +1066,12 @@ async function refreshAdminData(){
   const orgs = await fetchAllOrganizations();
   const mechanics = profiles.filter(p=>p.role==='mechanic');
   const orgName = id => (orgs.find(o=>o.id===id) || {}).name || '—';
+  const locByMechanic = await fetchLocationsFor(mechanics.map(m=>m.id));
 
   // stats
   let liveCount = 0;
   for(const m of mechanics){
-    const loc = await fetchLocation(m.id);
+    const loc = locByMechanic[m.id];
     if(loc && Date.now() - loc.updatedAt < 30000) liveCount++;
   }
   const activeJobs = jobs.filter(j=>j.status!=='complete');
@@ -1067,7 +1084,7 @@ async function refreshAdminData(){
 
   // live map
   for(const m of mechanics){
-    const loc = await fetchLocation(m.id);
+    const loc = locByMechanic[m.id];
     if(!loc) continue;
     const isLive = Date.now() - loc.updatedAt < 30000;
     if(adminMarkers[m.id]) adminMarkers[m.id].setLatLng([loc.lat, loc.lng]);
