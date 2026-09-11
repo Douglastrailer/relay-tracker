@@ -410,3 +410,18 @@ main{ padding-top:36px; }
   letter-spacing:0.05em; color:var(--ink-faint); margin:18px 0 8px;
 }
 .team-subhead:first-child{ margin-top:0; }
+
+/* ===== requests badge + cards ===== */
+.req-badge{
+  background:var(--live); color:#fff; font-size:0.68rem; font-weight:800; padding:1px 7px;
+  border-radius:999px; margin-left:6px;
+}
+.request-card{
+  background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:14px;
+}
+.request-card .rq-top{ display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:10px; }
+.request-card .rq-shop{ font-family:var(--font-display); font-weight:800; font-size:1.05rem; }
+.request-card .rq-meta{ font-size:0.82rem; color:var(--ink-soft); line-height:1.6; margin-top:6px; }
+.request-card .rq-actions{ display:flex; gap:8px; margin-top:14px; }
+.request-card .rq-approve{ background:var(--done); color:#fff; border:none; padding:9px 18px; border-radius:8px; font-weight:700; font-size:0.85rem; }
+.request-card .rq-reject{ background:none; color:var(--live); border:1px solid var(--live); padding:9px 18px; border-radius:8px; font-weight:700; font-size:0.85rem; }
