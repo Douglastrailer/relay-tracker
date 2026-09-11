@@ -68,7 +68,7 @@ async function fetchAllProfiles(){
   return data || [];
 }
 async function fetchAllOrganizations(){
-  const { data, error } = await sb.from('organizations').select('id, name');
+  const { data, error } = await sb.from('organizations').select('id, name, status, created_at');
   if(error){ console.error('fetchAllOrganizations', error); return []; }
   return data || [];
 }
@@ -286,13 +286,14 @@ document.getElementById('signupSubmit').onclick = async (e)=>{
   const btn = e.target; btn.disabled = true;
   const name = document.getElementById('suName').value.trim();
   const email = document.getElementById('suEmail').value.trim();
+  const phone = document.getElementById('suPhone').value.trim();
   const role = document.getElementById('suRole').value;
   const shopName = document.getElementById('suShopName').value.trim();
   const inviteCode = document.getElementById('suInvite').value.trim();
   const company = document.getElementById('suCompany').value.trim();
   const pass = document.getElementById('suPass').value;
   authError.textContent = '';
-  if(!name || !email || !pass || (role==='fleet' && !company)){ authError.textContent = 'Fill in all required fields.'; btn.disabled=false; return; }
+  if(!name || !email || !phone || !pass || (role==='fleet' && !company)){ authError.textContent = 'Fill in all required fields.'; btn.disabled=false; return; }
   if(pass.length < 6){ authError.textContent = 'Password must be at least 6 characters.'; btn.disabled=false; return; }
   if(!sb){ authError.textContent = 'Not connected to the database yet — reload and try again.'; btn.disabled=false; return; }
 
@@ -305,7 +306,7 @@ document.getElementById('signupSubmit').onclick = async (e)=>{
   if(data.session && data.user){
     const orgResult = await resolveOrgForSignup(role, shopName, inviteCode);
     if(orgResult.error){ authError.textContent = orgResult.error; btn.disabled=false; return; }
-    const { error: profileErr } = await sb.from('profiles').insert([{ id:data.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true }]);
+    const { error: profileErr } = await sb.from('profiles').insert([{ id:data.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true, email, phone }]);
     if(profileErr){ authError.textContent = 'Account created, but profile setup failed: ' + profileErr.message; btn.disabled=false; return; }
     if(orgResult.joinedViaInvite) rotateInviteCode(orgResult.orgId);
     onAuthed(data.session.user.id);
@@ -341,18 +342,19 @@ document.getElementById('forgotPassBtn').onclick = async ()=>{
 document.getElementById('completeProfileSubmit').onclick = async (e)=>{
   const btn = e.target; btn.disabled = true;
   const name = document.getElementById('cpName').value.trim();
+  const phone = document.getElementById('cpPhone').value.trim();
   const role = document.getElementById('cpRole').value;
   const shopName = document.getElementById('cpShopName').value.trim();
   const inviteCode = document.getElementById('cpInvite').value.trim();
   const company = document.getElementById('cpCompany').value.trim();
   authError.textContent = '';
-  if(!name || (role==='fleet' && !company)){ authError.textContent = 'Fill in all required fields.'; btn.disabled=false; return; }
+  if(!name || !phone || (role==='fleet' && !company)){ authError.textContent = 'Fill in all required fields.'; btn.disabled=false; return; }
 
   const orgResult = await resolveOrgForSignup(role, shopName, inviteCode);
   if(orgResult.error){ authError.textContent = orgResult.error; btn.disabled=false; return; }
 
   const { data: userData } = await sb.auth.getUser();
-  const { error } = await sb.from('profiles').insert([{ id:userData.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true }]);
+  const { error } = await sb.from('profiles').insert([{ id:userData.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true, email:userData.user.email, phone }]);
   if(error){ authError.textContent = error.message; btn.disabled=false; return; }
   if(orgResult.joinedViaInvite) rotateInviteCode(orgResult.orgId);
   await onAuthed(userData.user.id);
@@ -406,14 +408,63 @@ async function onAuthed(userId){
     showAuthForm('complete');
     return;
   }
-  let orgName = null;
+  let orgName = null, orgStatus = 'approved';
   if(profile.org_id){
-    const { data: orgData } = await sb.from('organizations').select('name').eq('id', profile.org_id).maybeSingle();
+    const { data: orgData } = await sb.from('organizations').select('name, status').eq('id', profile.org_id).maybeSingle();
     orgName = orgData ? orgData.name : null;
+    orgStatus = orgData ? orgData.status : 'approved';
   }
-  session = { id:profile.id, name:profile.name, role:profile.role, company:profile.company, orgId:profile.org_id, orgName };
+  session = { id:profile.id, name:profile.name, role:profile.role, company:profile.company, orgId:profile.org_id, orgName, orgStatus };
+
+  if(session.role === 'shop' && orgStatus !== 'approved'){
+    showPendingScreen(orgStatus);
+    return;
+  }
   enterApp();
 }
+
+function showPendingScreen(status){
+  document.getElementById('publicNav').classList.add('hidden');
+  homeView.classList.add('hidden');
+  contactView.classList.add('hidden');
+  publicAuthView.classList.add('hidden');
+  document.getElementById('whoBox').classList.remove('hidden');
+  document.getElementById('whoName').textContent = session.name;
+  document.getElementById('whoRole').textContent = 'Shop owner';
+  document.getElementById('whoOrg').textContent = session.orgName ? '· ' + session.orgName : '';
+  document.getElementById('editCompanyBtn').classList.add('hidden');
+
+  const view = document.getElementById('pendingApprovalView');
+  view.classList.remove('hidden');
+  if(status === 'rejected'){
+    document.getElementById('pendingIcon').textContent = '⚠️';
+    document.getElementById('pendingTitle').textContent = "We couldn't approve this request";
+    document.getElementById('pendingBody').textContent = "Your company's request to join Relay wasn't approved. If you think this is a mistake, reach out to us at hello@relayfleet.us.";
+    document.getElementById('pendingCheckBtn').classList.add('hidden');
+  } else {
+    document.getElementById('pendingIcon').textContent = '⏳';
+    document.getElementById('pendingTitle').textContent = 'Your request is under review';
+    document.getElementById('pendingBody').textContent = "Thanks for signing up for Relay. We're reviewing your company's request and will be in touch shortly.";
+    document.getElementById('pendingCheckBtn').classList.remove('hidden');
+  }
+}
+
+document.getElementById('pendingCheckBtn').onclick = async ()=>{
+  const btn = document.getElementById('pendingCheckBtn');
+  btn.disabled = true;
+  btn.textContent = 'Checking...';
+  const { data: orgData } = await sb.from('organizations').select('status').eq('id', session.orgId).maybeSingle();
+  const status = orgData ? orgData.status : 'pending';
+  if(status === 'approved'){
+    document.getElementById('pendingApprovalView').classList.add('hidden');
+    enterApp();
+  } else {
+    session.orgStatus = status;
+    showPendingScreen(status);
+    btn.disabled = false;
+    btn.textContent = 'Check again';
+  }
+};
 
 if(sb){
   sb.auth.onAuthStateChange((event, authSession) => {
@@ -984,9 +1035,11 @@ async function refreshAdminData(){
     else adminMarkers[m.id] = L.marker([loc.lat, loc.lng], { icon: pinIcon(isLive?'mech':'offline') }).addTo(adminOpsMap).bindPopup(esc(m.name));
   }
 
-  // accounts
+  // accounts — only show members of approved companies (pending/rejected show under Requests instead)
+  const approvedOrgIds = new Set(orgs.filter(o=>o.status==='approved').map(o=>o.id));
+  const visibleProfiles = profiles.filter(p => p.role === 'admin' || approvedOrgIds.has(p.org_id));
   const accBox = document.getElementById('adminAccounts');
-  accBox.innerHTML = profiles.map(p => `
+  accBox.innerHTML = visibleProfiles.map(p => `
     <div class="account-row" data-id="${p.id}">
       <div class="aname">${esc(p.name)}<div class="meta" style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-faint); margin-top:2px;">${esc(orgName(p.org_id))}</div></div>
       <select class="arole-select">
@@ -1017,6 +1070,52 @@ async function refreshAdminData(){
       if(error) alert('Could not update: ' + error.message); else refreshAdminData();
     };
   });
+
+  // pending company requests
+  const pendingOrgs = orgs.filter(o => o.status === 'pending');
+  const reqBadge = document.getElementById('requestsBadge');
+  if(pendingOrgs.length > 0){ reqBadge.textContent = pendingOrgs.length; reqBadge.classList.remove('hidden'); }
+  else { reqBadge.classList.add('hidden'); }
+
+  const reqBox = document.getElementById('adminRequests');
+  if(pendingOrgs.length === 0){
+    reqBox.innerHTML = '<div class="empty-note">No pending requests right now.</div>';
+  } else {
+    reqBox.innerHTML = pendingOrgs.map(org => {
+      const owner = profiles.find(p => p.org_id === org.id && p.role === 'shop');
+      return `
+      <div class="request-card" data-org="${org.id}">
+        <div class="rq-top">
+          <div>
+            <div class="rq-shop">${esc(org.name)}</div>
+            <div class="rq-meta">
+              Owner: ${esc(owner ? owner.name : 'Unknown')}<br>
+              Email: ${esc(owner && owner.email ? owner.email : '—')}<br>
+              Phone: ${esc(owner && owner.phone ? owner.phone : '—')}<br>
+              Requested: ${new Date(org.created_at).toLocaleDateString()}
+            </div>
+          </div>
+        </div>
+        <div class="rq-actions">
+          <button class="rq-approve">Approve</button>
+          <button class="rq-reject">Reject</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    reqBox.querySelectorAll('.request-card').forEach(card=>{
+      const orgId = card.dataset.org;
+      card.querySelector('.rq-approve').onclick = async ()=>{
+        const { error } = await sb.from('organizations').update({ status:'approved' }).eq('id', orgId);
+        if(error) alert('Could not approve: ' + error.message); else refreshAdminData();
+      };
+      card.querySelector('.rq-reject').onclick = async ()=>{
+        if(!confirm('Reject this company\'s request? They will see a rejection message when they log in.')) return;
+        const { error } = await sb.from('organizations').update({ status:'rejected' }).eq('id', orgId);
+        if(error) alert('Could not reject: ' + error.message); else refreshAdminData();
+      };
+    });
+  }
 
   // jobs
   const mechName = id => (profiles.find(p=>p.id===id) || {}).name || 'Unassigned';
