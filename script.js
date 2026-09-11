@@ -374,6 +374,14 @@ document.addEventListener('click', (e)=>{
   }
 });
 
+const contactModalOverlay = document.getElementById('contactModalOverlay');
+document.getElementById('contactUsBtn').onclick = ()=>{
+  moreMenu.classList.add('hidden');
+  contactModalOverlay.classList.remove('hidden');
+};
+document.getElementById('contactModalClose').onclick = ()=> contactModalOverlay.classList.add('hidden');
+contactModalOverlay.onclick = (e)=>{ if(e.target === contactModalOverlay) contactModalOverlay.classList.add('hidden'); };
+
 document.getElementById('editCompanyBtn').onclick = async ()=>{
   moreMenu.classList.add('hidden');
   const newName = prompt('Enter your new company / shop name:', session.orgName || '');
@@ -416,11 +424,28 @@ async function onAuthed(userId){
   }
   session = { id:profile.id, name:profile.name, role:profile.role, company:profile.company, orgId:profile.org_id, orgName, orgStatus };
 
+  if(profile.active === false){
+    showInactiveScreen();
+    return;
+  }
   if(session.role === 'shop' && orgStatus !== 'approved'){
     showPendingScreen(orgStatus);
     return;
   }
   enterApp();
+}
+
+function showInactiveScreen(){
+  document.getElementById('publicNav').classList.add('hidden');
+  homeView.classList.add('hidden');
+  contactView.classList.add('hidden');
+  publicAuthView.classList.add('hidden');
+  document.getElementById('whoBox').classList.remove('hidden');
+  document.getElementById('whoName').textContent = session.name;
+  document.getElementById('whoRole').textContent = 'Inactive';
+  document.getElementById('whoOrg').textContent = '';
+  document.getElementById('editCompanyBtn').classList.add('hidden');
+  document.getElementById('accountInactiveView').classList.remove('hidden');
 }
 
 function showPendingScreen(status){
@@ -517,6 +542,20 @@ function enterApp(){
   else if(session.role === 'shop'){ document.getElementById('shopView').classList.remove('hidden'); initShopView(); }
   else if(session.role === 'admin'){ document.getElementById('adminView').classList.remove('hidden'); initAdminView(); }
   else { document.getElementById('fleetView').classList.remove('hidden'); initFleetView(); }
+
+  // Watch for admin deactivating this account WHILE they're using the app —
+  // kicks them out immediately instead of waiting for their next reload.
+  setInterval(async ()=>{
+    const { data } = await sb.from('profiles').select('active').eq('id', session.id).maybeSingle();
+    if(data && data.active === false){
+      if(watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+      document.getElementById('mechanicView').classList.add('hidden');
+      document.getElementById('shopView').classList.add('hidden');
+      document.getElementById('adminView').classList.add('hidden');
+      document.getElementById('fleetView').classList.add('hidden');
+      showInactiveScreen();
+    }
+  }, 15000);
 }
 
 // ================= MECHANIC VIEW =================
@@ -1039,9 +1078,11 @@ async function refreshAdminData(){
   const approvedOrgIds = new Set(orgs.filter(o=>o.status==='approved').map(o=>o.id));
   const visibleProfiles = profiles.filter(p => p.role === 'admin' || approvedOrgIds.has(p.org_id));
   const accBox = document.getElementById('adminAccounts');
-  accBox.innerHTML = visibleProfiles.map(p => `
+
+  function accountRowHtml(p, companyLine){
+    return `
     <div class="account-row" data-id="${p.id}">
-      <div class="aname">${esc(p.name)}<div class="meta" style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-faint); margin-top:2px;">${esc(orgName(p.org_id))}</div></div>
+      <div class="aname">${esc(p.name)}<div class="meta" style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-faint); margin-top:2px;">${companyLine}</div></div>
       <select class="arole-select">
         <option value="mechanic" ${p.role==='mechanic'?'selected':''}>Mechanic</option>
         <option value="shop" ${p.role==='shop'?'selected':''}>Shop owner</option>
@@ -1053,7 +1094,23 @@ async function refreshAdminData(){
         <button class="toggle-btn ${p.active?'on':'off'}" data-active="${p.active}">${p.active?'Active':'Inactive'}</button>
         <button class="j-edit acc-save">Save</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }
+
+  const shopOwners = visibleProfiles.filter(p=>p.role==='shop');
+  const mechanicAccounts = visibleProfiles.filter(p=>p.role==='mechanic');
+  const fleetMgrs = visibleProfiles.filter(p=>p.role==='fleet');
+  const admins = visibleProfiles.filter(p=>p.role==='admin');
+
+  accBox.innerHTML = `
+    <div class="team-subhead">Shop owners</div>
+    ${shopOwners.length ? shopOwners.map(p=>accountRowHtml(p, 'Company: ' + esc(orgName(p.org_id)))).join('') : '<div class="empty-note">None yet.</div>'}
+    <div class="team-subhead">Mechanics</div>
+    ${mechanicAccounts.length ? mechanicAccounts.map(p=>accountRowHtml(p, 'Works for: ' + esc(orgName(p.org_id)))).join('') : '<div class="empty-note">None yet.</div>'}
+    <div class="team-subhead">Fleet managers</div>
+    ${fleetMgrs.length ? fleetMgrs.map(p=>accountRowHtml(p, 'Customer of: ' + esc(orgName(p.org_id)) + ' · Company: ' + esc(p.company||'—'))).join('') : '<div class="empty-note">None yet.</div>'}
+    ${admins.length ? `<div class="team-subhead">Admins</div>` + admins.map(p=>accountRowHtml(p, 'Platform admin')).join('') : ''}
+  `;
 
   accBox.querySelectorAll('.account-row').forEach(row=>{
     const id = row.dataset.id;
