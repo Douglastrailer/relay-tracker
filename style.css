@@ -425,3 +425,17 @@ main{ padding-top:36px; }
 .request-card .rq-actions{ display:flex; gap:8px; margin-top:14px; }
 .request-card .rq-approve{ background:var(--done); color:#fff; border:none; padding:9px 18px; border-radius:8px; font-weight:700; font-size:0.85rem; }
 .request-card .rq-reject{ background:none; color:var(--live); border:1px solid var(--live); padding:9px 18px; border-radius:8px; font-weight:700; font-size:0.85rem; }
+
+/* ===== contact us modal ===== */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:500;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.modal-card{
+  position:relative; background:var(--panel); border-radius:16px; padding:28px; max-width:380px; width:100%;
+  text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.3);
+}
+.modal-close{
+  position:absolute; top:12px; right:14px; background:none; border:none; font-size:1.4rem; color:var(--ink-faint); line-height:1;
+}
+.modal-close:hover{ color:var(--ink); }
