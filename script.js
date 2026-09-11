@@ -1097,36 +1097,37 @@ async function refreshAdminData(){
     </div>`;
   }
 
-  const shopOwners = visibleProfiles.filter(p=>p.role==='shop');
-  const mechanicAccounts = visibleProfiles.filter(p=>p.role==='mechanic');
-  const fleetMgrs = visibleProfiles.filter(p=>p.role==='fleet');
-  const admins = visibleProfiles.filter(p=>p.role==='admin');
+  function renderAccountsForRole(role){
+    const filtered = visibleProfiles.filter(p=>p.role===role);
+    const companyLine = p =>
+      role === 'shop' ? 'Company: ' + esc(orgName(p.org_id)) :
+      role === 'mechanic' ? 'Works for: ' + esc(orgName(p.org_id)) :
+      role === 'fleet' ? 'Customer of: ' + esc(orgName(p.org_id)) + ' · Company: ' + esc(p.company||'—') :
+      'Platform admin';
+    accBox.innerHTML = filtered.length
+      ? filtered.map(p=>accountRowHtml(p, companyLine(p))).join('')
+      : '<div class="empty-note">None yet.</div>';
+    accBox.querySelectorAll('.account-row').forEach(row=>{
+      const id = row.dataset.id;
+      row.querySelector('.toggle-btn').onclick = async (e)=>{
+        const btn = e.target;
+        const newActive = btn.dataset.active !== 'true';
+        const { error } = await sb.from('profiles').update({ active:newActive }).eq('id', id);
+        if(!error) refreshAdminData();
+      };
+      row.querySelector('.acc-save').onclick = async ()=>{
+        const newRole = row.querySelector('.arole-select').value;
+        const company = row.querySelector('.acompany-input').value.trim();
+        const { error } = await sb.from('profiles').update({ role:newRole, company: newRole==='fleet' ? company : null }).eq('id', id);
+        if(error) alert('Could not update: ' + error.message); else refreshAdminData();
+      };
+    });
+  }
 
-  accBox.innerHTML = `
-    <div class="team-subhead">Shop owners</div>
-    ${shopOwners.length ? shopOwners.map(p=>accountRowHtml(p, 'Company: ' + esc(orgName(p.org_id)))).join('') : '<div class="empty-note">None yet.</div>'}
-    <div class="team-subhead">Mechanics</div>
-    ${mechanicAccounts.length ? mechanicAccounts.map(p=>accountRowHtml(p, 'Works for: ' + esc(orgName(p.org_id)))).join('') : '<div class="empty-note">None yet.</div>'}
-    <div class="team-subhead">Fleet managers</div>
-    ${fleetMgrs.length ? fleetMgrs.map(p=>accountRowHtml(p, 'Customer of: ' + esc(orgName(p.org_id)) + ' · Company: ' + esc(p.company||'—'))).join('') : '<div class="empty-note">None yet.</div>'}
-    ${admins.length ? `<div class="team-subhead">Admins</div>` + admins.map(p=>accountRowHtml(p, 'Platform admin')).join('') : ''}
-  `;
+  const roleFilter = document.getElementById('accountsRoleFilter');
+  renderAccountsForRole(roleFilter.value);
+  roleFilter.onchange = ()=> renderAccountsForRole(roleFilter.value);
 
-  accBox.querySelectorAll('.account-row').forEach(row=>{
-    const id = row.dataset.id;
-    row.querySelector('.toggle-btn').onclick = async (e)=>{
-      const btn = e.target;
-      const newActive = btn.dataset.active !== 'true';
-      const { error } = await sb.from('profiles').update({ active:newActive }).eq('id', id);
-      if(!error) refreshAdminData();
-    };
-    row.querySelector('.acc-save').onclick = async ()=>{
-      const role = row.querySelector('.arole-select').value;
-      const company = row.querySelector('.acompany-input').value.trim();
-      const { error } = await sb.from('profiles').update({ role, company: role==='fleet' ? company : null }).eq('id', id);
-      if(error) alert('Could not update: ' + error.message); else refreshAdminData();
-    };
-  });
 
   // pending company requests
   const pendingOrgs = orgs.filter(o => o.status === 'pending');
