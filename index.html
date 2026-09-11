@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=16"/>
+<link rel="stylesheet" href="style.css?v=17"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 </style>
@@ -108,8 +108,8 @@
         <p>We're happy to help you get your company set up.</p>
       </div>
       <div class="auth-card">
-        <div class="field"><label>Email</label><p style="margin-top:4px;"><a href="mailto:dustinashford06@gmail.com" style="color:var(--accent); font-weight:700;">dustinashford06@gmail.com</a></p></div>
-        <div class="field"><label>Phone</label><p style="margin-top:4px; color:var(--ink-soft);">+1(417)203-0461</p></div>
+        <div class="field"><label>Email</label><p style="margin-top:4px;"><a href="mailto:hello@relayfleet.us" style="color:var(--accent); font-weight:700;">hello@relayfleet.us</a></p></div>
+        <div class="field"><label>Phone</label><p style="margin-top:4px; color:var(--ink-soft);">Add your business number here</p></div>
         <p class="auth-note">Prefer email — we'll get back to you as soon as we can.</p>
       </div>
     </div>
@@ -140,6 +140,7 @@
         <div id="signupForm" class="hidden">
           <div class="field"><label>Name</label><input type="text" id="suName" placeholder="Your name"></div>
           <div class="field"><label>Email</label><input type="email" id="suEmail" placeholder="you@example.com"></div>
+          <div class="field"><label>Phone number</label><input type="tel" id="suPhone" placeholder="(555) 555-5555"></div>
           <div class="field"><label>Role</label>
             <select id="suRole">
               <option value="shop">Shop owner (setting up a new company)</option>
@@ -167,6 +168,7 @@
         <div id="completeProfileForm" class="hidden">
           <p class="auth-note" style="margin-top:0;">Almost there — finish setting up your account.</p>
           <div class="field"><label>Name</label><input type="text" id="cpName" placeholder="Your name"></div>
+          <div class="field"><label>Phone number</label><input type="tel" id="cpPhone" placeholder="(555) 555-5555"></div>
           <div class="field"><label>Role</label>
             <select id="cpRole">
               <option value="shop">Shop owner (setting up a new company)</option>
@@ -230,6 +232,17 @@
   </div>
 
   <!-- ================= SHOP OWNER ================= -->
+  <div id="pendingApprovalView" class="hidden">
+    <div class="auth-wrap">
+      <div class="auth-card" style="text-align:center;">
+        <div id="pendingIcon" style="font-size:2.4rem; margin-bottom:14px;">⏳</div>
+        <h2 id="pendingTitle" style="font-family:var(--font-display); font-size:1.3rem; margin-bottom:10px;">Your request is under review</h2>
+        <p id="pendingBody" class="auth-note" style="margin-top:0;">Thanks for signing up for Relay. We're reviewing your company's request and will be in touch shortly.</p>
+        <button class="auth-submit" id="pendingCheckBtn" style="margin-top:14px;">Check again</button>
+      </div>
+    </div>
+  </div>
+
   <div id="shopView" class="hidden">
     <div class="dash-tabs">
       <button class="dash-tab active" data-target="shop-overview">Overview</button>
@@ -321,6 +334,7 @@
   <div id="adminView" class="hidden">
     <div class="dash-tabs">
       <button class="dash-tab active" data-target="admin-overview">Overview</button>
+      <button class="dash-tab" data-target="admin-requests">Requests <span id="requestsBadge" class="req-badge hidden">0</span></button>
       <button class="dash-tab" data-target="admin-accounts">Accounts</button>
       <button class="dash-tab" data-target="admin-jobs">Jobs</button>
     </div>
@@ -333,9 +347,16 @@
       </div>
     </div>
 
+    <div class="dash-panel hidden" id="admin-requests">
+      <div class="section">
+        <div class="section-head"><h2>Pending company requests</h2></div>
+        <div id="adminRequests"></div>
+      </div>
+    </div>
+
     <div class="dash-panel hidden" id="admin-accounts">
       <div class="section">
-        <div class="section-head"><h2>All accounts</h2></div>
+        <div class="section-head"><h2>Current users</h2></div>
         <div id="adminAccounts"></div>
       </div>
     </div>
@@ -365,7 +386,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <div id="fatalError" style="display:none; position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:999; background:#FFEAE4; color:#C23A1E; border:1px solid #F3B7A8; padding:12px 18px; border-radius:10px; font-family:'JetBrains Mono',monospace; font-size:0.8rem; max-width:90vw; box-shadow:0 8px 24px rgba(0,0,0,0.12);"></div>
-<script src="script.js?v=18"></script>
+<script src="script.js?v=20"></script>
 
 </body>
 </html>
