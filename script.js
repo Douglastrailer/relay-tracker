@@ -351,7 +351,10 @@ document.getElementById('signupSubmit').onclick = async (e)=>{
     if(orgResult.error){ authError.textContent = orgResult.error; btn.disabled=false; return; }
     const { error: profileErr } = await sb.from('profiles').insert([{ id:data.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true, email, phone }]);
     if(profileErr){ authError.textContent = 'Account created, but profile setup failed: ' + profileErr.message; btn.disabled=false; return; }
-    if(role === 'fleet') await sb.from('fleet_shop_links').insert([{ fleet_id:data.user.id, org_id:orgResult.orgId }]);
+    if(role === 'fleet'){
+      const { error: linkErr } = await sb.from('fleet_shop_links').insert([{ fleet_id:data.user.id, org_id:orgResult.orgId }]);
+      if(linkErr) console.error('fleet_shop_links insert failed on signup', linkErr); // recoverable via "Join another shop" in their dashboard
+    }
     if(orgResult.joinedViaInvite) rotateInviteCode(orgResult.orgId);
     onAuthed(data.session.user.id);
   } else {
@@ -397,10 +400,14 @@ document.getElementById('completeProfileSubmit').onclick = async (e)=>{
   const orgResult = await resolveOrgForSignup(role, shopName, inviteCode);
   if(orgResult.error){ authError.textContent = orgResult.error; btn.disabled=false; return; }
 
-  const { data: userData } = await sb.auth.getUser();
+  const { data: userData, error: getUserErr } = await sb.auth.getUser();
+  if(getUserErr || !userData || !userData.user){ authError.textContent = 'Something went wrong confirming your session — please refresh and try again.'; btn.disabled=false; return; }
   const { error } = await sb.from('profiles').insert([{ id:userData.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true, email:userData.user.email, phone }]);
   if(error){ authError.textContent = error.message; btn.disabled=false; return; }
-  if(role === 'fleet') await sb.from('fleet_shop_links').insert([{ fleet_id:userData.user.id, org_id:orgResult.orgId }]);
+  if(role === 'fleet'){
+    const { error: linkErr } = await sb.from('fleet_shop_links').insert([{ fleet_id:userData.user.id, org_id:orgResult.orgId }]);
+    if(linkErr) console.error('fleet_shop_links insert failed on signup', linkErr); // recoverable via "Join another shop" in their dashboard
+  }
   if(orgResult.joinedViaInvite) rotateInviteCode(orgResult.orgId);
   await onAuthed(userData.user.id);
   btn.disabled = false;
@@ -1193,6 +1200,15 @@ async function refreshAdminData(){
   const orgName = id => (orgs.find(o=>o.id===id) || {}).name || '—';
   const locByMechanic = await fetchLocationsFor(mechanics.map(m=>m.id));
 
+  // Fleet managers can belong to multiple shops now — build the full list
+  // per fleet manager instead of just showing their first/primary one.
+  const { data: allFleetLinks } = await sb.from('fleet_shop_links').select('fleet_id, org_id');
+  const fleetShopsById = {};
+  (allFleetLinks || []).forEach(l=>{
+    if(!fleetShopsById[l.fleet_id]) fleetShopsById[l.fleet_id] = [];
+    fleetShopsById[l.fleet_id].push(orgName(l.org_id));
+  });
+
   // stats
   let liveCount = 0;
   for(const m of mechanics){
@@ -1244,7 +1260,7 @@ async function refreshAdminData(){
     const companyLine = p =>
       role === 'shop' ? 'Company: ' + esc(orgName(p.org_id)) :
       role === 'mechanic' ? 'Works for: ' + esc(orgName(p.org_id)) :
-      role === 'fleet' ? 'Customer of: ' + esc(orgName(p.org_id)) + ' · Company: ' + esc(p.company||'—') :
+      role === 'fleet' ? 'Customer of: ' + esc((fleetShopsById[p.id]||[]).join(', ') || orgName(p.org_id)) + ' · Company: ' + esc(p.company||'—') :
       'Platform admin';
     accBox.innerHTML = filtered.length
       ? filtered.map(p=>accountRowHtml(p, companyLine(p))).join('')
