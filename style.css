@@ -445,3 +445,14 @@ main{ padding-top:36px; }
   display:inline-flex; align-items:center; gap:8px; background:var(--panel-2); border:1px solid var(--line);
   border-radius:999px; padding:6px 14px; font-size:0.8rem; font-weight:700; margin:0 8px 8px 0;
 }
+
+/* ===== error log ===== */
+.error-card{
+  background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--live); border-radius:10px;
+  padding:14px 16px; margin-bottom:10px;
+}
+.error-card .err-msg{ font-family:var(--font-mono); font-size:0.82rem; color:var(--ink); word-break:break-word; }
+.error-card .err-meta{ font-size:0.72rem; color:var(--ink-faint); margin-top:6px; }
+.error-card details{ margin-top:8px; }
+.error-card summary{ font-size:0.75rem; color:var(--accent); cursor:pointer; }
+.error-card pre{ font-size:0.7rem; color:var(--ink-soft); white-space:pre-wrap; margin-top:6px; max-height:150px; overflow-y:auto; }
