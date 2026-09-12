@@ -58,9 +58,16 @@ async function fetchAllMechanics(){
   return data || [];
 }
 async function fetchOrgMembers(){
-  const { data, error } = await sb.from('profiles').select('*').in('role', ['mechanic','fleet']).eq('org_id', session.orgId);
-  if(error){ console.error('fetchOrgMembers', error); return []; }
-  return data || [];
+  const { data: mechanics, error: mechErr } = await sb.from('profiles').select('*').eq('role','mechanic').eq('org_id', session.orgId);
+  if(mechErr) console.error('fetchOrgMembers (mechanics)', mechErr);
+
+  // Fleet managers are linked via fleet_shop_links now, not just profiles.org_id,
+  // since one fleet manager can belong to multiple shops.
+  const { data: fleetLinks, error: fleetErr } = await sb.from('fleet_shop_links').select('profiles:fleet_id(*)').eq('org_id', session.orgId);
+  if(fleetErr) console.error('fetchOrgMembers (fleet)', fleetErr);
+  const fleetMembers = (fleetLinks || []).map(l => l.profiles).filter(Boolean);
+
+  return [...(mechanics || []), ...fleetMembers];
 }
 async function fetchAllProfiles(){
   const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending:true });
@@ -223,6 +230,7 @@ let session = null; // { id, name, role, company, orgId }
 let watchId = null;
 let mechMapObj = null, mechMarker = null;
 const mechDestMarkers = {};
+let mechActiveJobsCache = []; // last-rendered active jobs, used by the GPS ticker to update distance without a full page rebuild
 let appEntered = false;
 
 // ================= public nav (Home / Sign in / Contact) =================
@@ -322,6 +330,7 @@ document.getElementById('signupSubmit').onclick = async (e)=>{
     if(orgResult.error){ authError.textContent = orgResult.error; btn.disabled=false; return; }
     const { error: profileErr } = await sb.from('profiles').insert([{ id:data.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true, email, phone }]);
     if(profileErr){ authError.textContent = 'Account created, but profile setup failed: ' + profileErr.message; btn.disabled=false; return; }
+    if(role === 'fleet') await sb.from('fleet_shop_links').insert([{ fleet_id:data.user.id, org_id:orgResult.orgId }]);
     if(orgResult.joinedViaInvite) rotateInviteCode(orgResult.orgId);
     onAuthed(data.session.user.id);
   } else {
@@ -370,6 +379,7 @@ document.getElementById('completeProfileSubmit').onclick = async (e)=>{
   const { data: userData } = await sb.auth.getUser();
   const { error } = await sb.from('profiles').insert([{ id:userData.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true, email:userData.user.email, phone }]);
   if(error){ authError.textContent = error.message; btn.disabled=false; return; }
+  if(role === 'fleet') await sb.from('fleet_shop_links').insert([{ fleet_id:userData.user.id, org_id:orgResult.orgId }]);
   if(orgResult.joinedViaInvite) rotateInviteCode(orgResult.orgId);
   await onAuthed(userData.user.id);
   btn.disabled = false;
@@ -538,11 +548,7 @@ document.querySelectorAll('.dash-tabs').forEach(wireDashTabs);
 // ================= app entry =================
 // ================= realtime sync =================
 // Instead of every dashboard constantly asking "anything new?" every
-// few seconds, Supabase pushes changes to jobs/locations the instant
-// they happen. Whatever the current role's dashboard is, we just
-// re-run its normal refresh function when something relevant changes —
-// same rendering code as before, just triggered by real events
-// instead of a fixed timer.
+// few seconds, Supabase pushes changes the instant they happen.
 let realtimeChannel = null;
 function refreshCurrentView(){
   if(!appEntered) return;
@@ -551,11 +557,35 @@ function refreshCurrentView(){
   else if(session.role === 'admin') refreshAdminData();
   else if(session.role === 'fleet') refreshFleetData();
 }
+// Location pings happen constantly (every few seconds per live mechanic) —
+// far too often to justify rebuilding the whole page, since that was wiping
+// out anything being typed in an open chat box. Instead we just nudge the
+// map marker directly, straight from the realtime payload, touching nothing
+// else on the page at all.
+function handleLocationPing(payload){
+  if(!appEntered) return;
+  const row = payload.new;
+  if(!row || !row.mechanic_id) return;
+  if(session.role === 'shop' && shopMarkers[row.mechanic_id]){
+    shopMarkers[row.mechanic_id].setLatLng([row.lat, row.lng]);
+  } else if(session.role === 'admin' && adminMarkers[row.mechanic_id]){
+    adminMarkers[row.mechanic_id].setLatLng([row.lat, row.lng]);
+  } else if(session.role === 'fleet'){
+    const jobIds = fleetJobsByMechanic[row.mechanic_id] || [];
+    jobIds.forEach(jobId=>{
+      const entry = fleetMaps[jobId];
+      if(!entry) return;
+      if(entry.mechMarker) entry.mechMarker.setLatLng([row.lat, row.lng]);
+      else entry.mechMarker = L.marker([row.lat, row.lng], { icon: pinIcon('mech') }).addTo(entry.map);
+    });
+  }
+  // Mechanic's own marker is already handled locally by their own GPS callback.
+}
 function setupRealtimeSync(){
   if(realtimeChannel || !sb) return;
   realtimeChannel = sb.channel('relay-live-updates')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, refreshCurrentView)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, refreshCurrentView)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, handleLocationPing)
     .subscribe();
 }
 
@@ -635,7 +665,17 @@ function initMechanicView(){
         lastWrite = now;
         await upsertLocation(session.id, latitude, longitude, document.getElementById('mechStatus').value);
       }
-      renderMechJobs();
+      // Update just the distance numbers directly instead of rebuilding the
+      // whole page — this used to call renderMechJobs() on every single GPS
+      // tick (often every 1-3 seconds), which was wiping out anything being
+      // typed in an open chat box. Distances still update live; nothing else
+      // needs to change just because the GPS pinged.
+      mechActiveJobsCache.forEach(job=>{
+        const el = document.getElementById('mech-dist-'+job.id);
+        if(!el) return;
+        const mi = milesBetween(latitude, longitude, job.dest_lat, job.dest_lng);
+        el.textContent = mi < 0.1 ? 'Arrived' : mi.toFixed(1) + ' mi away';
+      });
     }, (err)=>{
       document.getElementById('gpsReadout').textContent = 'Location error: ' + err.message + '. Check that location access is allowed for this page.';
     }, { enableHighAccuracy:true, maximumAge:5000, timeout:15000 });
@@ -659,6 +699,7 @@ async function renderMechJobs(){
   const mine = jobs.filter(j => j.mechanic_id === session.id);
   const active = mine.filter(j => j.status !== 'complete');
   const history = mine.filter(j => j.status === 'complete').slice().reverse().slice(0, 15);
+  mechActiveJobsCache = active; // used by the GPS ticker to update distance without a full rebuild
 
   document.getElementById('mechActiveCount').textContent = active.length ? active.length + ' active' : '';
 
@@ -681,7 +722,7 @@ async function renderMechJobs(){
           <div class="job-card-top">
             <div><b>${esc(job.customer)}</b><div class="meta">${esc(job.vehicle)}</div></div>
           </div>
-          <div class="row"><span>Distance</span><b>${distText}</b></div>
+          <div class="row"><span>Distance</span><b id="mech-dist-${job.id}">${distText}</b></div>
           <div class="row"><span>Status</span><b>${job.status.replace('_',' ')}</b></div>
           <a class="directions-btn" href="https://www.google.com/maps/dir/?api=1&destination=${job.dest_lat},${job.dest_lng}" target="_blank" rel="noopener">🧭 Get directions</a>
           <div class="job-actions">
@@ -1010,18 +1051,56 @@ async function refreshShopData(){
 
 // ================= FLEET MANAGER VIEW =================
 const fleetMaps = {};
+let fleetJobsByMechanic = {}; // mechanic_id -> [job.id, ...], used for realtime marker targeting
 function initFleetView(){
-  document.getElementById('fleetHint').textContent = `Showing jobs for ${session.company}.`;
+  document.getElementById('fleetHint').textContent = `Showing units for ${session.company}, across every shop you've joined.`;
+  loadFleetShops();
   refreshFleetData();
   setInterval(refreshFleetData, 60000); // fallback only - Realtime handles instant updates
 }
 
+async function loadFleetShops(){
+  const listBox = document.getElementById('fleetShopList');
+  const { data, error } = await sb.from('fleet_shop_links').select('org_id, organizations(name)').eq('fleet_id', session.id);
+  if(error || !data || data.length === 0){ listBox.innerHTML = '<div class="empty-note">You haven\'t joined any shops yet.</div>'; return; }
+  listBox.innerHTML = data.map(l => `<span class="shop-chip">🏢 ${esc(l.organizations ? l.organizations.name : 'Unknown shop')}</span>`).join('');
+}
+
+document.getElementById('fleetAddShopBtn').onclick = async ()=>{
+  const errBox = document.getElementById('fleetAddShopError');
+  const codeInput = document.getElementById('fleetAddShopCode');
+  const code = codeInput.value.trim().toUpperCase();
+  errBox.textContent = '';
+  if(!code){ errBox.textContent = 'Enter an invite code.'; return; }
+
+  const { data: org, error: orgErr } = await sb.from('organizations').select('id').eq('invite_code', code).maybeSingle();
+  if(orgErr || !org){ errBox.textContent = 'Invite code not found — double check it with that shop.'; return; }
+
+  const { error: linkErr } = await sb.from('fleet_shop_links').insert([{ fleet_id: session.id, org_id: org.id }]);
+  if(linkErr){
+    errBox.textContent = linkErr.code === '23505' ? 'You\'ve already joined that shop.' : 'Could not join: ' + linkErr.message;
+    return;
+  }
+  await rotateInviteCode(org.id);
+  codeInput.value = '';
+  loadFleetShops();
+  refreshFleetData();
+};
+
 async function refreshFleetData(){
-  // RLS already restricts this to only this fleet manager's company jobs
+  // RLS already restricts this to only jobs from shops you've joined, matching your company name
   const jobs = await fetchJobs();
   const active = jobs.filter(j=>j.status!=='complete');
   const history = jobs.filter(j=>j.status==='complete').slice().reverse().slice(0,15);
   const locByMechanic = await fetchLocationsFor(active.map(j=>j.mechanic_id));
+  const orgs = await fetchAllOrganizations();
+  const orgName = id => (orgs.find(o=>o.id===id) || {}).name || '—';
+
+  fleetJobsByMechanic = {};
+  active.forEach(j => {
+    if(!fleetJobsByMechanic[j.mechanic_id]) fleetJobsByMechanic[j.mechanic_id] = [];
+    fleetJobsByMechanic[j.mechanic_id].push(j.id);
+  });
 
   const box = document.getElementById('fleetJobs');
   const _s1 = preserveOpenInputs();
@@ -1030,7 +1109,7 @@ async function refreshFleetData(){
     let html = '';
     for(const j of active){
       html += `<div class="card" style="margin-bottom:14px;">
-        <div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge ${j.status==='on_site'?'arrived':'live'}"><span class="bd"></span>${j.status.replace('_',' ')}</span></div>
+        <div class="job-card-top"><div><b>${esc(j.vehicle)}</b><div class="meta">Shop: ${esc(orgName(j.org_id))}</div></div><span class="badge ${j.status==='on_site'?'arrived':'live'}"><span class="bd"></span>${j.status.replace('_',' ')}</span></div>
         <div class="ops-map" style="height:280px; margin-top:12px;" id="fleetMap${j.id}"></div>
         <div class="gps-readout" id="fleetDist${j.id}" style="margin-top:10px;"></div>
         ${commentsBlockHtml(j.id)}
