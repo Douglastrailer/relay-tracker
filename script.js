@@ -661,6 +661,12 @@ function wireDashTabs(container){
       panelParent.querySelectorAll(':scope > .dash-panel').forEach(p=>p.classList.add('hidden'));
       const target = document.getElementById(tab.dataset.target);
       if(target) target.classList.remove('hidden');
+      // Leaflet maps initialized while their tab was hidden render blank —
+      // they never learn their real size until told to recalculate, which
+      // can only happen once the tab is actually visible in the DOM.
+      setTimeout(()=>{
+        [shopMap, pinMapObj, adminOpsMap].forEach(m=>{ if(m && m.invalidateSize) m.invalidateSize(); });
+      }, 50);
     };
   });
 }
