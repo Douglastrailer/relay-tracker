@@ -210,6 +210,80 @@ function closeThread(jobId){
   if(box) box.classList.add('hidden');
   openCommentThreads.delete(jobId);
 }
+
+// ================= job attachments (photos/files) =================
+const openAttachmentThreads = new Set();
+function attachmentsBlockHtml(jobId){
+  return `
+    <button class="comments-toggle" data-attach-job="${jobId}">📎 Files</button>
+    <div class="comments-box hidden" id="attachments-${jobId}">
+      <div class="attach-list" id="attach-list-${jobId}"></div>
+      <label class="attach-upload-btn">
+        + Add a photo or file
+        <input type="file" id="attach-input-${jobId}" accept="image/*,.pdf,.doc,.docx" style="display:none;">
+      </label>
+    </div>`;
+}
+async function fetchAttachments(jobId){
+  const { data, error } = await sb.from('job_attachments').select('*, profiles:uploader_id(name)').eq('job_id', jobId).order('created_at', { ascending:true });
+  if(error){ console.error('fetchAttachments', error); return []; }
+  return data || [];
+}
+async function renderAttachmentList(jobId){
+  const listEl = document.getElementById('attach-list-'+jobId);
+  if(!listEl) return;
+  const files = await fetchAttachments(jobId);
+  if(files.length === 0){ listEl.innerHTML = '<div class="empty-note">No files yet.</div>'; return; }
+  const items = await Promise.all(files.map(async f=>{
+    const { data: signed } = await sb.storage.from('job-attachments').createSignedUrl(f.file_path, 3600);
+    const url = signed ? signed.signedUrl : '#';
+    const isImage = (f.file_type || '').startsWith('image/');
+    return `
+      <div class="attach-item">
+        ${isImage
+          ? `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" class="attach-thumb" alt="${esc(f.file_name)}"></a>`
+          : `<a href="${url}" target="_blank" rel="noopener" class="attach-file-link">📄 ${esc(f.file_name)}</a>`}
+        <div class="attach-meta">${esc(f.profiles ? f.profiles.name : 'Someone')} · ${new Date(f.created_at).toLocaleDateString()}</div>
+      </div>`;
+  }));
+  listEl.innerHTML = items.join('');
+}
+function openAttachmentThread(jobId){
+  const box = document.getElementById('attachments-'+jobId);
+  if(!box) return;
+  box.classList.remove('hidden');
+  openAttachmentThreads.add(jobId);
+  renderAttachmentList(jobId);
+  const input = document.getElementById('attach-input-'+jobId);
+  input.onchange = async ()=>{
+    const file = input.files[0];
+    if(!file) return;
+    if(file.size > 10*1024*1024){ alert('That file is too big — 10MB max.'); input.value=''; return; }
+    const path = `${jobId}/${Date.now()}-${file.name}`;
+    const { error: upErr } = await sb.storage.from('job-attachments').upload(path, file);
+    if(upErr){ alert('Upload failed: ' + upErr.message); input.value=''; return; }
+    const { error: metaErr } = await sb.from('job_attachments').insert([{ job_id:jobId, uploader_id:session.id, file_path:path, file_name:file.name, file_type:file.type }]);
+    if(metaErr) console.error('job_attachments insert failed', metaErr);
+    input.value = '';
+    renderAttachmentList(jobId);
+  };
+}
+function closeAttachmentThread(jobId){
+  const box = document.getElementById('attachments-'+jobId);
+  if(box) box.classList.add('hidden');
+  openAttachmentThreads.delete(jobId);
+}
+function wireAttachmentToggles(container){
+  container.querySelectorAll('[data-attach-job]').forEach(btn=>{
+    const jobId = btn.dataset.attachJob;
+    btn.onclick = ()=>{
+      const box = document.getElementById('attachments-'+jobId);
+      if(box.classList.contains('hidden')) openAttachmentThread(jobId); else closeAttachmentThread(jobId);
+    };
+    if(openAttachmentThreads.has(jobId)) openAttachmentThread(jobId);
+  });
+}
+
 setInterval(()=>{
   openCommentThreads.forEach(jobId => renderCommentList(jobId));
 }, 5000);
@@ -759,10 +833,12 @@ async function renderMechJobs(){
             <button data-s="complete" class="${job.status==='complete'?'active':''}">Mark complete</button>
           </div>
           ${commentsBlockHtml(job.id)}
+          ${attachmentsBlockHtml(job.id)}
         </div>`;
     }).join('');
 
     wireCommentToggles(activeBox);
+    wireAttachmentToggles(activeBox);
     activeBox.querySelectorAll('.job-card').forEach(card=>{
       const jobId = Number(card.dataset.job);
       const job = active.find(j=>j.id===jobId);
@@ -787,8 +863,10 @@ async function renderMechJobs(){
         <div class="job-card">
           <div class="job-card-top"><div><b>${esc(job.customer)}</b><div class="meta">${esc(job.vehicle)}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>
           ${commentsBlockHtml(job.id)}
+          ${attachmentsBlockHtml(job.id)}
         </div>`).join('');
   wireCommentToggles(historyBox);
+  wireAttachmentToggles(historyBox);
   restoreOpenChatNodes(historyBox, _s2);
 }
 
@@ -1036,9 +1114,11 @@ async function refreshShopData(){
         </div>
         <div class="j-editbox"></div>
         ${commentsBlockHtml(j.id)}
+        ${attachmentsBlockHtml(j.id)}
       </div>`).join('');
 
     wireCommentToggles(list);
+    wireAttachmentToggles(list);
     list.querySelectorAll('.job-card').forEach(card=>{
       const jobId = Number(card.dataset.job);
       const job = jobs.find(j=>j.id===jobId);
@@ -1072,8 +1152,10 @@ async function refreshShopData(){
       <div class="job-card">
         <div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>
         ${commentsBlockHtml(j.id)}
+        ${attachmentsBlockHtml(j.id)}
       </div>`).join('');
   wireCommentToggles(histBox);
+  wireAttachmentToggles(histBox);
   restoreOpenChatNodes(histBox, _s2);
 }
 
@@ -1141,10 +1223,12 @@ async function refreshFleetData(){
         <div class="ops-map" style="height:280px; margin-top:12px;" id="fleetMap${j.id}"></div>
         <div class="gps-readout" id="fleetDist${j.id}" style="margin-top:10px;"></div>
         ${commentsBlockHtml(j.id)}
+        ${attachmentsBlockHtml(j.id)}
       </div>`;
     }
     box.innerHTML = html;
     wireCommentToggles(box);
+    wireAttachmentToggles(box);
     restoreOpenChatNodes(box, _s1);
 
     for(const j of active){
@@ -1175,8 +1259,9 @@ async function refreshFleetData(){
   const _s2 = preserveOpenChatNodes(histBox);
   histBox.innerHTML = history.length === 0
     ? '<div class="card empty-note">No completed jobs yet.</div>'
-    : history.map(j => `<div class="job-card"><div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}</div>`).join('');
+    : history.map(j => `<div class="job-card"><div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}${attachmentsBlockHtml(j.id)}</div>`).join('');
   wireCommentToggles(histBox);
+  wireAttachmentToggles(histBox);
   restoreOpenChatNodes(histBox, _s2);
 }
 
@@ -1350,8 +1435,10 @@ async function refreshAdminData(){
         <button class="j-delete danger">Delete</button>
       </div>
       ${commentsBlockHtml(j.id)}
+      ${attachmentsBlockHtml(j.id)}
     </div>`).join('');
   wireCommentToggles(list);
+  wireAttachmentToggles(list);
   restoreOpenChatNodes(list, _s1);
   list.querySelectorAll('.j-delete').forEach(btn=>{
     btn.onclick = async ()=>{
@@ -1366,8 +1453,9 @@ async function refreshAdminData(){
   const _s2 = preserveOpenChatNodes(adminHistBox);
   adminHistBox.innerHTML = history.length === 0
     ? '<div class="empty-note">No completed jobs yet.</div>'
-    : history.map(j => `<div class="job-card"><div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))} · Company: ${esc(orgName(j.org_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}</div>`).join('');
+    : history.map(j => `<div class="job-card"><div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))} · Company: ${esc(orgName(j.org_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}${attachmentsBlockHtml(j.id)}</div>`).join('');
   wireCommentToggles(adminHistBox);
+  wireAttachmentToggles(adminHistBox);
   restoreOpenChatNodes(adminHistBox, _s2);
 
   // error log
