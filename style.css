@@ -445,3 +445,19 @@ main{ padding-top:36px; }
 .error-card details{ margin-top:8px; }
 .error-card summary{ font-size:0.75rem; color:var(--accent); cursor:pointer; }
 .error-card pre{ font-size:0.7rem; color:var(--ink-soft); white-space:pre-wrap; margin-top:6px; max-height:150px; overflow-y:auto; }
+
+/* ===== job attachments ===== */
+.attach-list{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px; }
+.attach-item{ width:100px; }
+.attach-thumb{ width:100px; height:100px; object-fit:cover; border-radius:10px; border:1px solid var(--line); display:block; }
+.attach-file-link{
+  width:100px; height:100px; display:flex; align-items:center; justify-content:center; text-align:center;
+  background:var(--panel-2); border:1px solid var(--line); border-radius:10px; font-size:0.72rem; color:var(--ink);
+  padding:6px; word-break:break-word;
+}
+.attach-meta{ font-size:0.65rem; color:var(--ink-faint); margin-top:4px; text-align:center; }
+.attach-upload-btn{
+  display:inline-block; background:var(--panel-2); border:1px dashed var(--line); border-radius:8px;
+  padding:9px 14px; font-size:0.78rem; font-weight:700; color:var(--accent); cursor:pointer;
+}
+.attach-upload-btn:hover{ border-color:var(--accent); }
