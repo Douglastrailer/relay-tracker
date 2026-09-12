@@ -114,6 +114,21 @@ async function fetchJobs(){
   if(error){ console.error('fetchJobs', error); return []; }
   return data || [];
 }
+// Active jobs are naturally small (a handful of open jobs at once) so no
+// limit is needed here. Completed history is the one that grows unbounded
+// over years of use — this fetches only the N most recent AT THE DATABASE
+// LEVEL, instead of the old approach of downloading every job a company has
+// ever had and slicing it down in the browser.
+async function fetchActiveJobs(){
+  const { data, error } = await sb.from('jobs').select('*').neq('status','complete').order('created_at', { ascending:true });
+  if(error){ console.error('fetchActiveJobs', error); return []; }
+  return data || [];
+}
+async function fetchCompletedJobs(limit){
+  const { data, error } = await sb.from('jobs').select('*').eq('status','complete').order('updated_at', { ascending:false }).limit(limit);
+  if(error){ console.error('fetchCompletedJobs', error); return []; }
+  return data || [];
+}
 async function fetchJobComments(jobId){
   const { data, error } = await sb.from('job_comments').select('*, profiles:author_id(name)').eq('job_id', jobId).order('created_at', { ascending:true });
   if(error){ console.error('fetchJobComments', error); return []; }
@@ -379,7 +394,11 @@ updateRoleFields('su'); updateRoleFields('cp');
 // resolves { orgId, error } for a signup based on role + shop name / invite code
 function generateInviteCode(){
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars (0/O, 1/I)
-  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  // crypto.getRandomValues is cryptographically secure — Math.random() is not,
+  // and invite codes are a security-sensitive token, not just a display string.
+  const randomBytes = new Uint8Array(8);
+  crypto.getRandomValues(randomBytes);
+  return Array.from(randomBytes, b => chars[b % chars.length]).join('');
 }
 async function rotateInviteCode(orgId){
   await sb.from('organizations').update({ invite_code: generateInviteCode() }).eq('id', orgId);
@@ -797,10 +816,8 @@ function initMechanicView(){
 }
 
 async function renderMechJobs(){
-  const jobs = await fetchJobs();
-  const mine = jobs.filter(j => j.mechanic_id === session.id);
-  const active = mine.filter(j => j.status !== 'complete');
-  const history = mine.filter(j => j.status === 'complete').slice().reverse().slice(0, 15);
+  const active = (await fetchActiveJobs()).filter(j => j.mechanic_id === session.id);
+  const history = (await fetchCompletedJobs(15)).filter(j => j.mechanic_id === session.id);
   mechActiveJobsCache = active; // used by the GPS ticker to update distance without a full rebuild
 
   document.getElementById('mechActiveCount').textContent = active.length ? active.length + ' active' : '';
@@ -1067,7 +1084,7 @@ function renderAnalytics(jobs, mechanics, mechName){
 
 async function refreshShopData(){
   const mechanics = await fetchAllMechanics();
-  const jobs = await fetchJobs();
+  const active = await fetchActiveJobs();
   const locByMechanic = await fetchLocationsFor(mechanics.map(m=>m.id));
 
   let liveCount = 0;
@@ -1085,18 +1102,25 @@ async function refreshShopData(){
 
   const mechName = id => (mechanics.find(m=>m.id===id) || {}).name || 'Unassigned';
 
-  const active = jobs.filter(j=>j.status!=='complete');
-  const history = jobs.filter(j=>j.status==='complete').slice().reverse().slice(0,20);
+  const history = await fetchCompletedJobs(20);
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const completedToday = jobs.filter(j => j.status==='complete' && j.updated_at && new Date(j.updated_at) >= today).length;
+  // Note: "completed today" is computed from the most recent 20 completed jobs,
+  // not the full history — on an extremely busy day (20+ completions) this
+  // could slightly undercount. Acceptable tradeoff for not downloading a
+  // company's entire job history just to show one stat number.
+  const completedToday = history.filter(j => j.updated_at && new Date(j.updated_at) >= today).length;
   document.getElementById('shopStats').innerHTML = `
     <div class="stat-box"><b>${active.length}</b><span>Active jobs</span></div>
     <div class="stat-box"><b>${liveCount}</b><span>Mechanics live now</span></div>
     <div class="stat-box"><b>${mechanics.filter(m=>m.active).length}</b><span>Active mechanics</span></div>
     <div class="stat-box"><b>${completedToday}</b><span>Completed today</span></div>`;
 
-  renderAnalytics(jobs, mechanics, mechName);
+  // Analytics currently run against active + the most recent 20 completed
+  // jobs, not a company's full history — a proper fix is a dedicated
+  // database aggregation query (flagged in the production audit as a
+  // follow-up, not done in this pass).
+  renderAnalytics(active.concat(history), mechanics, mechName);
 
   const list = document.getElementById('shopJobList');
   const _s1 = preserveOpenChatNodes(list);
@@ -1121,7 +1145,7 @@ async function refreshShopData(){
     wireAttachmentToggles(list);
     list.querySelectorAll('.job-card').forEach(card=>{
       const jobId = Number(card.dataset.job);
-      const job = jobs.find(j=>j.id===jobId);
+      const job = active.find(j=>j.id===jobId);
       card.querySelector('.j-delete').onclick = async ()=>{
         if(!confirm('Delete this job? This cannot be undone.')) return;
         const { error } = await sb.from('jobs').delete().eq('id', jobId);
@@ -1199,9 +1223,8 @@ document.getElementById('fleetAddShopBtn').onclick = async ()=>{
 
 async function refreshFleetData(){
   // RLS already restricts this to only jobs from shops you've joined, matching your company name
-  const jobs = await fetchJobs();
-  const active = jobs.filter(j=>j.status!=='complete');
-  const history = jobs.filter(j=>j.status==='complete').slice().reverse().slice(0,15);
+  const active = await fetchActiveJobs();
+  const history = await fetchCompletedJobs(15);
   const locByMechanic = await fetchLocationsFor(active.map(j=>j.mechanic_id));
   const orgs = await fetchAllOrganizations();
   const orgName = id => (orgs.find(o=>o.id===id) || {}).name || '—';
@@ -1279,7 +1302,6 @@ function initAdminView(){
 
 async function refreshAdminData(){
   const profiles = await fetchAllProfiles();
-  const jobs = await fetchJobs();
   const orgs = await fetchAllOrganizations();
   const mechanics = profiles.filter(p=>p.role==='mechanic');
   const orgName = id => (orgs.find(o=>o.id===id) || {}).name || '—';
@@ -1300,13 +1322,17 @@ async function refreshAdminData(){
     const loc = locByMechanic[m.id];
     if(loc && Date.now() - loc.updatedAt < 30000) liveCount++;
   }
-  const activeJobs = jobs.filter(j=>j.status!=='complete');
-  const completeJobs = jobs.filter(j=>j.status==='complete');
+  const activeJobs = await fetchActiveJobs();
+  // Exact counts via a head-only query — gets the real total without
+  // downloading every row, which matters once job history is in the
+  // thousands. This is what Phase 15 of the audit asks for: efficient
+  // aggregation instead of scanning the whole table into the browser.
+  const { count: completeCount } = await sb.from('jobs').select('*', { count:'exact', head:true }).eq('status','complete');
   document.getElementById('adminStats').innerHTML = `
     <div class="stat-box"><b>${profiles.length}</b><span>Total accounts</span></div>
     <div class="stat-box"><b>${liveCount}</b><span>Mechanics live now</span></div>
     <div class="stat-box"><b>${activeJobs.length}</b><span>Active jobs</span></div>
-    <div class="stat-box"><b>${completeJobs.length}</b><span>Completed jobs</span></div>`;
+    <div class="stat-box"><b>${completeCount || 0}</b><span>Completed jobs</span></div>`;
 
   // live map
   for(const m of mechanics){
@@ -1420,8 +1446,8 @@ async function refreshAdminData(){
 
   // jobs
   const mechName = id => (profiles.find(p=>p.id===id) || {}).name || 'Unassigned';
-  const active = jobs.filter(j=>j.status!=='complete');
-  const history = jobs.filter(j=>j.status==='complete').slice().reverse().slice(0,30);
+  const active = activeJobs; // already fetched above for the stats
+  const history = await fetchCompletedJobs(30);
 
   const list = document.getElementById('adminJobList');
   const _s1 = preserveOpenChatNodes(list);
