@@ -1,8 +1,33 @@
 // surface any uncaught error instead of failing silently
+async function logErrorToServer(message, stack){
+  try{
+    if(!sb || typeof session === 'undefined' || !session) return;
+    await sb.from('error_logs').insert([{
+      message: String(message).slice(0, 2000),
+      stack: stack ? String(stack).slice(0, 4000) : null,
+      page_url: window.location.href,
+      user_id: session.id,
+      user_role: session.role
+    }]);
+  } catch(e){ /* never let error logging itself cause more errors */ }
+}
+
 window.addEventListener('error', function(e){
   const box = document.getElementById('fatalError');
   box.style.display = 'block';
   box.textContent = 'Something broke: ' + (e.message || 'unknown error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '');
+  logErrorToServer(e.message, e.error && e.error.stack);
+});
+
+// Unhandled promise rejections are extremely common in an app this
+// full of async/await Supabase calls, and were previously invisible
+// entirely — a failed request could just silently do nothing.
+window.addEventListener('unhandledrejection', function(e){
+  const reasonMsg = e.reason && e.reason.message ? e.reason.message : String(e.reason);
+  const box = document.getElementById('fatalError');
+  box.style.display = 'block';
+  box.textContent = 'Something broke: ' + reasonMsg;
+  logErrorToServer(reasonMsg, e.reason && e.reason.stack);
 });
 
 // ================= Supabase connection =================
@@ -1332,6 +1357,22 @@ async function refreshAdminData(){
     : history.map(j => `<div class="job-card"><div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))} · Company: ${esc(orgName(j.org_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}</div>`).join('');
   wireCommentToggles(adminHistBox);
   restoreOpenInputs(_s2);
+
+  // error log
+  const { data: errors } = await sb.from('error_logs').select('*').order('created_at', { ascending:false }).limit(50);
+  const errBadge = document.getElementById('errorsBadge');
+  const recentErrors = (errors || []).filter(e => Date.now() - new Date(e.created_at).getTime() < 24*60*60*1000);
+  if(recentErrors.length > 0){ errBadge.textContent = recentErrors.length; errBadge.classList.remove('hidden'); }
+  else { errBadge.classList.add('hidden'); }
+
+  const errBox = document.getElementById('adminErrors');
+  errBox.innerHTML = (!errors || errors.length === 0) ? '<div class="empty-note">No errors logged. That\'s a good sign.</div>' :
+    errors.map(er => `
+      <div class="error-card">
+        <div class="err-msg">${esc(er.message || 'Unknown error')}</div>
+        <div class="err-meta">${new Date(er.created_at).toLocaleString()} · Role: ${esc(er.user_role||'—')} · Page: ${esc((er.page_url||'').split('/').pop() || '—')}</div>
+        ${er.stack ? `<details><summary>Stack trace</summary><pre>${esc(er.stack)}</pre></details>` : ''}
+      </div>`).join('');
 }
 
 // ================= theme toggle =================
