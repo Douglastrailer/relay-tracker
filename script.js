@@ -73,29 +73,29 @@ function showCompleteToast(job){
 
 // ================= data layer =================
 async function fetchMyProfile(userId){
-  const { data, error } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+  const { data, error } = await sb.from('profiles').select('id, name, role, company, org_id, active').eq('id', userId).maybeSingle();
   if(error){ console.error('fetchMyProfile', error); return null; }
   return data;
 }
 async function fetchAllMechanics(){
-  const { data, error } = await sb.from('profiles').select('*').eq('role','mechanic');
+  const { data, error } = await sb.from('profiles').select('id, name, active').eq('role','mechanic');
   if(error){ console.error('fetchAllMechanics', error); return []; }
   return data || [];
 }
 async function fetchOrgMembers(){
-  const { data: mechanics, error: mechErr } = await sb.from('profiles').select('*').eq('role','mechanic').eq('org_id', session.orgId);
+  const { data: mechanics, error: mechErr } = await sb.from('profiles').select('id, name, active, role').eq('role','mechanic').eq('org_id', session.orgId);
   if(mechErr) console.error('fetchOrgMembers (mechanics)', mechErr);
 
   // Fleet managers are linked via fleet_shop_links now, not just profiles.org_id,
   // since one fleet manager can belong to multiple shops.
-  const { data: fleetLinks, error: fleetErr } = await sb.from('fleet_shop_links').select('profiles:fleet_id(*)').eq('org_id', session.orgId);
+  const { data: fleetLinks, error: fleetErr } = await sb.from('fleet_shop_links').select('profiles:fleet_id(id, name, active, role, company)').eq('org_id', session.orgId);
   if(fleetErr) console.error('fetchOrgMembers (fleet)', fleetErr);
   const fleetMembers = (fleetLinks || []).map(l => l.profiles).filter(Boolean);
 
   return [...(mechanics || []), ...fleetMembers];
 }
 async function fetchAllProfiles(){
-  const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending:true });
+  const { data, error } = await sb.from('profiles').select('id, name, active, company, org_id, role, email, phone').order('created_at', { ascending:true });
   if(error){ console.error('fetchAllProfiles', error); return []; }
   return data || [];
 }
@@ -109,23 +109,21 @@ async function fetchCompanies(){
   if(error) return [];
   return [...new Set((data||[]).map(d=>d.company).filter(Boolean))];
 }
-async function fetchJobs(){
-  const { data, error } = await sb.from('jobs').select('*').order('created_at', { ascending:true });
-  if(error){ console.error('fetchJobs', error); return []; }
-  return data || [];
-}
 // Active jobs are naturally small (a handful of open jobs at once) so no
 // limit is needed here. Completed history is the one that grows unbounded
 // over years of use — this fetches only the N most recent AT THE DATABASE
 // LEVEL, instead of the old approach of downloading every job a company has
 // ever had and slicing it down in the browser.
+// Column list excludes only "created_by" — the one job column never
+// actually read anywhere in the app after being set on creation.
+const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, dest_lat, dest_lng, status, created_at, updated_at, org_id';
 async function fetchActiveJobs(){
-  const { data, error } = await sb.from('jobs').select('*').neq('status','complete').order('created_at', { ascending:true });
+  const { data, error } = await sb.from('jobs').select(JOB_COLUMNS).neq('status','complete').order('created_at', { ascending:true });
   if(error){ console.error('fetchActiveJobs', error); return []; }
   return data || [];
 }
 async function fetchCompletedJobs(limit){
-  const { data, error } = await sb.from('jobs').select('*').eq('status','complete').order('updated_at', { ascending:false }).limit(limit);
+  const { data, error } = await sb.from('jobs').select(JOB_COLUMNS).eq('status','complete').order('updated_at', { ascending:false }).limit(limit);
   if(error){ console.error('fetchCompletedJobs', error); return []; }
   return data || [];
 }
@@ -136,7 +134,8 @@ async function fetchJobComments(jobId){
 }
 async function addJobComment(jobId, body){
   const { error } = await sb.from('job_comments').insert([{ job_id:jobId, author_id:session.id, body }]);
-  return !error;
+  if(error && error.code === '42501'){ return { ok:false, rateLimited:true }; } // RLS rejection — likely the rate limit
+  return { ok: !error };
 }
 function commentsBlockHtml(jobId){
   return `
@@ -213,9 +212,10 @@ function openThread(jobId){
     const val = input.value.trim();
     if(!val) return;
     send.disabled = true;
-    const ok = await addJobComment(jobId, val);
+    const result = await addJobComment(jobId, val);
     send.disabled = false;
-    if(ok){ input.value = ''; delete commentDrafts[jobId]; renderCommentList(jobId); }
+    if(result.ok){ input.value = ''; delete commentDrafts[jobId]; renderCommentList(jobId); }
+    else if(result.rateLimited){ alert("You're sending messages a bit fast — give it a minute and try again."); }
   };
   send.onclick = submit;
   input.onkeydown = (e)=>{ if(e.key === 'Enter') submit(); };
@@ -304,7 +304,7 @@ setInterval(()=>{
 }, 5000);
 
 async function fetchLocation(mechanicId){
-  const { data, error } = await sb.from('locations').select('*').eq('mechanic_id', mechanicId).maybeSingle();
+  const { data, error } = await sb.from('locations').select('lat, lng, updated_at, status').eq('mechanic_id', mechanicId).maybeSingle();
   if(error || !data) return null;
   return { lat:data.lat, lng:data.lng, updatedAt:new Date(data.updated_at).getTime(), status:data.status };
 }
@@ -315,7 +315,7 @@ async function fetchLocation(mechanicId){
 async function fetchLocationsFor(mechanicIds){
   const map = {};
   if(!mechanicIds || mechanicIds.length === 0) return map;
-  const { data, error } = await sb.from('locations').select('*').in('mechanic_id', mechanicIds);
+  const { data, error } = await sb.from('locations').select('mechanic_id, lat, lng, updated_at, status').in('mechanic_id', mechanicIds);
   if(error){ console.error('fetchLocationsFor', error); return map; }
   (data || []).forEach(row=>{
     map[row.mechanic_id] = { lat:row.lat, lng:row.lng, updatedAt:new Date(row.updated_at).getTime(), status:row.status };
@@ -981,7 +981,11 @@ function initShopView(){
     if(!customer || !vehicle || !mechanicId || !chosenPin){ alert('Fill in every field and set a breakdown location (address or pin).'); return; }
 
     const { data, error } = await sb.from('jobs').insert([{ customer, vehicle, mechanic_id:mechanicId, dest_lat:chosenPin.lat, dest_lng:chosenPin.lng, status:'assigned', created_by:session.id, org_id:session.orgId }]).select();
-    if(error){ alert('Could not create job: ' + error.message); return; }
+    if(error){
+      if(error.code === '42501') alert("You've created a lot of jobs very quickly — give it a few minutes and try again.");
+      else alert('Could not create job: ' + error.message);
+      return;
+    }
 
     if(issue && data && data[0]){
       await addJobComment(data[0].id, issue);
@@ -1491,7 +1495,7 @@ async function refreshAdminData(){
   restoreOpenChatNodes(adminHistBox, _s2);
 
   // error log
-  const { data: errors } = await sb.from('error_logs').select('*').order('created_at', { ascending:false }).limit(50);
+  const { data: errors } = await sb.from('error_logs').select('message, stack, page_url, user_role, created_at').order('created_at', { ascending:false }).limit(50);
   const errBadge = document.getElementById('errorsBadge');
   const recentErrors = (errors || []).filter(e => Date.now() - new Date(e.created_at).getTime() < 24*60*60*1000);
   if(recentErrors.length > 0){ errBadge.textContent = recentErrors.length; errBadge.classList.remove('hidden'); }
