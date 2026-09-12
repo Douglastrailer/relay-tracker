@@ -536,6 +536,29 @@ function wireDashTabs(container){
 document.querySelectorAll('.dash-tabs').forEach(wireDashTabs);
 
 // ================= app entry =================
+// ================= realtime sync =================
+// Instead of every dashboard constantly asking "anything new?" every
+// few seconds, Supabase pushes changes to jobs/locations the instant
+// they happen. Whatever the current role's dashboard is, we just
+// re-run its normal refresh function when something relevant changes —
+// same rendering code as before, just triggered by real events
+// instead of a fixed timer.
+let realtimeChannel = null;
+function refreshCurrentView(){
+  if(!appEntered) return;
+  if(session.role === 'mechanic') renderMechJobs();
+  else if(session.role === 'shop') refreshShopData();
+  else if(session.role === 'admin') refreshAdminData();
+  else if(session.role === 'fleet') refreshFleetData();
+}
+function setupRealtimeSync(){
+  if(realtimeChannel || !sb) return;
+  realtimeChannel = sb.channel('relay-live-updates')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, refreshCurrentView)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, refreshCurrentView)
+    .subscribe();
+}
+
 function enterApp(){
   if(appEntered) return;
   appEntered = true;
@@ -556,6 +579,8 @@ function enterApp(){
   else if(session.role === 'shop'){ document.getElementById('shopView').classList.remove('hidden'); initShopView(); }
   else if(session.role === 'admin'){ document.getElementById('adminView').classList.remove('hidden'); initAdminView(); }
   else { document.getElementById('fleetView').classList.remove('hidden'); initFleetView(); }
+
+  setupRealtimeSync();
 
   // Watch for admin deactivating this account WHILE they're using the app —
   // kicks them out immediately instead of waiting for their next reload.
@@ -626,7 +651,7 @@ function initMechanicView(){
   }
 
   renderMechJobs();
-  setInterval(renderMechJobs, 6000);
+  setInterval(renderMechJobs, 60000); // fallback only - Realtime handles instant updates
 }
 
 async function renderMechJobs(){
@@ -775,7 +800,7 @@ function initShopView(){
   populateCompanyList();
   refreshShopData();
   renderTeamList();
-  setInterval(refreshShopData, 5000);
+  setInterval(refreshShopData, 60000); // fallback only - Realtime handles instant updates
   setInterval(renderTeamList, 15000);
 
   document.getElementById('createJobBtn').onclick = async ()=>{
@@ -988,7 +1013,7 @@ const fleetMaps = {};
 function initFleetView(){
   document.getElementById('fleetHint').textContent = `Showing jobs for ${session.company}.`;
   refreshFleetData();
-  setInterval(refreshFleetData, 5000);
+  setInterval(refreshFleetData, 60000); // fallback only - Realtime handles instant updates
 }
 
 async function refreshFleetData(){
@@ -1057,7 +1082,7 @@ function initAdminView(){
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(adminOpsMap);
 
   refreshAdminData();
-  setInterval(refreshAdminData, 6000);
+  setInterval(refreshAdminData, 60000); // fallback only - Realtime handles instant updates
 }
 
 async function refreshAdminData(){
