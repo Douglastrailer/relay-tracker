@@ -439,3 +439,9 @@ main{ padding-top:36px; }
   position:absolute; top:12px; right:14px; background:none; border:none; font-size:1.4rem; color:var(--ink-faint); line-height:1;
 }
 .modal-close:hover{ color:var(--ink); }
+
+/* ===== fleet multi-shop ===== */
+.shop-chip{
+  display:inline-flex; align-items:center; gap:8px; background:var(--panel-2); border:1px solid var(--line);
+  border-radius:999px; padding:6px 14px; font-size:0.8rem; font-weight:700; margin:0 8px 8px 0;
+}
