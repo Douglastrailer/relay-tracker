@@ -152,29 +152,25 @@ async function renderCommentList(jobId){
     }).join('');
   listEl.scrollTop = listEl.scrollHeight;
 }
-function preserveOpenInputs(){
+// Keeps an open chat's actual input box alive across a page rebuild,
+// instead of destroying it and copying the text back in. Copying text
+// back in (the old approach) still resets focus and the on-screen
+// keyboard on mobile, which is what was still causing jumpiness —
+// this way the exact same DOM element survives, so nothing about it
+// ever actually resets: cursor position, focus, even autocomplete state.
+function preserveOpenChatNodes(container){
   const preserved = {};
-  document.querySelectorAll('[id^="comment-input-"]').forEach(inp=>{
-    const jobId = inp.id.replace('comment-input-', '');
-    preserved[jobId] = {
-      value: inp.value,
-      hadFocus: document.activeElement === inp,
-      selStart: inp.selectionStart,
-      selEnd: inp.selectionEnd
-    };
+  container.querySelectorAll('.comments-box:not(.hidden)').forEach(box=>{
+    const jobId = box.id.replace('comments-', '');
+    preserved[jobId] = box;
+    box.remove();
   });
   return preserved;
 }
-function restoreOpenInputs(preserved){
+function restoreOpenChatNodes(container, preserved){
   Object.keys(preserved).forEach(jobId=>{
-    const inp = document.getElementById('comment-input-'+jobId);
-    const saved = preserved[jobId];
-    if(!inp || !saved) return;
-    inp.value = saved.value;
-    if(saved.hadFocus){
-      inp.focus();
-      try{ inp.setSelectionRange(saved.selStart, saved.selEnd); }catch(e){}
-    }
+    const placeholder = container.querySelector('#comments-'+jobId);
+    if(placeholder && preserved[jobId]) placeholder.replaceWith(preserved[jobId]);
   });
 }
 function wireCommentToggles(container){
@@ -731,7 +727,7 @@ async function renderMechJobs(){
   const loc = await fetchLocation(session.id);
 
   const activeBox = document.getElementById('mechJobsBox');
-  const _s1 = preserveOpenInputs();
+  const _s1 = preserveOpenChatNodes(activeBox);
   if(active.length === 0){
     activeBox.innerHTML = '<div class="empty-note">No jobs assigned right now.</div>';
   } else {
@@ -774,10 +770,10 @@ async function renderMechJobs(){
       });
     });
   }
-  restoreOpenInputs(_s1);
+  restoreOpenChatNodes(activeBox, _s1);
 
   const historyBox = document.getElementById('mechHistoryBox');
-  const _s2 = preserveOpenInputs();
+  const _s2 = preserveOpenChatNodes(historyBox);
   historyBox.innerHTML = history.length === 0
     ? '<div class="empty-note">No completed jobs yet.</div>'
     : history.map(job => `
@@ -786,7 +782,7 @@ async function renderMechJobs(){
           ${commentsBlockHtml(job.id)}
         </div>`).join('');
   wireCommentToggles(historyBox);
-  restoreOpenInputs(_s2);
+  restoreOpenChatNodes(historyBox, _s2);
 }
 
 // ================= SHOP OWNER VIEW =================
@@ -1018,7 +1014,7 @@ async function refreshShopData(){
   renderAnalytics(jobs, mechanics, mechName);
 
   const list = document.getElementById('shopJobList');
-  const _s1 = preserveOpenInputs();
+  const _s1 = preserveOpenChatNodes(list);
   if(active.length === 0){ list.innerHTML = '<div class="empty-note">No active jobs — create one on the right.</div>'; }
   else {
     list.innerHTML = active.slice().reverse().map(j => `
@@ -1059,10 +1055,10 @@ async function refreshShopData(){
       };
     });
   }
-  restoreOpenInputs(_s1);
+  restoreOpenChatNodes(list, _s1);
 
   const histBox = document.getElementById('shopHistoryList');
-  const _s2 = preserveOpenInputs();
+  const _s2 = preserveOpenChatNodes(histBox);
   histBox.innerHTML = history.length === 0
     ? '<div class="empty-note">No completed jobs yet.</div>'
     : history.map(j => `
@@ -1071,7 +1067,7 @@ async function refreshShopData(){
         ${commentsBlockHtml(j.id)}
       </div>`).join('');
   wireCommentToggles(histBox);
-  restoreOpenInputs(_s2);
+  restoreOpenChatNodes(histBox, _s2);
 }
 
 // ================= FLEET MANAGER VIEW =================
@@ -1128,7 +1124,7 @@ async function refreshFleetData(){
   });
 
   const box = document.getElementById('fleetJobs');
-  const _s1 = preserveOpenInputs();
+  const _s1 = preserveOpenChatNodes(box);
   if(active.length === 0){ box.innerHTML = '<div class="card empty-note">No active jobs for your company right now.</div>'; }
   else {
     let html = '';
@@ -1142,7 +1138,7 @@ async function refreshFleetData(){
     }
     box.innerHTML = html;
     wireCommentToggles(box);
-    restoreOpenInputs(_s1);
+    restoreOpenChatNodes(box, _s1);
 
     for(const j of active){
       const loc = locByMechanic[j.mechanic_id];
@@ -1169,12 +1165,12 @@ async function refreshFleetData(){
   }
 
   const histBox = document.getElementById('fleetHistory');
-  const _s2 = preserveOpenInputs();
+  const _s2 = preserveOpenChatNodes(histBox);
   histBox.innerHTML = history.length === 0
     ? '<div class="card empty-note">No completed jobs yet.</div>'
     : history.map(j => `<div class="job-card"><div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}</div>`).join('');
   wireCommentToggles(histBox);
-  restoreOpenInputs(_s2);
+  restoreOpenChatNodes(histBox, _s2);
 }
 
 // ================= ADMIN VIEW =================
@@ -1327,7 +1323,7 @@ async function refreshAdminData(){
   const history = jobs.filter(j=>j.status==='complete').slice().reverse().slice(0,30);
 
   const list = document.getElementById('adminJobList');
-  const _s1 = preserveOpenInputs();
+  const _s1 = preserveOpenChatNodes(list);
   list.innerHTML = active.length === 0 ? '<div class="empty-note">No active jobs.</div>' : active.slice().reverse().map(j => `
     <div class="job-card" data-job="${j.id}">
       <div class="job-card-top">
@@ -1340,7 +1336,7 @@ async function refreshAdminData(){
       ${commentsBlockHtml(j.id)}
     </div>`).join('');
   wireCommentToggles(list);
-  restoreOpenInputs(_s1);
+  restoreOpenChatNodes(list, _s1);
   list.querySelectorAll('.j-delete').forEach(btn=>{
     btn.onclick = async ()=>{
       const jobId = Number(btn.closest('.job-card').dataset.job);
@@ -1351,12 +1347,12 @@ async function refreshAdminData(){
   });
 
   const adminHistBox = document.getElementById('adminHistoryList');
-  const _s2 = preserveOpenInputs();
+  const _s2 = preserveOpenChatNodes(adminHistBox);
   adminHistBox.innerHTML = history.length === 0
     ? '<div class="empty-note">No completed jobs yet.</div>'
     : history.map(j => `<div class="job-card"><div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))} · Company: ${esc(orgName(j.org_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}</div>`).join('');
   wireCommentToggles(adminHistBox);
-  restoreOpenInputs(_s2);
+  restoreOpenChatNodes(adminHistBox, _s2);
 
   // error log
   const { data: errors } = await sb.from('error_logs').select('*').order('created_at', { ascending:false }).limit(50);
