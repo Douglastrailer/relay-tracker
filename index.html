@@ -172,7 +172,7 @@
             <label>Your company name</label>
             <input type="text" id="suCompany" placeholder="e.g. Amazon, FedEx">
           </div>
-          <div class="field"><label>Choose a password</label><input type="password" id="suPass" placeholder="At least 6 characters"></div>
+          <div class="field"><label>Choose a password</label><input type="password" id="suPass" placeholder="At least 8 characters"></div>
           <button class="auth-submit" id="signupSubmit">Create account</button>
         </div>
 
@@ -271,6 +271,7 @@
     <div class="dash-tabs">
       <button class="dash-tab active" data-target="shop-overview">Overview</button>
       <button class="dash-tab" data-target="shop-jobs">Jobs</button>
+      <button class="dash-tab" data-target="shop-invoices">Invoices</button>
       <button class="dash-tab" data-target="shop-team">Team</button>
       <button class="dash-tab" data-target="shop-analytics">Analytics</button>
     </div>
@@ -311,6 +312,30 @@
               <div class="pin-hint" id="pinHint">Type an address and hit Find, or click the map to drop a pin directly.</div>
             </div>
             <button id="createJobBtn">Create job</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-panel hidden" id="shop-invoices">
+      <div class="grid-2 section">
+        <div>
+          <div class="section-head"><h2>Invoices</h2></div>
+          <div class="job-list" id="invoiceList"></div>
+        </div>
+        <div>
+          <div class="card new-job-form">
+            <h3>New invoice</h3>
+            <div class="field"><label>Customer name</label><input type="text" id="invCustomerName" placeholder="e.g. FedEx"></div>
+            <div class="field"><label>Link to a job (optional)</label><select id="invJobSelect"><option value="">— No linked job —</option></select></div>
+            <div class="field">
+              <label>Line items</label>
+              <div id="invItemRows"></div>
+              <button type="button" class="text-btn" id="addInvItemBtn">+ Add line item</button>
+            </div>
+            <div class="inv-total-row">Total: <b id="invTotalDisplay">$0.00</b></div>
+            <div class="field"><label>Notes (optional)</label><textarea id="invNotes" rows="2" placeholder="e.g. Net 30 — thank you for your business"></textarea></div>
+            <button id="createInvoiceBtn">Save invoice</button>
           </div>
         </div>
       </div>
