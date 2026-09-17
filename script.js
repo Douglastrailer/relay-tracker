@@ -1303,6 +1303,7 @@ function renderAnalytics(jobs, mechanics, mechName){
 async function refreshShopData(){
   const mechanics = await fetchOrgMechanics();
   const active = await fetchActiveJobs({ orgId: session.orgId });
+  const locByMechanic = await fetchLocationsFor(mechanics.map(m=>m.id));
 
   let liveCount = 0;
   for(const m of mechanics){
