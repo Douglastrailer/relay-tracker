@@ -102,6 +102,12 @@
 
   .new-job-form{ display:flex; flex-direction:column; gap:10px; }
   .new-job-form h3{ font-family:var(--font-display); font-size:0.92rem; }
+  .inv-item-row{ display:grid; grid-template-columns:1fr 60px 90px 26px; gap:6px; margin-bottom:6px; align-items:center; }
+  .inv-item-row input{ padding:8px 9px; border:1px solid var(--line); border-radius:8px; font-size:0.82rem; }
+  .inv-item-remove{ background:none; border:none; color:var(--ink-faint); font-size:1.1rem; cursor:pointer; padding:0; }
+  .inv-total-row{ display:flex; justify-content:space-between; padding:8px 2px; font-size:0.9rem; border-top:1px solid var(--line); margin-top:2px; }
+  .invoice-send-row{ display:flex; gap:6px; margin-top:10px; }
+  .invoice-send-row input{ flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:0.8rem; }
   .pin-map{ height:200px; border-radius:12px; overflow:hidden; border:1px solid var(--line); margin-top:4px; }
   .pin-hint{ font-size:0.76rem; color:var(--ink-faint); }
   .new-job-form button{ background:var(--accent); color:#fff; border:none; padding:11px; border-radius:9px; font-weight:700; font-size:0.85rem; }
