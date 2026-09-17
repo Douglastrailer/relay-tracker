@@ -77,9 +77,9 @@ async function fetchMyProfile(userId){
   if(error){ console.error('fetchMyProfile', error); return null; }
   return data;
 }
-async function fetchAllMechanics(){
-  const { data, error } = await sb.from('profiles').select('id, name, active').eq('role','mechanic');
-  if(error){ console.error('fetchAllMechanics', error); return []; }
+async function fetchOrgMechanics(){
+  const { data, error } = await sb.from('profiles').select('id, name, active').eq('role','mechanic').eq('org_id', session.orgId);
+  if(error){ console.error('fetchOrgMechanics', error); return []; }
   return data || [];
 }
 async function fetchOrgMembers(){
@@ -105,9 +105,27 @@ async function fetchAllOrganizations(){
   return data || [];
 }
 async function fetchCompanies(){
-  const { data, error } = await sb.from('profiles').select('company').eq('role','fleet');
+  const { data, error } = await sb.from('fleet_shop_links').select('profiles:fleet_id(company)').eq('org_id', session.orgId);
   if(error) return [];
-  return [...new Set((data||[]).map(d=>d.company).filter(Boolean))];
+  return [...new Set((data||[]).map(d=>d.profiles && d.profiles.company).filter(Boolean))];
+}
+// Invoices, embedded with their line items in one round trip via
+// PostgREST's foreign-key embedding (invoice_items.invoice_id -> invoices.id).
+// Totals are computed client-side from the embedded items rather than
+// stored as a column, so there's never a separate total that can drift
+// out of sync with the actual line items.
+async function fetchInvoices(){
+  const { data, error } = await sb.from('invoices')
+    .select('id, job_id, customer_name, customer_email, status, notes, created_at, sent_at, paid_at, invoice_items(id, description, quantity, unit_price)')
+    .eq('org_id', session.orgId)
+    .order('created_at', { ascending:false });
+  if(error){ console.error('fetchInvoices', error); return []; }
+  return data || [];
+}
+async function fetchJobsForInvoiceLink(){
+  const { data, error } = await sb.from('jobs').select('id, customer, vehicle').eq('org_id', session.orgId).order('created_at', { ascending:false }).limit(50);
+  if(error) return [];
+  return data || [];
 }
 // Active jobs are naturally small (a handful of open jobs at once) so no
 // limit is needed here. Completed history is the one that grows unbounded
@@ -117,13 +135,28 @@ async function fetchCompanies(){
 // Column list excludes only "created_by" — the one job column never
 // actually read anywhere in the app after being set on creation.
 const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, dest_lat, dest_lng, status, created_at, updated_at, org_id';
-async function fetchActiveJobs(){
-  const { data, error } = await sb.from('jobs').select(JOB_COLUMNS).neq('status','complete').order('created_at', { ascending:true });
+async function fetchActiveJobs(scope){
+  let q = sb.from('jobs').select(JOB_COLUMNS).neq('status','complete').order('created_at', { ascending:true });
+  // Scoping here is a query-planning aid, not the security boundary — RLS
+  // still enforces access underneath regardless of what's passed in. But
+  // without it, Postgres can't use idx_jobs_org_status / idx_jobs_mechanic_status
+  // at all (the RLS OR-condition across mechanic/org/fleet-link is opaque
+  // to the planner on its own) and falls back to scanning every job on the
+  // platform on every dashboard refresh — fine at a few thousand rows, a
+  // real bottleneck once job history accumulates at real scale.
+  if(scope && scope.orgId) q = q.eq('org_id', scope.orgId);
+  else if(scope && scope.mechanicId) q = q.eq('mechanic_id', scope.mechanicId);
+  else if(scope && scope.orgIds && scope.orgIds.length) q = q.in('org_id', scope.orgIds);
+  const { data, error } = await q;
   if(error){ console.error('fetchActiveJobs', error); return []; }
   return data || [];
 }
-async function fetchCompletedJobs(limit){
-  const { data, error } = await sb.from('jobs').select(JOB_COLUMNS).eq('status','complete').order('updated_at', { ascending:false }).limit(limit);
+async function fetchCompletedJobs(limit, scope){
+  let q = sb.from('jobs').select(JOB_COLUMNS).eq('status','complete').order('updated_at', { ascending:false }).limit(limit);
+  if(scope && scope.orgId) q = q.eq('org_id', scope.orgId);
+  else if(scope && scope.mechanicId) q = q.eq('mechanic_id', scope.mechanicId);
+  else if(scope && scope.orgIds && scope.orgIds.length) q = q.in('org_id', scope.orgIds);
+  const { data, error } = await q;
   if(error){ console.error('fetchCompletedJobs', error); return []; }
   return data || [];
 }
@@ -134,7 +167,10 @@ async function fetchJobComments(jobId){
 }
 async function addJobComment(jobId, body){
   const { error } = await sb.from('job_comments').insert([{ job_id:jobId, author_id:session.id, body }]);
-  if(error && error.code === '42501'){ return { ok:false, rateLimited:true }; } // RLS rejection — likely the rate limit
+  // 42501 is Postgres's generic "RLS denied this" code — it fires for the rate
+  // limit, but also if access to the job changed underneath you mid-session, so
+  // the message below stays deliberately non-specific about which one it was.
+  if(error && error.code === '42501'){ return { ok:false, blocked:true }; }
   return { ok: !error };
 }
 function commentsBlockHtml(jobId){
@@ -215,7 +251,7 @@ function openThread(jobId){
     const result = await addJobComment(jobId, val);
     send.disabled = false;
     if(result.ok){ input.value = ''; delete commentDrafts[jobId]; renderCommentList(jobId); }
-    else if(result.rateLimited){ alert("You're sending messages a bit fast — give it a minute and try again."); }
+    else if(result.blocked){ alert("Message not sent — you may be posting too quickly, or you may no longer have access to this job. Wait a moment and try again, or refresh if it keeps happening."); }
   };
   send.onclick = submit;
   input.onkeydown = (e)=>{ if(e.key === 'Enter') submit(); };
@@ -412,9 +448,10 @@ async function resolveOrgForSignup(role, shopName, inviteCode){
     return { orgId: data[0].id, joinedViaInvite: false };
   } else {
     if(!inviteCode) return { error: 'Enter the invite code from your shop owner.' };
-    const { data, error } = await sb.from('organizations').select('id').eq('invite_code', inviteCode.trim().toUpperCase()).maybeSingle();
-    if(error || !data) return { error: 'Invite code not found or already used — ask your shop owner for a fresh one.' };
-    return { orgId: data.id, joinedViaInvite: true };
+    const { data, error } = await sb.rpc('lookup_org_by_invite_code', { code: inviteCode.trim().toUpperCase() });
+    const org = data && data[0];
+    if(error || !org) return { error: 'Invite code not found or already used — ask your shop owner for a fresh one.' };
+    return { orgId: org.org_id, joinedViaInvite: true };
   }
 }
 
@@ -430,11 +467,8 @@ document.getElementById('signupSubmit').onclick = async (e)=>{
   const pass = document.getElementById('suPass').value;
   authError.textContent = '';
   if(!name || !email || !phone || !pass || (role==='fleet' && !company)){ authError.textContent = 'Fill in all required fields.'; btn.disabled=false; return; }
-  if(pass.length < 6){ authError.textContent = 'Password must be at least 6 characters.'; btn.disabled=false; return; }
+  if(pass.length < 8){ authError.textContent = 'Password must be at least 8 characters.'; btn.disabled=false; return; }
   if(!sb){ authError.textContent = 'Not connected to the database yet — reload and try again.'; btn.disabled=false; return; }
-
-  const { data: nameCheck } = await sb.from('profiles').select('name').ilike('name', name);
-  if(nameCheck && nameCheck.length){ authError.textContent = 'That name is already taken.'; btn.disabled=false; return; }
 
   const { data, error } = await sb.auth.signUp({ email, password: pass });
   if(error){ authError.textContent = error.message; btn.disabled=false; return; }
@@ -540,9 +574,9 @@ document.getElementById('editCompanyBtn').onclick = async ()=>{
 
 document.getElementById('changePassBtn').onclick = async ()=>{
   moreMenu.classList.add('hidden');
-  const newPass = prompt('Enter a new password (at least 6 characters):');
+  const newPass = prompt('Enter a new password (at least 8 characters):');
   if(!newPass) return;
-  if(newPass.length < 6){ alert('Password must be at least 6 characters.'); return; }
+  if(newPass.length < 8){ alert('Password must be at least 8 characters.'); return; }
   const { error } = await sb.auth.updateUser({ password: newPass });
   alert(error ? 'Could not change password: ' + error.message : 'Password updated.');
 };
@@ -573,7 +607,7 @@ async function onAuthed(userId){
     showInactiveScreen();
     return;
   }
-  if(session.role === 'shop' && orgStatus !== 'approved'){
+  if(orgStatus !== 'approved'){
     showPendingScreen(orgStatus);
     return;
   }
@@ -600,7 +634,9 @@ function showPendingScreen(status){
   publicAuthView.classList.add('hidden');
   document.getElementById('whoBox').classList.remove('hidden');
   document.getElementById('whoName').textContent = session.name;
-  document.getElementById('whoRole').textContent = 'Shop owner';
+  document.getElementById('whoRole').textContent =
+    session.role === 'shop' ? 'Shop owner' :
+    session.role === 'fleet' ? 'Fleet manager' : 'Mechanic';
   document.getElementById('whoOrg').textContent = session.orgName ? '· ' + session.orgName : '';
   document.getElementById('editCompanyBtn').classList.add('hidden');
 
@@ -822,8 +858,8 @@ function initMechanicView(){
 }
 
 async function renderMechJobs(){
-  const active = (await fetchActiveJobs()).filter(j => j.mechanic_id === session.id);
-  const history = (await fetchCompletedJobs(15)).filter(j => j.mechanic_id === session.id);
+  const active = await fetchActiveJobs({ mechanicId: session.id });
+  const history = await fetchCompletedJobs(15, { mechanicId: session.id });
   mechActiveJobsCache = active; // used by the GPS ticker to update distance without a full rebuild
 
   document.getElementById('mechActiveCount').textContent = active.length ? active.length + ' active' : '';
@@ -917,6 +953,177 @@ document.getElementById('regenerateInviteBtn').onclick = async ()=>{
   loadInviteCode();
 };
 
+// ================= invoices UI =================
+let invItemRowCounter = 0;
+
+function addInvoiceItemRow(prefill){
+  const container = document.getElementById('invItemRows');
+  if(!container) return;
+  const row = document.createElement('div');
+  row.className = 'inv-item-row';
+  row.id = 'invRow' + (invItemRowCounter++);
+  row.innerHTML = `
+    <input type="text" placeholder="Description" class="inv-desc" value="${esc(prefill && prefill.description || '')}">
+    <input type="number" placeholder="Qty" class="inv-qty" min="0.01" step="0.01" value="${prefill && prefill.quantity != null ? prefill.quantity : 1}">
+    <input type="number" placeholder="Price" class="inv-price" min="0" step="0.01" value="${prefill && prefill.unit_price != null ? prefill.unit_price : ''}">
+    <button type="button" class="inv-item-remove" title="Remove line">×</button>
+  `;
+  row.querySelector('.inv-item-remove').onclick = ()=>{ row.remove(); recalcInvoiceTotal(); };
+  row.querySelectorAll('.inv-qty, .inv-price').forEach(inp => inp.addEventListener('input', recalcInvoiceTotal));
+  container.appendChild(row);
+  recalcInvoiceTotal();
+}
+
+function collectInvoiceItemRows(){
+  const rows = document.querySelectorAll('#invItemRows .inv-item-row');
+  const items = [];
+  rows.forEach((row, i)=>{
+    const description = row.querySelector('.inv-desc').value.trim();
+    const quantity = parseFloat(row.querySelector('.inv-qty').value);
+    const unit_price = parseFloat(row.querySelector('.inv-price').value);
+    if(description && quantity > 0 && unit_price >= 0){
+      items.push({ description, quantity, unit_price, sort_order: i });
+    }
+  });
+  return items;
+}
+
+function recalcInvoiceTotal(){
+  const total = collectInvoiceItemRows().reduce((sum, it)=> sum + it.quantity * it.unit_price, 0);
+  const el = document.getElementById('invTotalDisplay');
+  if(el) el.textContent = '$' + total.toFixed(2);
+}
+
+function resetInvoiceForm(){
+  document.getElementById('invCustomerName').value = '';
+  document.getElementById('invJobSelect').value = '';
+  document.getElementById('invNotes').value = '';
+  document.getElementById('invItemRows').innerHTML = '';
+  addInvoiceItemRow();
+}
+
+async function populateInvoiceJobSelect(){
+  const sel = document.getElementById('invJobSelect');
+  if(!sel) return;
+  const jobs = await fetchJobsForInvoiceLink();
+  sel.innerHTML = '<option value="">— No linked job —</option>' +
+    jobs.map(j => `<option value="${j.id}">#${j.id} — ${esc(j.customer)} (${esc(j.vehicle)})</option>`).join('');
+}
+
+async function createInvoice(){
+  const customerName = document.getElementById('invCustomerName').value.trim();
+  const jobId = document.getElementById('invJobSelect').value;
+  const notes = document.getElementById('invNotes').value.trim();
+  const items = collectInvoiceItemRows();
+  if(!customerName){ alert('Enter a customer name.'); return; }
+  if(!items.length){ alert('Add at least one line item with a description, quantity, and price.'); return; }
+
+  const btn = document.getElementById('createInvoiceBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  const { data: invoice, error } = await sb.from('invoices').insert([{
+    org_id: session.orgId,
+    job_id: jobId ? Number(jobId) : null,
+    customer_name: customerName,
+    notes: notes || null,
+    status: 'draft',
+    created_by: session.id,
+  }]).select().single();
+
+  if(error){
+    alert('Could not create invoice: ' + error.message);
+    btn.disabled = false; btn.textContent = 'Save invoice';
+    return;
+  }
+
+  const itemRows = items.map(it => ({ invoice_id: invoice.id, description: it.description, quantity: it.quantity, unit_price: it.unit_price, sort_order: it.sort_order }));
+  const { error: itemErr } = await sb.from('invoice_items').insert(itemRows);
+  if(itemErr) alert('Invoice was created, but the line items failed to save: ' + itemErr.message);
+
+  resetInvoiceForm();
+  btn.disabled = false; btn.textContent = 'Save invoice';
+  refreshInvoices();
+}
+
+async function sendInvoiceEmail(invoiceId, email){
+  if(!email || !email.includes('@')){ alert('Enter a valid email address first.'); return; }
+  const { data, error } = await sb.functions.invoke('send-invoice-email', { body: { invoiceId, recipientEmail: email } });
+  if(error){ alert('Could not send the invoice: ' + error.message); return; }
+  if(data && data.error){ alert('Could not send the invoice: ' + data.error); return; }
+  refreshInvoices();
+}
+
+async function markInvoicePaid(invoiceId){
+  const { error } = await sb.from('invoices').update({ status:'paid', paid_at:new Date().toISOString() }).eq('id', invoiceId);
+  if(error){ alert('Could not update the invoice: ' + error.message); return; }
+  refreshInvoices();
+}
+
+async function deleteInvoiceDraft(invoiceId){
+  if(!confirm('Delete this draft invoice? This cannot be undone.')) return;
+  const { error } = await sb.from('invoices').delete().eq('id', invoiceId);
+  if(error){ alert('Could not delete: ' + error.message); return; }
+  refreshInvoices();
+}
+
+function invoiceStatusBadge(status){
+  if(status === 'paid') return '<span class="badge arrived"><span class="bd"></span>paid</span>';
+  if(status === 'unpaid') return '<span class="badge live"><span class="bd"></span>unpaid</span>';
+  return '<span class="badge offline"><span class="bd"></span>draft</span>';
+}
+
+function invoiceCardHtml(inv){
+  const items = inv.invoice_items || [];
+  const total = items.reduce((sum, it)=> sum + Number(it.quantity) * Number(it.unit_price), 0);
+  const itemsHtml = items.map(it => `<div class="meta">${esc(it.description)} — ${it.quantity} × $${Number(it.unit_price).toFixed(2)}</div>`).join('');
+  const jobTag = inv.job_id ? `<div class="meta">Linked to job #${inv.job_id}</div>` : '';
+
+  let actions = '';
+  if(inv.status === 'draft') actions = `<button class="text-btn inv-delete-btn" data-id="${inv.id}">Delete draft</button>`;
+  else if(inv.status === 'unpaid') actions = `<button class="text-btn inv-paid-btn" data-id="${inv.id}">Mark paid</button>`;
+
+  const sendRow = inv.status !== 'paid' ? `
+    <div class="invoice-send-row">
+      <input type="email" class="inv-send-email" placeholder="customer@email.com" value="${esc(inv.customer_email || '')}" data-id="${inv.id}">
+      <button class="text-btn inv-send-btn" data-id="${inv.id}">${inv.sent_at ? 'Resend' : 'Send'}</button>
+    </div>` : '';
+
+  return `<div class="job-card">
+    <div class="job-card-top"><div><b>${esc(inv.customer_name)}</b><div class="meta">$${total.toFixed(2)} · ${new Date(inv.created_at).toLocaleDateString()}</div></div>${invoiceStatusBadge(inv.status)}</div>
+    ${jobTag}
+    ${itemsHtml}
+    ${inv.notes ? `<div class="meta">${esc(inv.notes)}</div>` : ''}
+    <div style="margin-top:8px;">${actions}</div>
+    ${sendRow}
+  </div>`;
+}
+
+async function refreshInvoices(){
+  const list = document.getElementById('invoiceList');
+  if(!list) return;
+  const invoices = await fetchInvoices();
+  list.innerHTML = invoices.length ? invoices.map(invoiceCardHtml).join('') : '<div class="empty-note">No invoices yet.</div>';
+
+  list.querySelectorAll('.inv-delete-btn').forEach(btn=>{ btn.onclick = ()=> deleteInvoiceDraft(Number(btn.dataset.id)); });
+  list.querySelectorAll('.inv-paid-btn').forEach(btn=>{ btn.onclick = ()=> markInvoicePaid(Number(btn.dataset.id)); });
+  list.querySelectorAll('.inv-send-btn').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = Number(btn.dataset.id);
+      const input = list.querySelector(`.inv-send-email[data-id="${id}"]`);
+      sendInvoiceEmail(id, input.value.trim());
+    };
+  });
+}
+
+function initInvoicesUI(){
+  populateInvoiceJobSelect();
+  addInvoiceItemRow();
+  refreshInvoices();
+  setInterval(refreshInvoices, 60000);
+  document.getElementById('addInvItemBtn').onclick = ()=> addInvoiceItemRow();
+  document.getElementById('createInvoiceBtn').onclick = createInvoice;
+}
+
 function initShopView(){
   shopMap = L.map('shopOpsMap', { attributionControl:false }).setView([42.45, -83.25], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(shopMap);
@@ -970,6 +1177,7 @@ function initShopView(){
   populateCompanyList();
   refreshShopData();
   renderTeamList();
+  initInvoicesUI();
   setInterval(refreshShopData, 60000); // fallback only - Realtime handles instant updates
   setInterval(renderTeamList, 15000);
 
@@ -982,7 +1190,7 @@ function initShopView(){
 
     const { data, error } = await sb.from('jobs').insert([{ customer, vehicle, mechanic_id:mechanicId, dest_lat:chosenPin.lat, dest_lng:chosenPin.lng, status:'assigned', created_by:session.id, org_id:session.orgId }]).select();
     if(error){
-      if(error.code === '42501') alert("You've created a lot of jobs very quickly — give it a few minutes and try again.");
+      if(error.code === '42501') alert("Could not create the job — you may be creating jobs too quickly, or the assigned mechanic may no longer be on your team. Wait a moment and try again, or refresh and check the mechanic list.");
       else alert('Could not create job: ' + error.message);
       return;
     }
@@ -1000,7 +1208,7 @@ function initShopView(){
 }
 
 async function populateMechanicSelect(){
-  const mechanics = (await fetchAllMechanics()).filter(m=>m.active);
+  const mechanics = (await fetchOrgMechanics()).filter(m=>m.active);
   const sel = document.getElementById('njMechanic');
   sel.innerHTML = mechanics.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('') || '<option value="">No active mechanics yet</option>';
 }
@@ -1093,9 +1301,8 @@ function renderAnalytics(jobs, mechanics, mechName){
 }
 
 async function refreshShopData(){
-  const mechanics = await fetchAllMechanics();
-  const active = await fetchActiveJobs();
-  const locByMechanic = await fetchLocationsFor(mechanics.map(m=>m.id));
+  const mechanics = await fetchOrgMechanics();
+  const active = await fetchActiveJobs({ orgId: session.orgId });
 
   let liveCount = 0;
   for(const m of mechanics){
@@ -1112,7 +1319,7 @@ async function refreshShopData(){
 
   const mechName = id => (mechanics.find(m=>m.id===id) || {}).name || 'Unassigned';
 
-  const history = await fetchCompletedJobs(20);
+  const history = await fetchCompletedJobs(20, { orgId: session.orgId });
 
   const today = new Date(); today.setHours(0,0,0,0);
   // Note: "completed today" is computed from the most recent 20 completed jobs,
@@ -1217,10 +1424,11 @@ document.getElementById('fleetAddShopBtn').onclick = async ()=>{
   errBox.textContent = '';
   if(!code){ errBox.textContent = 'Enter an invite code.'; return; }
 
-  const { data: org, error: orgErr } = await sb.from('organizations').select('id').eq('invite_code', code).maybeSingle();
+  const { data: orgRows, error: orgErr } = await sb.rpc('lookup_org_by_invite_code', { code });
+  const org = orgRows && orgRows[0];
   if(orgErr || !org){ errBox.textContent = 'Invite code not found — double check it with that shop.'; return; }
 
-  const { error: linkErr } = await sb.from('fleet_shop_links').insert([{ fleet_id: session.id, org_id: org.id }]);
+  const { error: linkErr } = await sb.from('fleet_shop_links').insert([{ fleet_id: session.id, org_id: org.org_id }]);
   if(linkErr){
     errBox.textContent = linkErr.code === '23505' ? 'You\'ve already joined that shop.' : 'Could not join: ' + linkErr.message;
     return;
@@ -1232,12 +1440,12 @@ document.getElementById('fleetAddShopBtn').onclick = async ()=>{
 };
 
 async function refreshFleetData(){
-  // RLS already restricts this to only jobs from shops you've joined, matching your company name
-  const active = await fetchActiveJobs();
-  const history = await fetchCompletedJobs(15);
-  const locByMechanic = await fetchLocationsFor(active.map(j=>j.mechanic_id));
-  const orgs = await fetchAllOrganizations();
+  const orgs = await fetchAllOrganizations(); // RLS already limits this to orgs you've joined
+  const orgIds = orgs.map(o=>o.id);
   const orgName = id => (orgs.find(o=>o.id===id) || {}).name || '—';
+  const active = await fetchActiveJobs({ orgIds });
+  const history = await fetchCompletedJobs(15, { orgIds });
+  const locByMechanic = await fetchLocationsFor(active.map(j=>j.mechanic_id));
 
   fleetJobsByMechanic = {};
   active.forEach(j => {
