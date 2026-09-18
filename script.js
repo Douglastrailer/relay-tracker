@@ -1124,6 +1124,79 @@ function initInvoicesUI(){
   document.getElementById('createInvoiceBtn').onclick = createInvoice;
 }
 
+// ================= billing profile UI =================
+async function fetchBillingProfile(){
+  const { data, error } = await sb.from('organizations')
+    .select('name, billing_email, billing_phone, billing_address, payment_instructions, logo_path')
+    .eq('id', session.orgId).single();
+  if(error){ console.error('fetchBillingProfile', error); return null; }
+  return data;
+}
+
+function billingLogoPublicUrl(logoPath){
+  if(!logoPath) return '';
+  const { data } = sb.storage.from('shop-logos').getPublicUrl(logoPath);
+  return data ? data.publicUrl : '';
+}
+
+async function populateBillingForm(){
+  const profile = await fetchBillingProfile();
+  if(!profile) return;
+  document.getElementById('billingEmail').value = profile.billing_email || '';
+  document.getElementById('billingPhone').value = profile.billing_phone || '';
+  document.getElementById('billingAddress').value = profile.billing_address || '';
+  document.getElementById('billingPaymentInstructions').value = profile.payment_instructions || '';
+  const preview = document.getElementById('billingLogoPreview');
+  if(profile.logo_path){
+    preview.src = billingLogoPublicUrl(profile.logo_path);
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+async function saveBillingProfile(){
+  const btn = document.getElementById('saveBillingProfileBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  const fileInput = document.getElementById('billingLogoInput');
+  const file = fileInput.files[0];
+  let logoPathUpdate = {};
+  if(file){
+    if(file.size > 3*1024*1024){ alert('Logo is too big — 3MB max.'); btn.disabled=false; btn.textContent='Save billing info'; return; }
+    const path = `${session.orgId}/${Date.now()}-${file.name}`;
+    const { error: upErr } = await sb.storage.from('shop-logos').upload(path, file);
+    if(upErr){ alert('Logo upload failed: ' + upErr.message); btn.disabled=false; btn.textContent='Save billing info'; return; }
+    logoPathUpdate = { logo_path: path };
+  }
+
+  const { error } = await sb.from('organizations').update({
+    billing_email: document.getElementById('billingEmail').value.trim() || null,
+    billing_phone: document.getElementById('billingPhone').value.trim() || null,
+    billing_address: document.getElementById('billingAddress').value.trim() || null,
+    payment_instructions: document.getElementById('billingPaymentInstructions').value.trim() || null,
+    ...logoPathUpdate,
+  }).eq('id', session.orgId);
+
+  btn.disabled = false; btn.textContent = 'Save billing info';
+  if(error){ alert('Could not save: ' + error.message); return; }
+  fileInput.value = '';
+  populateBillingForm();
+  alert('Billing info saved.');
+}
+
+function initBillingUI(){
+  populateBillingForm();
+  document.getElementById('billingLogoInput').onchange = ()=>{
+    const file = document.getElementById('billingLogoInput').files[0];
+    if(!file) return;
+    const preview = document.getElementById('billingLogoPreview');
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = 'block';
+  };
+  document.getElementById('saveBillingProfileBtn').onclick = saveBillingProfile;
+}
+
 function initShopView(){
   shopMap = L.map('shopOpsMap', { attributionControl:false }).setView([42.45, -83.25], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(shopMap);
@@ -1178,6 +1251,7 @@ function initShopView(){
   refreshShopData();
   renderTeamList();
   initInvoicesUI();
+  initBillingUI();
   setInterval(refreshShopData, 60000); // fallback only - Realtime handles instant updates
   setInterval(renderTeamList, 15000);
 
