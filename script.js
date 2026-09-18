@@ -116,7 +116,7 @@ async function fetchCompanies(){
 // out of sync with the actual line items.
 async function fetchInvoices(){
   const { data, error } = await sb.from('invoices')
-    .select('id, job_id, customer_name, customer_email, status, notes, created_at, sent_at, paid_at, invoice_items(id, description, quantity, unit_price)')
+    .select('id, job_id, customer_name, customer_email, customer_address, unit_number, status, notes, created_at, sent_at, paid_at, invoice_items(id, description, quantity, unit_price)')
     .eq('org_id', session.orgId)
     .order('created_at', { ascending:false });
   if(error){ console.error('fetchInvoices', error); return []; }
@@ -996,6 +996,8 @@ function recalcInvoiceTotal(){
 
 function resetInvoiceForm(){
   document.getElementById('invCustomerName').value = '';
+  document.getElementById('invCustomerAddress').value = '';
+  document.getElementById('invUnitNumber').value = '';
   document.getElementById('invJobSelect').value = '';
   document.getElementById('invNotes').value = '';
   document.getElementById('invItemRows').innerHTML = '';
@@ -1012,6 +1014,8 @@ async function populateInvoiceJobSelect(){
 
 async function createInvoice(){
   const customerName = document.getElementById('invCustomerName').value.trim();
+  const customerAddress = document.getElementById('invCustomerAddress').value.trim();
+  const unitNumber = document.getElementById('invUnitNumber').value.trim();
   const jobId = document.getElementById('invJobSelect').value;
   const notes = document.getElementById('invNotes').value.trim();
   const items = collectInvoiceItemRows();
@@ -1025,6 +1029,8 @@ async function createInvoice(){
     org_id: session.orgId,
     job_id: jobId ? Number(jobId) : null,
     customer_name: customerName,
+    customer_address: customerAddress || null,
+    unit_number: unitNumber || null,
     notes: notes || null,
     status: 'draft',
     created_by: session.id,
@@ -1077,10 +1083,11 @@ function invoiceCardHtml(inv){
   const total = items.reduce((sum, it)=> sum + Number(it.quantity) * Number(it.unit_price), 0);
   const itemsHtml = items.map(it => `<div class="meta">${esc(it.description)} — ${it.quantity} × $${Number(it.unit_price).toFixed(2)}</div>`).join('');
   const jobTag = inv.job_id ? `<div class="meta">Linked to job #${inv.job_id}</div>` : '';
+  const unitTag = inv.unit_number ? `<div class="meta">Unit #${esc(inv.unit_number)}</div>` : '';
 
-  let actions = '';
-  if(inv.status === 'draft') actions = `<button class="text-btn inv-delete-btn" data-id="${inv.id}">Delete draft</button>`;
-  else if(inv.status === 'unpaid') actions = `<button class="text-btn inv-paid-btn" data-id="${inv.id}">Mark paid</button>`;
+  let actions = `<button class="text-btn inv-view-btn" data-id="${inv.id}">View PDF</button>`;
+  if(inv.status === 'draft') actions += `<button class="text-btn inv-delete-btn" data-id="${inv.id}">Delete draft</button>`;
+  else if(inv.status === 'unpaid') actions += `<button class="text-btn inv-paid-btn" data-id="${inv.id}">Mark paid</button>`;
 
   const sendRow = inv.status !== 'paid' ? `
     <div class="invoice-send-row">
@@ -1090,12 +1097,33 @@ function invoiceCardHtml(inv){
 
   return `<div class="job-card">
     <div class="job-card-top"><div><b>${esc(inv.customer_name)}</b><div class="meta">$${total.toFixed(2)} · ${new Date(inv.created_at).toLocaleDateString()}</div></div>${invoiceStatusBadge(inv.status)}</div>
+    ${unitTag}
     ${jobTag}
     ${itemsHtml}
     ${inv.notes ? `<div class="meta">${esc(inv.notes)}</div>` : ''}
-    <div style="margin-top:8px;">${actions}</div>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">${actions}</div>
     ${sendRow}
   </div>`;
+}
+
+async function viewInvoicePdf(invoiceId){
+  const { data: { session: authSession } } = await sb.auth.getSession();
+  if(!authSession){ alert('Your session expired — please refresh and log in again.'); return; }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/get-invoice-pdf?invoiceId=${invoiceId}`, {
+      headers: { Authorization: `Bearer ${authSession.access_token}`, apikey: SUPABASE_KEY },
+    });
+    if(!res.ok){
+      const body = await res.json().catch(()=>({}));
+      alert('Could not open the PDF: ' + (body.error || res.statusText));
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  } catch(e){
+    alert('Could not open the PDF: ' + e.message);
+  }
 }
 
 async function refreshInvoices(){
@@ -1104,6 +1132,7 @@ async function refreshInvoices(){
   const invoices = await fetchInvoices();
   list.innerHTML = invoices.length ? invoices.map(invoiceCardHtml).join('') : '<div class="empty-note">No invoices yet.</div>';
 
+  list.querySelectorAll('.inv-view-btn').forEach(btn=>{ btn.onclick = ()=> viewInvoicePdf(Number(btn.dataset.id)); });
   list.querySelectorAll('.inv-delete-btn').forEach(btn=>{ btn.onclick = ()=> deleteInvoiceDraft(Number(btn.dataset.id)); });
   list.querySelectorAll('.inv-paid-btn').forEach(btn=>{ btn.onclick = ()=> markInvoicePaid(Number(btn.dataset.id)); });
   list.querySelectorAll('.inv-send-btn').forEach(btn=>{
