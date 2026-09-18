@@ -272,6 +272,7 @@
       <button class="dash-tab active" data-target="shop-overview">Overview</button>
       <button class="dash-tab" data-target="shop-jobs">Jobs</button>
       <button class="dash-tab" data-target="shop-invoices">Invoices</button>
+      <button class="dash-tab" data-target="shop-billing">Billing</button>
       <button class="dash-tab" data-target="shop-team">Team</button>
       <button class="dash-tab" data-target="shop-analytics">Analytics</button>
     </div>
@@ -337,6 +338,27 @@
             <div class="field"><label>Notes (optional)</label><textarea id="invNotes" rows="2" placeholder="e.g. Net 30 — thank you for your business"></textarea></div>
             <button id="createInvoiceBtn">Save invoice</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-panel hidden" id="shop-billing">
+      <div class="section">
+        <div class="section-head"><h2>Billing info</h2></div>
+        <p class="meta" style="margin:-4px 0 16px;">This appears on every invoice you send — logo, address, and how customers should pay you.</p>
+        <div class="card new-job-form" style="max-width:480px;">
+          <div class="field">
+            <label>Logo</label>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <img id="billingLogoPreview" src="" alt="" style="width:56px;height:56px;object-fit:contain;border-radius:8px;background:rgba(255,255,255,0.06);display:none;">
+              <input type="file" id="billingLogoInput" accept="image/png,image/jpeg">
+            </div>
+          </div>
+          <div class="field"><label>Billing email</label><input type="email" id="billingEmail" placeholder="billing@yourshop.com"></div>
+          <div class="field"><label>Phone number</label><input type="text" id="billingPhone" placeholder="(555) 123-4567"></div>
+          <div class="field"><label>Shop address</label><textarea id="billingAddress" rows="2" placeholder="123 Main St, City, ST 12345"></textarea></div>
+          <div class="field"><label>Payment methods</label><textarea id="billingPaymentInstructions" rows="3" placeholder="e.g. Zelle: billing@yourshop.com&#10;Check payable to Your Shop LLC&#10;Net 30 from invoice date"></textarea></div>
+          <button id="saveBillingProfileBtn">Save billing info</button>
         </div>
       </div>
     </div>
