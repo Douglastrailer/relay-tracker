@@ -1871,6 +1871,35 @@ async function refreshAdminData(){
   wireAttachmentToggles(adminHistBox);
   restoreOpenChatNodes(adminHistBox, _s2);
 
+  // invoices — read-only here; admin uses the same View PDF the shop
+  // uses, but paid/unpaid status and sending stay owned by the shop.
+  const { data: allInvoices, error: allInvErr } = await sb.from('invoices')
+    .select('id, org_id, job_id, customer_name, customer_address, unit_number, status, notes, created_at, invoice_items(id, description, quantity, unit_price)')
+    .order('created_at', { ascending:false })
+    .limit(100);
+  if(allInvErr) console.error('admin invoices fetch', allInvErr);
+  const adminInvBox = document.getElementById('adminInvoiceList');
+  if(!allInvoices || allInvoices.length === 0){
+    adminInvBox.innerHTML = '<div class="empty-note">No invoices yet.</div>';
+  } else {
+    adminInvBox.innerHTML = allInvoices.map(inv => {
+      const items = inv.invoice_items || [];
+      const total = items.reduce((sum, it)=> sum + Number(it.quantity) * Number(it.unit_price), 0);
+      const unitTag = inv.unit_number ? `<div class="meta">Unit #${esc(inv.unit_number)}</div>` : '';
+      return `<div class="job-card">
+        <div class="job-card-top">
+          <div><b>${esc(inv.customer_name)}</b><div class="meta">${esc(orgName(inv.org_id))} · $${total.toFixed(2)} · ${new Date(inv.created_at).toLocaleDateString()}</div></div>
+          ${invoiceStatusBadge(inv.status)}
+        </div>
+        ${unitTag}
+        <div style="margin-top:8px;"><button class="text-btn admin-inv-view-btn" data-id="${inv.id}">View PDF</button></div>
+      </div>`;
+    }).join('');
+    adminInvBox.querySelectorAll('.admin-inv-view-btn').forEach(btn=>{
+      btn.onclick = ()=> viewInvoicePdf(Number(btn.dataset.id));
+    });
+  }
+
   // error log
   const { data: errors } = await sb.from('error_logs').select('message, stack, page_url, user_role, created_at').order('created_at', { ascending:false }).limit(50);
   const errBadge = document.getElementById('errorsBadge');
