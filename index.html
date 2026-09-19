@@ -268,11 +268,15 @@
   </div>
 
   <div id="shopView" class="hidden">
+    <div id="announcementBanner" class="announcement-banner hidden">
+      <span id="announcementText"></span>
+      <button id="announcementDismiss" class="announcement-dismiss" aria-label="Dismiss">×</button>
+    </div>
     <div class="dash-tabs">
       <button class="dash-tab active" data-target="shop-overview">Overview</button>
       <button class="dash-tab" data-target="shop-jobs">Jobs</button>
-      <button class="dash-tab" data-target="shop-invoices">Invoices</button>
-      <button class="dash-tab" data-target="shop-billing">Billing</button>
+      <button class="dash-tab" data-target="shop-invoices">Invoices <span class="new-badge" id="invoicesNewBadge">NEW</span></button>
+      <button class="dash-tab" data-target="shop-billing">Billing <span class="new-badge" id="billingNewBadge">NEW</span></button>
       <button class="dash-tab" data-target="shop-team">Team</button>
       <button class="dash-tab" data-target="shop-analytics">Analytics</button>
     </div>
