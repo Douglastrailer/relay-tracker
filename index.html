@@ -62,16 +62,16 @@
   <!-- ================= PUBLIC HOME ================= -->
   <div id="homeView">
     <div class="landing-hero">
-      <span class="auth-eyebrow">RELAY · LIVE TRACKING FOR SERVICE COMPANIES</span>
-      <h1>Live GPS tracking, built for<br>mobile service businesses.</h1>
-      <p>Relay connects your mechanics, your dispatch team, and the customers you serve — one shared, real-time view of every job, from breakdown to completion. No more phone calls just to ask "where's my truck?"</p>
+      <span class="auth-eyebrow">RELAY · LIVE TRACKING &amp; INVOICING FOR SERVICE COMPANIES</span>
+      <h1>From breakdown call to<br>paid invoice. All in Relay.</h1>
+      <p>Relay connects your mechanics, your dispatch team, and the customers you serve — one shared, real-time view of every job, from breakdown to completion. Then it turns the finished work straight into a professional invoice, no separate app for billing.</p>
       <div class="hero-cta">
         <button class="auth-submit landing-cta" id="landingSignup">Get started</button>
         <button class="btn-ghost" id="landingLogin">I already have an account</button>
       </div>
     </div>
 
-    <div class="how-it-works" style="max-width:900px;">
+    <div class="how-it-works how-it-works-4">
       <div class="hiw-step">
         <div class="hiw-num">1</div>
         <div class="hiw-title">Create a job</div>
@@ -87,12 +87,17 @@
         <div class="hiw-title">Track live</div>
         <div class="hiw-desc">Everyone involved sees the same real-time status, together.</div>
       </div>
+      <div class="hiw-step">
+        <div class="hiw-num">4</div>
+        <div class="hiw-title">Send the invoice</div>
+        <div class="hiw-desc">Job done? Generate a branded PDF and send it — from the same job, no extra app.</div>
+      </div>
     </div>
 
     <div class="feature-grid">
       <div class="feature-card">
         <h3>For shop owners</h3>
-        <p>See your whole team on one live map, assign jobs, and track completion times — without a single phone call.</p>
+        <p>See your whole team on one live map, assign jobs, and send professional PDF invoices the moment a job wraps up — without a single phone call or a separate invoicing app.</p>
       </div>
       <div class="feature-card">
         <h3>For mechanics</h3>
@@ -100,8 +105,22 @@
       </div>
       <div class="feature-card">
         <h3>For fleet managers</h3>
-        <p>Know exactly when help will arrive — real distance, real ETA, not a guess from a dispatcher.</p>
+        <p>Know exactly when help will arrive — real distance, real ETA, not a guess from a dispatcher — then get a clean, professional invoice the moment the job's done.</p>
       </div>
+    </div>
+
+    <div class="invoicing-showcase">
+      <span class="auth-eyebrow">NEW · BUILT-IN INVOICING</span>
+      <h2>Billing that lives inside the job — not a separate app.</h2>
+      <p>Every invoice pulls straight from the work you already tracked in Relay — nothing to re-type.</p>
+      <ul class="invoicing-checklist">
+        <li>Your logo, address, and payment info on every invoice</li>
+        <li>Real PDF invoices, not plain text</li>
+        <li>Sent straight to your customer's inbox in one click</li>
+        <li>Track exactly which invoices are paid and which aren't</li>
+        <li>Unit number and billing address on every invoice</li>
+        <li>No separate invoicing app or login</li>
+      </ul>
     </div>
 
     <div class="landing-cta-band">
@@ -309,12 +328,13 @@
             <div class="field"><label>Assign mechanic</label><select id="njMechanic"></select></div>
             <div class="field">
               <label>Breakdown location</label>
-              <div class="address-search">
-                <input type="text" id="addressInput" placeholder="Enter a street address...">
+              <div class="address-search" style="position:relative;">
+                <input type="text" id="addressInput" placeholder="Start typing a street address..." autocomplete="off">
                 <button type="button" id="addressSearchBtn">Find</button>
+                <div class="address-suggestions hidden" id="addressSuggestions"></div>
               </div>
               <div class="pin-map" id="pinMap"></div>
-              <div class="pin-hint" id="pinHint">Type an address and hit Find, or click the map to drop a pin directly.</div>
+              <div class="pin-hint" id="pinHint">Start typing and pick the exact match from the list, or click the map to drop a pin directly.</div>
             </div>
             <button id="createJobBtn">Create job</button>
           </div>
