@@ -426,6 +426,7 @@
       <button class="dash-tab" data-target="admin-requests">Requests <span id="requestsBadge" class="req-badge hidden">0</span></button>
       <button class="dash-tab" data-target="admin-accounts">Accounts</button>
       <button class="dash-tab" data-target="admin-jobs">Jobs</button>
+      <button class="dash-tab" data-target="admin-invoices">Invoices</button>
       <button class="dash-tab" data-target="admin-errors">Errors <span id="errorsBadge" class="req-badge hidden">0</span></button>
     </div>
 
@@ -466,6 +467,14 @@
         <div class="job-list" id="adminJobList"></div>
         <div class="section-head" style="margin-top:26px;"><h2>Completed history</h2></div>
         <div class="job-list" id="adminHistoryList"></div>
+      </div>
+    </div>
+
+    <div class="dash-panel hidden" id="admin-invoices">
+      <div class="section">
+        <div class="section-head"><h2>All invoices</h2></div>
+        <p style="font-size:0.82rem; color:var(--ink-soft); margin-bottom:16px;">Every invoice across every company on Relay, most recent first. Read-only here — paid/unpaid status and sending stay with the shop that created each one.</p>
+        <div class="job-list" id="adminInvoiceList"></div>
       </div>
     </div>
 
