@@ -1226,6 +1226,62 @@ function initBillingUI(){
   document.getElementById('saveBillingProfileBtn').onclick = saveBillingProfile;
 }
 
+// ================= feature announcements =================
+// Add a new entry here whenever there's a new feature worth surfacing —
+// each shows once per browser until dismissed, oldest-undismissed first.
+// localStorage is the right tool here specifically because this is a
+// per-viewer, low-stakes "have they seen this" flag, not real app state —
+// worst case if it's lost, someone sees an announcement a second time.
+const ANNOUNCEMENTS = [
+  { id: 'invoicing-2026-09', text: '🎉 New: create and send professional PDF invoices right from Relay — check out the Invoices and Billing tabs above.' },
+];
+
+function renderAnnouncementBanner(){
+  const banner = document.getElementById('announcementBanner');
+  const textEl = document.getElementById('announcementText');
+  if(!banner) return;
+  let dismissed = [];
+  try { dismissed = JSON.parse(localStorage.getItem('dismissedAnnouncements') || '[]'); } catch(e){ dismissed = []; }
+  const next = ANNOUNCEMENTS.find(a => !dismissed.includes(a.id));
+  if(!next){ banner.classList.add('hidden'); return; }
+  textEl.textContent = next.text;
+  banner.dataset.id = next.id;
+  banner.classList.remove('hidden');
+}
+
+function dismissAnnouncement(){
+  const banner = document.getElementById('announcementBanner');
+  const id = banner.dataset.id;
+  if(!id) return;
+  let dismissed = [];
+  try { dismissed = JSON.parse(localStorage.getItem('dismissedAnnouncements') || '[]'); } catch(e){ dismissed = []; }
+  if(!dismissed.includes(id)) dismissed.push(id);
+  try { localStorage.setItem('dismissedAnnouncements', JSON.stringify(dismissed)); } catch(e){}
+  renderAnnouncementBanner();
+}
+
+// NEW badges on tabs — hidden permanently (per browser) the first time
+// that tab is actually clicked, so it only ever draws attention once.
+function initNewBadges(){
+  let seen = [];
+  try { seen = JSON.parse(localStorage.getItem('seenNewBadges') || '[]'); } catch(e){ seen = []; }
+  const badgeTargets = [
+    { tab: 'shop-invoices', badge: 'invoicesNewBadge' },
+    { tab: 'shop-billing', badge: 'billingNewBadge' },
+  ];
+  badgeTargets.forEach(({ tab, badge }) => {
+    const badgeEl = document.getElementById(badge);
+    if(badgeEl && seen.includes(badge)) badgeEl.classList.add('hidden');
+    const tabBtn = document.querySelector(`[data-target="${tab}"]`);
+    if(tabBtn) tabBtn.addEventListener('click', () => {
+      if(badgeEl) badgeEl.classList.add('hidden');
+      let s = [];
+      try { s = JSON.parse(localStorage.getItem('seenNewBadges') || '[]'); } catch(e){ s = []; }
+      if(!s.includes(badge)){ s.push(badge); try { localStorage.setItem('seenNewBadges', JSON.stringify(s)); } catch(e){} }
+    }, { once:true });
+  });
+}
+
 function initShopView(){
   shopMap = L.map('shopOpsMap', { attributionControl:false }).setView([42.45, -83.25], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(shopMap);
@@ -1281,6 +1337,9 @@ function initShopView(){
   renderTeamList();
   initInvoicesUI();
   initBillingUI();
+  renderAnnouncementBanner();
+  initNewBadges();
+  document.getElementById('announcementDismiss').onclick = dismissAnnouncement;
   setInterval(refreshShopData, 60000); // fallback only - Realtime handles instant updates
   setInterval(renderTeamList, 15000);
 
