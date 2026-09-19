@@ -371,6 +371,21 @@ main{ padding-top:36px; }
 }
 .dash-tab.active{ background:var(--accent); color:#fff; }
 .dash-tab:hover:not(.active){ color:var(--ink); }
+.new-badge{
+  display:inline-block; background:var(--accent); color:#fff; font-size:0.6rem; font-weight:800;
+  padding:1px 6px; border-radius:999px; margin-left:5px; vertical-align:2px; letter-spacing:0.03em;
+}
+.dash-tab.active .new-badge{ background:rgba(255,255,255,0.25); }
+.announcement-banner{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  background:var(--accent); color:#fff; border-radius:12px; padding:13px 18px;
+  margin-bottom:18px; font-size:0.85rem; font-weight:600; line-height:1.4;
+}
+.announcement-dismiss{
+  background:rgba(255,255,255,0.18); border:none; color:#fff; width:24px; height:24px; border-radius:50%;
+  font-size:1rem; line-height:1; cursor:pointer; flex-shrink:0;
+}
+.announcement-dismiss:hover{ background:rgba(255,255,255,0.3); }
 .dash-panel{ animation:panelIn .2s ease; }
 @keyframes panelIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
 @media (max-width:600px){ .dash-tabs{ width:100%; } .dash-tab{ flex:1; text-align:center; padding:10px 8px; } }
