@@ -54,6 +54,28 @@ function milesBetween(lat1,lon1,lat2,lon2){
 function pinIcon(cls){
   return L.divIcon({ className:'', html:`<div class="relay-pin ${cls}"></div>`, iconSize:[16,16], iconAnchor:[8,8] });
 }
+// Adds the default street layer plus a satellite toggle to any Leaflet
+// map — shared by all 6 map instances in the app instead of repeating
+// tile-layer setup six times. Esri World Imagery is free and needs no
+// API key, same reason OpenStreetMap was chosen for the street layer —
+// no billing account to set up just to show a map.
+function addBaseMapToggle(map){
+  const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(map);
+  const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom:18, attribution:'Tiles &copy; Esri'
+  });
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'map-satellite-toggle';
+  btn.textContent = '🛰️ Satellite';
+  L.DomEvent.disableClickPropagation(btn); // don't let clicking the button also register as a map click (e.g. dropping a pin)
+  btn.onclick = ()=>{
+    if(map.hasLayer(satelliteLayer)){ map.removeLayer(satelliteLayer); map.addLayer(streetLayer); btn.textContent = '🛰️ Satellite'; }
+    else{ map.removeLayer(streetLayer); map.addLayer(satelliteLayer); btn.textContent = '🗺️ Map'; }
+  };
+  map.getContainer().appendChild(btn);
+  return { streetLayer, satelliteLayer };
+}
 function esc(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -793,7 +815,7 @@ function enterApp(){
 // ================= MECHANIC VIEW =================
 function initMechanicView(){
   mechMapObj = L.map('mechMap', { zoomControl:true, attributionControl:false }).setView([42.45, -83.25], 10);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(mechMapObj);
+  addBaseMapToggle(mechMapObj);
 
   document.getElementById('mechStatus').onchange = async (e)=>{
     await updateLocationStatus(session.id, e.target.value);
@@ -1290,12 +1312,12 @@ function initNewBadges(){
 
 function initShopView(){
   shopMap = L.map('shopOpsMap', { attributionControl:false }).setView([42.45, -83.25], 10);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(shopMap);
+  addBaseMapToggle(shopMap);
 
   loadInviteCode();
 
   pinMapObj = L.map('pinMap', { attributionControl:false }).setView([42.45, -83.25], 10);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(pinMapObj);
+  addBaseMapToggle(pinMapObj);
   pinMapObj.on('click', (e)=>{
     setPin(e.latlng.lat, e.latlng.lng, `Pin set at ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`);
   });
@@ -1310,7 +1332,56 @@ function initShopView(){
 
   const addressInput = document.getElementById('addressInput');
   const addressBtn = document.getElementById('addressSearchBtn');
+  const suggestBox = document.getElementById('addressSuggestions');
 
+  function hideSuggestions(){ suggestBox.classList.add('hidden'); suggestBox.innerHTML = ''; }
+
+  function renderSuggestions(results){
+    if(!results || results.length === 0){ hideSuggestions(); return; }
+    suggestBox.innerHTML = results.map((r, i) =>
+      `<button type="button" class="address-suggestion" data-i="${i}">${esc(r.display_name)}</button>`
+    ).join('');
+    suggestBox.classList.remove('hidden');
+    suggestBox.querySelectorAll('.address-suggestion').forEach(btn=>{
+      btn.onclick = ()=>{
+        const r = results[Number(btn.dataset.i)];
+        addressInput.value = r.display_name; // fill with the exact match that was picked, not what was typed
+        setPin(parseFloat(r.lat), parseFloat(r.lon), `Using: ${r.display_name}`);
+        hideSuggestions();
+      };
+    });
+  }
+
+  // Nominatim's usage policy caps public requests at ~1/sec — debouncing
+  // is required here, not just a nicety, or fast typing would get this
+  // rate-limited (and every shop owner shares that same limit, since
+  // they're all hitting the same public Nominatim instance).
+  let addressDebounce = null;
+  async function fetchSuggestions(query){
+    if(!query || query.trim().length < 3){ hideSuggestions(); return; }
+    try{
+      const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(query)}`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+      const results = await res.json();
+      renderSuggestions(results);
+    }catch(e){
+      hideSuggestions();
+    }
+  }
+  addressInput.addEventListener('input', ()=>{
+    clearTimeout(addressDebounce);
+    addressDebounce = setTimeout(()=> fetchSuggestions(addressInput.value), 450);
+  });
+  document.addEventListener('click', (e)=>{
+    if(!suggestBox.contains(e.target) && e.target !== addressInput) hideSuggestions();
+  });
+
+  // The "Find" button / Enter key: an explicit trigger for anyone who'd
+  // rather type the whole address and search than watch a live dropdown.
+  // If there's exactly one match, that's unambiguous enough to use
+  // directly; more than one, and it shows the same picker rather than
+  // silently guessing which one was meant — that guess was the entire
+  // original problem.
   async function searchAddress(){
     const query = addressInput.value.trim();
     if(!query) return;
@@ -1318,14 +1389,20 @@ function initShopView(){
     addressBtn.textContent = 'Searching…';
     document.getElementById('pinHint').textContent = 'Looking up that address...';
     try{
-      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(query)}`;
       const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
       const results = await res.json();
       if(!results || results.length === 0){
         document.getElementById('pinHint').textContent = `Couldn't find "${query}" — try adding city and state, or drop the pin manually.`;
-      } else {
+        hideSuggestions();
+      } else if(results.length === 1){
         const r = results[0];
-        setPin(parseFloat(r.lat), parseFloat(r.lon), `Found: ${r.display_name}`);
+        addressInput.value = r.display_name;
+        setPin(parseFloat(r.lat), parseFloat(r.lon), `Using: ${r.display_name}`);
+        hideSuggestions();
+      } else {
+        document.getElementById('pinHint').textContent = `Found ${results.length} matches — pick the exact one below.`;
+        renderSuggestions(results);
       }
     }catch(e){
       document.getElementById('pinHint').textContent = 'Address lookup failed — check your connection or drop the pin manually.';
@@ -1645,7 +1722,7 @@ async function refreshFleetData(){
       const loc = locByMechanic[j.mechanic_id];
       if(!fleetMaps[j.id]){
         const m = L.map('fleetMap'+j.id, { attributionControl:false }).setView([j.dest_lat, j.dest_lng], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(m);
+        addBaseMapToggle(m);
         L.marker([j.dest_lat, j.dest_lng], { icon: pinIcon('dest') }).addTo(m);
         fleetMaps[j.id] = { map:m, mechMarker:null };
       }
@@ -1681,7 +1758,7 @@ const adminMarkers = {};
 
 function initAdminView(){
   adminOpsMap = L.map('adminOpsMap', { attributionControl:false }).setView([42.45, -83.25], 9);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(adminOpsMap);
+  addBaseMapToggle(adminOpsMap);
 
   refreshAdminData();
   setInterval(refreshAdminData, 60000); // fallback only - Realtime handles instant updates
