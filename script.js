@@ -1228,20 +1228,26 @@ function initBillingUI(){
 
 // ================= feature announcements =================
 // Add a new entry here whenever there's a new feature worth surfacing —
-// each shows once per browser until dismissed, oldest-undismissed first.
-// localStorage is the right tool here specifically because this is a
-// per-viewer, low-stakes "have they seen this" flag, not real app state —
-// worst case if it's lost, someone sees an announcement a second time.
+// each shows once per ACCOUNT until dismissed, oldest-undismissed first.
+// Keyed by session.id, not just localStorage alone — a bare shared key
+// would mean dismissing on one account (or even just loading the page as
+// that account) suppresses the banner for every other account tested on
+// the same browser afterward, which is exactly the bug this was hit by.
+// Still genuinely a client-side, low-stakes "have they seen this" flag,
+// not real app state — worst case on a new device, they see it again.
 const ANNOUNCEMENTS = [
   { id: 'invoicing-2026-09', text: '🎉 New: create and send professional PDF invoices right from Relay — check out the Invoices and Billing tabs above.' },
 ];
+
+function announcementsStorageKey(){ return 'dismissedAnnouncements_' + session.id; }
+function badgesStorageKey(){ return 'seenNewBadges_' + session.id; }
 
 function renderAnnouncementBanner(){
   const banner = document.getElementById('announcementBanner');
   const textEl = document.getElementById('announcementText');
   if(!banner) return;
   let dismissed = [];
-  try { dismissed = JSON.parse(localStorage.getItem('dismissedAnnouncements') || '[]'); } catch(e){ dismissed = []; }
+  try { dismissed = JSON.parse(localStorage.getItem(announcementsStorageKey()) || '[]'); } catch(e){ dismissed = []; }
   const next = ANNOUNCEMENTS.find(a => !dismissed.includes(a.id));
   if(!next){ banner.classList.add('hidden'); return; }
   textEl.textContent = next.text;
@@ -1254,17 +1260,17 @@ function dismissAnnouncement(){
   const id = banner.dataset.id;
   if(!id) return;
   let dismissed = [];
-  try { dismissed = JSON.parse(localStorage.getItem('dismissedAnnouncements') || '[]'); } catch(e){ dismissed = []; }
+  try { dismissed = JSON.parse(localStorage.getItem(announcementsStorageKey()) || '[]'); } catch(e){ dismissed = []; }
   if(!dismissed.includes(id)) dismissed.push(id);
-  try { localStorage.setItem('dismissedAnnouncements', JSON.stringify(dismissed)); } catch(e){}
+  try { localStorage.setItem(announcementsStorageKey(), JSON.stringify(dismissed)); } catch(e){}
   renderAnnouncementBanner();
 }
 
-// NEW badges on tabs — hidden permanently (per browser) the first time
+// NEW badges on tabs — hidden permanently (per account) the first time
 // that tab is actually clicked, so it only ever draws attention once.
 function initNewBadges(){
   let seen = [];
-  try { seen = JSON.parse(localStorage.getItem('seenNewBadges') || '[]'); } catch(e){ seen = []; }
+  try { seen = JSON.parse(localStorage.getItem(badgesStorageKey()) || '[]'); } catch(e){ seen = []; }
   const badgeTargets = [
     { tab: 'shop-invoices', badge: 'invoicesNewBadge' },
     { tab: 'shop-billing', badge: 'billingNewBadge' },
@@ -1276,8 +1282,8 @@ function initNewBadges(){
     if(tabBtn) tabBtn.addEventListener('click', () => {
       if(badgeEl) badgeEl.classList.add('hidden');
       let s = [];
-      try { s = JSON.parse(localStorage.getItem('seenNewBadges') || '[]'); } catch(e){ s = []; }
-      if(!s.includes(badge)){ s.push(badge); try { localStorage.setItem('seenNewBadges', JSON.stringify(s)); } catch(e){} }
+      try { s = JSON.parse(localStorage.getItem(badgesStorageKey()) || '[]'); } catch(e){ s = []; }
+      if(!s.includes(badge)){ s.push(badge); try { localStorage.setItem(badgesStorageKey(), JSON.stringify(s)); } catch(e){} }
     }, { once:true });
   });
 }
