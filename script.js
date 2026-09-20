@@ -138,7 +138,7 @@ async function fetchCompanies(){
 // out of sync with the actual line items.
 async function fetchInvoices(){
   const { data, error } = await sb.from('invoices')
-    .select('id, job_id, customer_name, customer_email, customer_address, unit_number, status, notes, created_at, sent_at, paid_at, invoice_items(id, description, quantity, unit_price)')
+    .select('id, job_id, kind, source_estimate_id, customer_name, customer_email, customer_address, unit_number, status, notes, created_at, sent_at, paid_at, invoice_items(id, description, quantity, unit_price)')
     .eq('org_id', session.orgId)
     .order('created_at', { ascending:false });
   if(error){ console.error('fetchInvoices', error); return []; }
@@ -291,11 +291,23 @@ function attachmentsBlockHtml(jobId){
     <button class="comments-toggle" data-attach-job="${jobId}">📎 Files</button>
     <div class="comments-box hidden" id="attachments-${jobId}">
       <div class="attach-list" id="attach-list-${jobId}"></div>
-      <label class="attach-upload-btn">
-        + Add a photo or file
-        <input type="file" id="attach-input-${jobId}" accept="image/*,.pdf,.doc,.docx" style="display:none;">
-      </label>
+      <div class="attach-upload-row">
+        <select id="attach-type-${jobId}" class="attach-type-select">
+          <option value="general">General file</option>
+          <option value="before">Before photo</option>
+          <option value="after">After photo</option>
+        </select>
+        <label class="attach-upload-btn">
+          + Add
+          <input type="file" id="attach-input-${jobId}" accept="image/*,.pdf,.doc,.docx" style="display:none;">
+        </label>
+      </div>
     </div>`;
+}
+function photoTypeTag(photoType){
+  if(photoType === 'before') return '<span class="doc-kind-tag">BEFORE</span>';
+  if(photoType === 'after') return '<span class="doc-kind-tag">AFTER</span>';
+  return '';
 }
 async function fetchAttachments(jobId){
   const { data, error } = await sb.from('job_attachments').select('*, profiles:uploader_id(name)').eq('job_id', jobId).order('created_at', { ascending:true });
@@ -316,7 +328,7 @@ async function renderAttachmentList(jobId){
         ${isImage
           ? `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" class="attach-thumb" alt="${esc(f.file_name)}"></a>`
           : `<a href="${url}" target="_blank" rel="noopener" class="attach-file-link">📄 ${esc(f.file_name)}</a>`}
-        <div class="attach-meta">${esc(f.profiles ? f.profiles.name : 'Someone')} · ${new Date(f.created_at).toLocaleDateString()}</div>
+        <div class="attach-meta">${photoTypeTag(f.photo_type)}${esc(f.profiles ? f.profiles.name : 'Someone')} · ${new Date(f.created_at).toLocaleDateString()}</div>
       </div>`;
   }));
   listEl.innerHTML = items.join('');
@@ -328,14 +340,16 @@ function openAttachmentThread(jobId){
   openAttachmentThreads.add(jobId);
   renderAttachmentList(jobId);
   const input = document.getElementById('attach-input-'+jobId);
+  const typeSelect = document.getElementById('attach-type-'+jobId);
   input.onchange = async ()=>{
     const file = input.files[0];
     if(!file) return;
     if(file.size > 10*1024*1024){ alert('That file is too big — 10MB max.'); input.value=''; return; }
+    const photoType = (typeSelect && typeSelect.value) || 'general';
     const path = `${jobId}/${Date.now()}-${file.name}`;
     const { error: upErr } = await sb.storage.from('job-attachments').upload(path, file);
     if(upErr){ alert('Upload failed: ' + upErr.message); input.value=''; return; }
-    const { error: metaErr } = await sb.from('job_attachments').insert([{ job_id:jobId, uploader_id:session.id, file_path:path, file_name:file.name, file_type:file.type }]);
+    const { error: metaErr } = await sb.from('job_attachments').insert([{ job_id:jobId, uploader_id:session.id, file_path:path, file_name:file.name, file_type:file.type, photo_type:photoType }]);
     if(metaErr) console.error('job_attachments insert failed', metaErr);
     input.value = '';
     renderAttachmentList(jobId);
@@ -1016,6 +1030,9 @@ function recalcInvoiceTotal(){
   if(el) el.textContent = '$' + total.toFixed(2);
 }
 
+let selectedInvoiceKind = 'invoice';
+let cachedReviewLink = null;
+
 function resetInvoiceForm(){
   document.getElementById('invCustomerName').value = '';
   document.getElementById('invCustomerAddress').value = '';
@@ -1024,6 +1041,14 @@ function resetInvoiceForm(){
   document.getElementById('invNotes').value = '';
   document.getElementById('invItemRows').innerHTML = '';
   addInvoiceItemRow();
+}
+
+function setInvoiceFormKind(kind){
+  selectedInvoiceKind = kind;
+  document.getElementById('kindInvoiceBtn').classList.toggle('active', kind === 'invoice');
+  document.getElementById('kindEstimateBtn').classList.toggle('active', kind === 'estimate');
+  document.getElementById('invFormTitle').textContent = kind === 'estimate' ? 'New estimate' : 'New invoice';
+  document.getElementById('createInvoiceBtn').textContent = kind === 'estimate' ? 'Save estimate' : 'Save invoice';
 }
 
 async function populateInvoiceJobSelect(){
@@ -1041,6 +1066,7 @@ async function createInvoice(){
   const jobId = document.getElementById('invJobSelect').value;
   const notes = document.getElementById('invNotes').value.trim();
   const items = collectInvoiceItemRows();
+  const kind = selectedInvoiceKind;
   if(!customerName){ alert('Enter a customer name.'); return; }
   if(!items.length){ alert('Add at least one line item with a description, quantity, and price.'); return; }
 
@@ -1050,6 +1076,7 @@ async function createInvoice(){
   const { data: invoice, error } = await sb.from('invoices').insert([{
     org_id: session.orgId,
     job_id: jobId ? Number(jobId) : null,
+    kind,
     customer_name: customerName,
     customer_address: customerAddress || null,
     unit_number: unitNumber || null,
@@ -1059,72 +1086,133 @@ async function createInvoice(){
   }]).select().single();
 
   if(error){
-    alert('Could not create invoice: ' + error.message);
-    btn.disabled = false; btn.textContent = 'Save invoice';
+    alert(`Could not create ${kind}: ` + error.message);
+    btn.disabled = false; setInvoiceFormKind(kind);
     return;
   }
 
   const itemRows = items.map(it => ({ invoice_id: invoice.id, description: it.description, quantity: it.quantity, unit_price: it.unit_price, sort_order: it.sort_order }));
   const { error: itemErr } = await sb.from('invoice_items').insert(itemRows);
-  if(itemErr) alert('Invoice was created, but the line items failed to save: ' + itemErr.message);
+  if(itemErr) alert(`${kind === 'estimate' ? 'Estimate' : 'Invoice'} was created, but the line items failed to save: ` + itemErr.message);
 
   resetInvoiceForm();
-  btn.disabled = false; btn.textContent = 'Save invoice';
+  btn.disabled = false; setInvoiceFormKind(kind);
   refreshInvoices();
 }
 
 async function sendInvoiceEmail(invoiceId, email){
   if(!email || !email.includes('@')){ alert('Enter a valid email address first.'); return; }
   const { data, error } = await sb.functions.invoke('send-invoice-email', { body: { invoiceId, recipientEmail: email } });
-  if(error){ alert('Could not send the invoice: ' + error.message); return; }
-  if(data && data.error){ alert('Could not send the invoice: ' + data.error); return; }
+  if(error){ alert('Could not send: ' + error.message); return; }
+  if(data && data.error){ alert('Could not send: ' + data.error); return; }
   refreshInvoices();
 }
 
 async function markInvoicePaid(invoiceId){
   const { error } = await sb.from('invoices').update({ status:'paid', paid_at:new Date().toISOString() }).eq('id', invoiceId);
-  if(error){ alert('Could not update the invoice: ' + error.message); return; }
+  if(error){ alert('Could not update: ' + error.message); return; }
   refreshInvoices();
 }
 
+async function updateEstimateStatus(invoiceId, newStatus){
+  const { error } = await sb.from('invoices').update({ status:newStatus }).eq('id', invoiceId);
+  if(error){ alert('Could not update: ' + error.message); return; }
+  refreshInvoices();
+}
+
+// Copies an approved (or declined — the customer may still change their
+// mind) estimate's line items into a brand-new invoice, linked back via
+// source_estimate_id, and marks the estimate itself as converted so it
+// can't be converted twice.
+async function convertEstimateToInvoice(estimateId){
+  if(!confirm('Convert this estimate into an invoice? A new invoice will be created with the same line items.')) return;
+  const { data: estimate, error: estErr } = await sb.from('invoices').select('*').eq('id', estimateId).single();
+  if(estErr || !estimate){ alert('Could not load the estimate: ' + (estErr ? estErr.message : 'not found')); return; }
+  const { data: items, error: itemsErr } = await sb.from('invoice_items').select('description, quantity, unit_price, sort_order').eq('invoice_id', estimateId);
+  if(itemsErr){ alert('Could not load line items: ' + itemsErr.message); return; }
+
+  const { data: newInvoice, error } = await sb.from('invoices').insert([{
+    org_id: session.orgId, job_id: estimate.job_id, kind: 'invoice', source_estimate_id: estimate.id,
+    customer_name: estimate.customer_name, customer_address: estimate.customer_address, unit_number: estimate.unit_number,
+    notes: estimate.notes, status: 'draft', created_by: session.id,
+  }]).select().single();
+  if(error){ alert('Could not create the invoice: ' + error.message); return; }
+
+  const itemRows = (items || []).map(it => ({ invoice_id: newInvoice.id, description: it.description, quantity: it.quantity, unit_price: it.unit_price, sort_order: it.sort_order }));
+  if(itemRows.length){
+    const { error: insErr } = await sb.from('invoice_items').insert(itemRows);
+    if(insErr) alert('Invoice created, but copying line items failed: ' + insErr.message);
+  }
+
+  await sb.from('invoices').update({ status:'converted' }).eq('id', estimateId);
+  refreshInvoices();
+}
+
+async function sendReviewRequest(invoiceId, email){
+  if(!email || !email.includes('@')){ alert('Enter a valid email address first.'); return; }
+  const { data, error } = await sb.functions.invoke('send-review-request', { body: { invoiceId, recipientEmail: email } });
+  if(error){ alert('Could not send the review request: ' + error.message); return; }
+  if(data && data.error){ alert('Could not send the review request: ' + data.error); return; }
+  alert('Review request sent.');
+}
+
 async function deleteInvoiceDraft(invoiceId){
-  if(!confirm('Delete this draft invoice? This cannot be undone.')) return;
+  if(!confirm('Delete this draft? This cannot be undone.')) return;
   const { error } = await sb.from('invoices').delete().eq('id', invoiceId);
   if(error){ alert('Could not delete: ' + error.message); return; }
   refreshInvoices();
 }
 
 function invoiceStatusBadge(status){
-  if(status === 'paid') return '<span class="badge arrived"><span class="bd"></span>paid</span>';
-  if(status === 'unpaid') return '<span class="badge live"><span class="bd"></span>unpaid</span>';
+  if(status === 'paid' || status === 'approved') return `<span class="badge arrived"><span class="bd"></span>${status}</span>`;
+  if(status === 'unpaid' || status === 'sent') return `<span class="badge live"><span class="bd"></span>${status}</span>`;
+  if(status === 'declined') return '<span class="badge offline"><span class="bd"></span>declined</span>';
+  if(status === 'converted') return '<span class="badge offline"><span class="bd"></span>converted</span>';
   return '<span class="badge offline"><span class="bd"></span>draft</span>';
 }
 
 function invoiceCardHtml(inv){
+  const isEstimate = inv.kind === 'estimate';
   const items = inv.invoice_items || [];
   const total = items.reduce((sum, it)=> sum + Number(it.quantity) * Number(it.unit_price), 0);
   const itemsHtml = items.map(it => `<div class="meta">${esc(it.description)} — ${it.quantity} × $${Number(it.unit_price).toFixed(2)}</div>`).join('');
   const jobTag = inv.job_id ? `<div class="meta">Linked to job #${inv.job_id}</div>` : '';
   const unitTag = inv.unit_number ? `<div class="meta">Unit #${esc(inv.unit_number)}</div>` : '';
+  const kindTag = `<span class="doc-kind-tag">${isEstimate ? 'ESTIMATE' : 'INVOICE'}</span>`;
 
   let actions = `<button class="text-btn inv-view-btn" data-id="${inv.id}">View PDF</button>`;
   if(inv.status === 'draft') actions += `<button class="text-btn inv-delete-btn" data-id="${inv.id}">Delete draft</button>`;
-  else if(inv.status === 'unpaid') actions += `<button class="text-btn inv-paid-btn" data-id="${inv.id}">Mark paid</button>`;
+  else if(!isEstimate && inv.status === 'unpaid') actions += `<button class="text-btn inv-paid-btn" data-id="${inv.id}">Mark paid</button>`;
+  else if(isEstimate && inv.status === 'sent'){
+    actions += `<button class="text-btn inv-approve-btn" data-id="${inv.id}">Mark approved</button>`;
+    actions += `<button class="text-btn inv-decline-btn" data-id="${inv.id}">Mark declined</button>`;
+  } else if(isEstimate && (inv.status === 'approved' || inv.status === 'declined')){
+    actions += `<button class="text-btn inv-convert-btn" data-id="${inv.id}">Convert to invoice</button>`;
+  }
+  if(!isEstimate && inv.status === 'paid' && cachedReviewLink){
+    actions += `<button class="text-btn inv-review-btn" data-id="${inv.id}">Send review request</button>`;
+  }
 
-  const sendRow = inv.status !== 'paid' ? `
+  const canSend = inv.status === 'draft' || inv.status === 'unpaid' || inv.status === 'sent';
+  const sendRow = canSend ? `
     <div class="invoice-send-row">
       <input type="email" class="inv-send-email" placeholder="customer@email.com" value="${esc(inv.customer_email || '')}" data-id="${inv.id}">
-      <button class="text-btn inv-send-btn" data-id="${inv.id}">${inv.sent_at ? 'Resend' : 'Send'}</button>
+      <button class="text-btn inv-send-btn" data-id="${inv.id}">${inv.sent_at ? 'Resend' : (isEstimate ? 'Send for approval' : 'Send')}</button>
+    </div>` : '';
+  const reviewSendRow = (!isEstimate && inv.status === 'paid' && cachedReviewLink) ? `
+    <div class="invoice-send-row">
+      <input type="email" class="inv-review-email" placeholder="customer@email.com" value="${esc(inv.customer_email || '')}" data-id="${inv.id}">
     </div>` : '';
 
   return `<div class="job-card">
-    <div class="job-card-top"><div><b>${esc(inv.customer_name)}</b><div class="meta">$${total.toFixed(2)} · ${new Date(inv.created_at).toLocaleDateString()}</div></div>${invoiceStatusBadge(inv.status)}</div>
+    <div class="job-card-top"><div>${kindTag}<b>${esc(inv.customer_name)}</b><div class="meta">$${total.toFixed(2)} · ${new Date(inv.created_at).toLocaleDateString()}</div></div>${invoiceStatusBadge(inv.status)}</div>
     ${unitTag}
     ${jobTag}
     ${itemsHtml}
     ${inv.notes ? `<div class="meta">${esc(inv.notes)}</div>` : ''}
     <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">${actions}</div>
     ${sendRow}
+    ${reviewSendRow}
   </div>`;
 }
 
@@ -1152,11 +1240,14 @@ async function refreshInvoices(){
   const list = document.getElementById('invoiceList');
   if(!list) return;
   const invoices = await fetchInvoices();
-  list.innerHTML = invoices.length ? invoices.map(invoiceCardHtml).join('') : '<div class="empty-note">No invoices yet.</div>';
+  list.innerHTML = invoices.length ? invoices.map(invoiceCardHtml).join('') : '<div class="empty-note">No invoices or estimates yet.</div>';
 
   list.querySelectorAll('.inv-view-btn').forEach(btn=>{ btn.onclick = ()=> viewInvoicePdf(Number(btn.dataset.id)); });
   list.querySelectorAll('.inv-delete-btn').forEach(btn=>{ btn.onclick = ()=> deleteInvoiceDraft(Number(btn.dataset.id)); });
   list.querySelectorAll('.inv-paid-btn').forEach(btn=>{ btn.onclick = ()=> markInvoicePaid(Number(btn.dataset.id)); });
+  list.querySelectorAll('.inv-approve-btn').forEach(btn=>{ btn.onclick = ()=> updateEstimateStatus(Number(btn.dataset.id), 'approved'); });
+  list.querySelectorAll('.inv-decline-btn').forEach(btn=>{ btn.onclick = ()=> updateEstimateStatus(Number(btn.dataset.id), 'declined'); });
+  list.querySelectorAll('.inv-convert-btn').forEach(btn=>{ btn.onclick = ()=> convertEstimateToInvoice(Number(btn.dataset.id)); });
   list.querySelectorAll('.inv-send-btn').forEach(btn=>{
     btn.onclick = ()=>{
       const id = Number(btn.dataset.id);
@@ -1164,21 +1255,31 @@ async function refreshInvoices(){
       sendInvoiceEmail(id, input.value.trim());
     };
   });
+  list.querySelectorAll('.inv-review-btn').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = Number(btn.dataset.id);
+      const input = list.querySelector(`.inv-review-email[data-id="${id}"]`);
+      sendReviewRequest(id, input ? input.value.trim() : '');
+    };
+  });
 }
 
 function initInvoicesUI(){
   populateInvoiceJobSelect();
   addInvoiceItemRow();
+  fetchBillingProfile().then(profile => { cachedReviewLink = profile && profile.review_link ? profile.review_link : null; refreshInvoices(); });
   refreshInvoices();
   setInterval(refreshInvoices, 60000);
   document.getElementById('addInvItemBtn').onclick = ()=> addInvoiceItemRow();
   document.getElementById('createInvoiceBtn').onclick = createInvoice;
+  document.getElementById('kindInvoiceBtn').onclick = ()=> setInvoiceFormKind('invoice');
+  document.getElementById('kindEstimateBtn').onclick = ()=> setInvoiceFormKind('estimate');
 }
 
 // ================= billing profile UI =================
 async function fetchBillingProfile(){
   const { data, error } = await sb.from('organizations')
-    .select('name, billing_email, billing_phone, billing_address, payment_instructions, logo_path')
+    .select('name, billing_email, billing_phone, billing_address, payment_instructions, logo_path, review_link')
     .eq('id', session.orgId).single();
   if(error){ console.error('fetchBillingProfile', error); return null; }
   return data;
@@ -1197,6 +1298,7 @@ async function populateBillingForm(){
   document.getElementById('billingPhone').value = profile.billing_phone || '';
   document.getElementById('billingAddress').value = profile.billing_address || '';
   document.getElementById('billingPaymentInstructions').value = profile.payment_instructions || '';
+  document.getElementById('billingReviewLink').value = profile.review_link || '';
   const preview = document.getElementById('billingLogoPreview');
   if(profile.logo_path){
     preview.src = billingLogoPublicUrl(profile.logo_path);
@@ -1226,6 +1328,7 @@ async function saveBillingProfile(){
     billing_phone: document.getElementById('billingPhone').value.trim() || null,
     billing_address: document.getElementById('billingAddress').value.trim() || null,
     payment_instructions: document.getElementById('billingPaymentInstructions').value.trim() || null,
+    review_link: document.getElementById('billingReviewLink').value.trim() || null,
     ...logoPathUpdate,
   }).eq('id', session.orgId);
 
@@ -1233,6 +1336,8 @@ async function saveBillingProfile(){
   if(error){ alert('Could not save: ' + error.message); return; }
   fileInput.value = '';
   populateBillingForm();
+  cachedReviewLink = document.getElementById('billingReviewLink').value.trim() || null;
+  if(typeof refreshInvoices === 'function') refreshInvoices();
   alert('Billing info saved.');
 }
 
