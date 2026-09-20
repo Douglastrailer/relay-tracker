@@ -345,12 +345,19 @@
     <div class="dash-panel hidden" id="shop-invoices">
       <div class="grid-2 section">
         <div>
-          <div class="section-head"><h2>Invoices</h2></div>
+          <div class="section-head"><h2>Invoices &amp; Estimates</h2></div>
           <div class="job-list" id="invoiceList"></div>
         </div>
         <div>
           <div class="card new-job-form">
-            <h3>New invoice</h3>
+            <h3 id="invFormTitle">New invoice</h3>
+            <div class="field">
+              <label>Type</label>
+              <div class="kind-toggle">
+                <button type="button" class="kind-toggle-btn active" data-kind="invoice" id="kindInvoiceBtn">Invoice</button>
+                <button type="button" class="kind-toggle-btn" data-kind="estimate" id="kindEstimateBtn">Estimate</button>
+              </div>
+            </div>
             <div class="field"><label>Customer name</label><input type="text" id="invCustomerName" placeholder="e.g. FedEx"></div>
             <div class="field"><label>Customer address (optional)</label><textarea id="invCustomerAddress" rows="2" placeholder="Company legal address for billing"></textarea></div>
             <div class="field"><label>Unit number (optional)</label><input type="text" id="invUnitNumber" placeholder="e.g. TR-4521"></div>
@@ -384,6 +391,8 @@
           <div class="field"><label>Phone number</label><input type="text" id="billingPhone" placeholder="(555) 123-4567"></div>
           <div class="field"><label>Shop address</label><textarea id="billingAddress" rows="2" placeholder="123 Main St, City, ST 12345"></textarea></div>
           <div class="field"><label>Payment methods</label><textarea id="billingPaymentInstructions" rows="3" placeholder="e.g. Zelle: billing@yourshop.com&#10;Check payable to Your Shop LLC&#10;Net 30 from invoice date"></textarea></div>
+          <div class="field"><label>Review link (optional)</label><input type="text" id="billingReviewLink" placeholder="Your Google Business review link"></div>
+          <p class="meta" style="margin:-6px 0 4px;">Add this to send a "leave us a review" email once an invoice is marked paid.</p>
           <button id="saveBillingProfileBtn">Save billing info</button>
         </div>
       </div>
