@@ -51,6 +51,13 @@ function milesBetween(lat1,lon1,lat2,lon2){
   const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
+function jobStatusBadge(status){
+  const label = status.replace('_',' ');
+  if(status === 'assigned') return `<span class="badge pending"><span class="bd"></span>${label}</span>`;
+  if(status === 'en_route') return `<span class="badge live"><span class="bd"></span>${label}</span>`;
+  if(status === 'on_site') return `<span class="badge onsite"><span class="bd"></span>${label}</span>`;
+  return `<span class="badge arrived"><span class="bd"></span>${label}</span>`; // complete
+}
 function pinIcon(cls){
   return L.divIcon({ className:'', html:`<div class="relay-pin ${cls}"></div>`, iconSize:[16,16], iconAnchor:[8,8] });
 }
@@ -156,7 +163,7 @@ async function fetchJobsForInvoiceLink(){
 // ever had and slicing it down in the browser.
 // Column list excludes only "created_by" — the one job column never
 // actually read anywhere in the app after being set on creation.
-const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, dest_lat, dest_lng, status, created_at, updated_at, org_id';
+const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, job_type, dest_lat, dest_lng, status, created_at, updated_at, org_id';
 async function fetchActiveJobs(scope){
   let q = sb.from('jobs').select(JOB_COLUMNS).neq('status','complete').order('created_at', { ascending:true });
   // Scoping here is a query-planning aid, not the security boundary — RLS
@@ -870,6 +877,7 @@ function initMechanicView(){
       // typed in an open chat box. Distances still update live; nothing else
       // needs to change just because the GPS pinged.
       mechActiveJobsCache.forEach(job=>{
+        if(job.job_type === 'inshop') return; // no destination to measure distance to
         const el = document.getElementById('mech-dist-'+job.id);
         if(!el) return;
         const mi = milesBetween(latitude, longitude, job.dest_lat, job.dest_lng);
@@ -908,24 +916,33 @@ async function renderMechJobs(){
     activeBox.innerHTML = '<div class="empty-note">No jobs assigned right now.</div>';
   } else {
     activeBox.innerHTML = active.map(job => {
+      const isInshop = job.job_type === 'inshop';
       let distText = '—';
-      if(loc){
+      if(!isInshop && loc){
         const mi = milesBetween(loc.lat, loc.lng, job.dest_lat, job.dest_lng);
         distText = mi < 0.1 ? 'Arrived' : mi.toFixed(1) + ' mi away';
         if(!mechDestMarkers[job.id]) mechDestMarkers[job.id] = L.marker([job.dest_lat, job.dest_lng], { icon: pinIcon('dest') }).addTo(mechMapObj);
       }
+      const distRow = isInshop ? '' : `<div class="row"><span>Distance</span><b id="mech-dist-${job.id}">${distText}</b></div>`;
+      const directionsBtn = isInshop ? '' : `<a class="directions-btn" href="https://www.google.com/maps/dir/?api=1&destination=${job.dest_lat},${job.dest_lng}" target="_blank" rel="noopener">🧭 Get directions</a>`;
+      // In-shop jobs skip "heading there" entirely — there's no travel,
+      // so the job goes straight from assigned to being worked on.
+      const actionButtons = isInshop
+        ? `<button data-s="on_site" class="${job.status==='on_site'?'active':''}">Start job</button>
+           <button data-s="complete" class="${job.status==='complete'?'active':''}">Mark complete</button>`
+        : `<button data-s="en_route" class="${job.status==='en_route'?'active':''}">Heading there</button>
+           <button data-s="on_site" class="${job.status==='on_site'?'active':''}">Mark arrived</button>
+           <button data-s="complete" class="${job.status==='complete'?'active':''}">Mark complete</button>`;
       return `
         <div class="job-card" data-job="${job.id}">
           <div class="job-card-top">
-            <div><b>${esc(job.customer)}</b><div class="meta">${esc(job.vehicle)}</div></div>
+            <div>${isInshop ? '<span class="doc-kind-tag">IN-SHOP</span>' : ''}<b>${esc(job.customer)}</b><div class="meta">${esc(job.vehicle)}</div></div>
           </div>
-          <div class="row"><span>Distance</span><b id="mech-dist-${job.id}">${distText}</b></div>
+          ${distRow}
           <div class="row"><span>Status</span><b>${job.status.replace('_',' ')}</b></div>
-          <a class="directions-btn" href="https://www.google.com/maps/dir/?api=1&destination=${job.dest_lat},${job.dest_lng}" target="_blank" rel="noopener">🧭 Get directions</a>
+          ${directionsBtn}
           <div class="job-actions">
-            <button data-s="en_route" class="${job.status==='en_route'?'active':''}">Heading there</button>
-            <button data-s="on_site" class="${job.status==='on_site'?'active':''}">Mark arrived</button>
-            <button data-s="complete" class="${job.status==='complete'?'active':''}">Mark complete</button>
+            ${actionButtons}
           </div>
           ${commentsBlockHtml(job.id)}
           ${attachmentsBlockHtml(job.id)}
@@ -1415,6 +1432,84 @@ function initNewBadges(){
   });
 }
 
+// ================= full job history (paginated, searchable) =================
+// Unlike the small "recent completed" snippet in the Jobs tab (capped at
+// 20), this reaches every completed job a shop has ever had, a page at a
+// time — org_id+status is already indexed (idx_jobs_org_status), so this
+// stays fast even as history grows into the thousands.
+const HISTORY_PAGE_SIZE = 25;
+let historyOffset = 0;
+let historyReachedEnd = false;
+
+async function fetchJobHistoryPage({ orgId, search, jobType, offset, limit }){
+  let q = sb.from('jobs').select(JOB_COLUMNS).eq('org_id', orgId).eq('status', 'complete')
+    .order('updated_at', { ascending:false }).range(offset, offset + limit - 1);
+  if(jobType) q = q.eq('job_type', jobType);
+  if(search) q = q.or(`customer.ilike.%${search}%,vehicle.ilike.%${search}%`);
+  const { data, error } = await q;
+  if(error){ console.error('fetchJobHistoryPage', error); return []; }
+  return data || [];
+}
+
+function historyCardHtml(job, mechNameFn){
+  const isInshop = job.job_type === 'inshop';
+  return `<div class="job-card">
+    <div class="job-card-top">
+      <div>${isInshop ? '<span class="doc-kind-tag">IN-SHOP</span>' : ''}<b>${esc(job.customer)} — ${esc(job.vehicle)}</b><div class="meta">Mechanic: ${esc(mechNameFn(job.mechanic_id))} · ${new Date(job.updated_at).toLocaleDateString()}</div></div>
+      <span class="badge arrived"><span class="bd"></span>complete</span>
+    </div>
+    ${commentsBlockHtml(job.id)}
+    ${attachmentsBlockHtml(job.id)}
+  </div>`;
+}
+
+// Cached once per History-tab session rather than re-fetched on every
+// page/search, since the mechanic roster rarely changes mid-browse.
+let historyMechName = id => 'Unassigned';
+async function refreshHistoryMechCache(){
+  const mechanics = await fetchOrgMechanics();
+  historyMechName = id => (mechanics.find(m=>m.id===id) || {}).name || 'Unassigned';
+}
+
+async function loadHistoryPage(reset){
+  const list = document.getElementById('fullHistoryList');
+  const loadMoreBtn = document.getElementById('historyLoadMoreBtn');
+  const endNote = document.getElementById('historyEndNote');
+  if(reset){ historyOffset = 0; historyReachedEnd = false; list.innerHTML = ''; endNote.classList.add('hidden'); }
+
+  const search = document.getElementById('historySearchInput').value.trim();
+  const jobType = document.getElementById('historyTypeFilter').value;
+  const page = await fetchJobHistoryPage({ orgId: session.orgId, search, jobType, offset: historyOffset, limit: HISTORY_PAGE_SIZE });
+
+  if(page.length === 0 && historyOffset === 0){
+    list.innerHTML = '<div class="empty-note">No completed jobs match.</div>';
+    loadMoreBtn.classList.add('hidden');
+    return;
+  }
+
+  const _s = preserveOpenChatNodes(list);
+  list.insertAdjacentHTML('beforeend', page.map(job => historyCardHtml(job, historyMechName)).join(''));
+  wireCommentToggles(list);
+  wireAttachmentToggles(list);
+  restoreOpenChatNodes(list, _s);
+
+  historyOffset += page.length;
+  historyReachedEnd = page.length < HISTORY_PAGE_SIZE;
+  loadMoreBtn.classList.toggle('hidden', historyReachedEnd);
+  endNote.classList.toggle('hidden', !historyReachedEnd || historyOffset === 0);
+}
+
+function initHistoryUI(){
+  let searchDebounce = null;
+  document.getElementById('historySearchInput').addEventListener('input', ()=>{
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(()=> loadHistoryPage(true), 400);
+  });
+  document.getElementById('historyTypeFilter').onchange = ()=> loadHistoryPage(true);
+  document.getElementById('historyLoadMoreBtn').onclick = ()=> loadHistoryPage(false);
+  refreshHistoryMechCache().then(()=> loadHistoryPage(true));
+}
+
 function initShopView(){
   shopMap = L.map('shopOpsMap', { attributionControl:false }).setView([42.45, -83.25], 10);
   addBaseMapToggle(shopMap);
@@ -1525,20 +1620,37 @@ function initShopView(){
   renderTeamList();
   initInvoicesUI();
   initBillingUI();
+  initHistoryUI();
   renderAnnouncementBanner();
   initNewBadges();
   document.getElementById('announcementDismiss').onclick = dismissAnnouncement;
   setInterval(refreshShopData, 60000); // fallback only - Realtime handles instant updates
   setInterval(renderTeamList, 15000);
 
+  let selectedJobType = 'mobile';
+  function setJobTypeUI(type){
+    selectedJobType = type;
+    document.getElementById('jobTypeMobileBtn').classList.toggle('active', type === 'mobile');
+    document.getElementById('jobTypeInshopBtn').classList.toggle('active', type === 'inshop');
+    document.getElementById('njLocationField').classList.toggle('hidden', type === 'inshop');
+    document.getElementById('njInshopNote').classList.toggle('hidden', type !== 'inshop');
+  }
+  document.getElementById('jobTypeMobileBtn').onclick = ()=> setJobTypeUI('mobile');
+  document.getElementById('jobTypeInshopBtn').onclick = ()=> setJobTypeUI('inshop');
+
   document.getElementById('createJobBtn').onclick = async ()=>{
     const customer = document.getElementById('njCustomer').value.trim();
     const vehicle = document.getElementById('njVehicle').value.trim();
     const issue = document.getElementById('njIssue').value.trim();
     const mechanicId = document.getElementById('njMechanic').value;
-    if(!customer || !vehicle || !mechanicId || !chosenPin){ alert('Fill in every field and set a breakdown location (address or pin).'); return; }
+    const jobType = selectedJobType;
+    if(!customer || !vehicle || !mechanicId){ alert('Fill in every field.'); return; }
+    if(jobType === 'mobile' && !chosenPin){ alert('Set a breakdown location (address or pin) for a mobile job.'); return; }
 
-    const { data, error } = await sb.from('jobs').insert([{ customer, vehicle, mechanic_id:mechanicId, dest_lat:chosenPin.lat, dest_lng:chosenPin.lng, status:'assigned', created_by:session.id, org_id:session.orgId }]).select();
+    const payload = { customer, vehicle, mechanic_id:mechanicId, job_type:jobType, status:'assigned', created_by:session.id, org_id:session.orgId };
+    if(jobType === 'mobile'){ payload.dest_lat = chosenPin.lat; payload.dest_lng = chosenPin.lng; }
+
+    const { data, error } = await sb.from('jobs').insert([payload]).select();
     if(error){
       if(error.code === '42501') alert("Could not create the job — you may be creating jobs too quickly, or the assigned mechanic may no longer be on your team. Wait a moment and try again, or refresh and check the mechanic list.");
       else alert('Could not create job: ' + error.message);
@@ -1552,6 +1664,7 @@ function initShopView(){
     document.getElementById('njCustomer').value = ''; document.getElementById('njVehicle').value = ''; document.getElementById('njIssue').value = ''; addressInput.value = '';
     if(pinMarker){ pinMapObj.removeLayer(pinMarker); pinMarker = null; } chosenPin = null;
     document.getElementById('pinHint').textContent = 'Type an address and hit Find, or click the map to drop a pin directly.';
+    setJobTypeUI('mobile');
     refreshShopData();
     populateCompanyList();
   };
@@ -1698,7 +1811,7 @@ async function refreshShopData(){
       <div class="job-card" data-job="${j.id}">
         <div class="job-card-top">
           <div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div>
-          <span class="badge ${j.status==='on_site'?'arrived':'live'}"><span class="bd"></span>${j.status.replace('_',' ')}</span>
+          ${jobStatusBadge(j.status)}
         </div>
         <div class="job-actions">
           <button class="j-edit">Edit</button>
@@ -1810,10 +1923,12 @@ async function refreshFleetData(){
   else {
     let html = '';
     for(const j of active){
+      const isInshop = j.job_type === 'inshop';
       html += `<div class="card" style="margin-bottom:14px;">
-        <div class="job-card-top"><div><b>${esc(j.vehicle)}</b><div class="meta">Shop: ${esc(orgName(j.org_id))}</div></div><span class="badge ${j.status==='on_site'?'arrived':'live'}"><span class="bd"></span>${j.status.replace('_',' ')}</span></div>
+        <div class="job-card-top"><div>${isInshop ? '<span class="doc-kind-tag">IN-SHOP</span>' : ''}<b>${esc(j.vehicle)}</b><div class="meta">Shop: ${esc(orgName(j.org_id))}</div></div>${jobStatusBadge(j.status)}</div>
+        ${isInshop ? '<p class="meta" style="margin-top:10px;">This job is being done at the shop — no live location to track.</p>' : `
         <div class="ops-map" style="height:280px; margin-top:12px;" id="fleetMap${j.id}"></div>
-        <div class="gps-readout" id="fleetDist${j.id}" style="margin-top:10px;"></div>
+        <div class="gps-readout" id="fleetDist${j.id}" style="margin-top:10px;"></div>`}
         ${commentsBlockHtml(j.id)}
         ${attachmentsBlockHtml(j.id)}
       </div>`;
@@ -1824,6 +1939,7 @@ async function refreshFleetData(){
     restoreOpenChatNodes(box, _s1);
 
     for(const j of active){
+      if(j.job_type === 'inshop') continue; // no destination — no map to build
       const loc = locByMechanic[j.mechanic_id];
       if(!fleetMaps[j.id]){
         const m = L.map('fleetMap'+j.id, { attributionControl:false }).setView([j.dest_lat, j.dest_lng], 12);
@@ -2024,7 +2140,7 @@ async function refreshAdminData(){
     <div class="job-card" data-job="${j.id}">
       <div class="job-card-top">
         <div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))} · Company: ${esc(orgName(j.org_id))}</div></div>
-        <span class="badge ${j.status==='on_site'?'arrived':'live'}"><span class="bd"></span>${j.status.replace('_',' ')}</span>
+        ${jobStatusBadge(j.status)}
       </div>
       <div class="job-actions">
         <button class="j-delete danger">Delete</button>
