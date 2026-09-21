@@ -294,6 +294,7 @@
     <div class="dash-tabs">
       <button class="dash-tab active" data-target="shop-overview">Overview</button>
       <button class="dash-tab" data-target="shop-jobs">Jobs</button>
+      <button class="dash-tab" data-target="shop-history">History</button>
       <button class="dash-tab" data-target="shop-invoices">Invoices <span class="new-badge" id="invoicesNewBadge">NEW</span></button>
       <button class="dash-tab" data-target="shop-billing">Billing <span class="new-badge" id="billingNewBadge">NEW</span></button>
       <button class="dash-tab" data-target="shop-team">Team</button>
@@ -319,6 +320,13 @@
         <div>
           <div class="card new-job-form">
             <h3>Create a job</h3>
+            <div class="field">
+              <label>Service type</label>
+              <div class="kind-toggle">
+                <button type="button" class="kind-toggle-btn active" data-jobtype="mobile" id="jobTypeMobileBtn">Mobile / dispatch</button>
+                <button type="button" class="kind-toggle-btn" data-jobtype="inshop" id="jobTypeInshopBtn">In-shop</button>
+              </div>
+            </div>
             <div class="field"><label>Customer / company</label>
               <input type="text" id="njCustomer" list="companyList" placeholder="e.g. FedEx">
               <datalist id="companyList"></datalist>
@@ -326,7 +334,7 @@
             <div class="field"><label>Vehicle / unit</label><input type="text" id="njVehicle" placeholder="e.g. Trailer #7790"></div>
             <div class="field"><label>Describe the issue</label><textarea id="njIssue" rows="3" placeholder="e.g. Customer says it's making a grinding noise when braking"></textarea></div>
             <div class="field"><label>Assign mechanic</label><select id="njMechanic"></select></div>
-            <div class="field">
+            <div class="field" id="njLocationField">
               <label>Breakdown location</label>
               <div class="address-search" style="position:relative;">
                 <input type="text" id="addressInput" placeholder="Start typing a street address..." autocomplete="off">
@@ -336,9 +344,27 @@
               <div class="pin-map" id="pinMap"></div>
               <div class="pin-hint" id="pinHint">Start typing and pick the exact match from the list, or click the map to drop a pin directly.</div>
             </div>
+            <p class="meta hidden" id="njInshopNote">No location needed — this job stays at the shop, so there's nothing to track on the map.</p>
             <button id="createJobBtn">Create job</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="dash-panel hidden" id="shop-history">
+      <div class="section">
+        <div class="section-head"><h2>Job history</h2></div>
+        <div class="history-search-row">
+          <input type="text" id="historySearchInput" placeholder="Search by customer or vehicle...">
+          <select id="historyTypeFilter">
+            <option value="">All service types</option>
+            <option value="mobile">Mobile / dispatch</option>
+            <option value="inshop">In-shop</option>
+          </select>
+        </div>
+        <div class="job-list" id="fullHistoryList"></div>
+        <button id="historyLoadMoreBtn" class="btn-ghost hidden" style="margin-top:14px;">Load more</button>
+        <div class="empty-note hidden" id="historyEndNote">That's the full history.</div>
       </div>
     </div>
 
