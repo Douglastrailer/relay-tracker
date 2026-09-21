@@ -1614,19 +1614,6 @@ function initShopView(){
   addressBtn.onclick = searchAddress;
   addressInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); searchAddress(); } });
 
-  populateMechanicSelect();
-  populateCompanyList();
-  refreshShopData();
-  renderTeamList();
-  initInvoicesUI();
-  initBillingUI();
-  initHistoryUI();
-  renderAnnouncementBanner();
-  initNewBadges();
-  document.getElementById('announcementDismiss').onclick = dismissAnnouncement;
-  setInterval(refreshShopData, 60000); // fallback only - Realtime handles instant updates
-  setInterval(renderTeamList, 15000);
-
   let selectedJobType = 'mobile';
   function setJobTypeUI(type){
     selectedJobType = type;
@@ -1637,6 +1624,34 @@ function initShopView(){
   }
   document.getElementById('jobTypeMobileBtn').onclick = ()=> setJobTypeUI('mobile');
   document.getElementById('jobTypeInshopBtn').onclick = ()=> setJobTypeUI('inshop');
+
+  // Each of these is an independent feature area. Calling them in a flat,
+  // un-isolated sequence means a single one throwing (a missing element,
+  // a bad response shape, anything) silently stops every call after it
+  // from ever running — which is exactly what broke the service-type
+  // toggle above: it isn't related to any of these, but it was wired
+  // AFTER them, so one of them failing was enough to take it down too.
+  // Isolating each call means the rest of the page keeps working even
+  // if one feature has a problem, and the real error still surfaces in
+  // the console instead of disappearing.
+  function safeInit(name, fn){
+    try {
+      const result = fn();
+      if(result && typeof result.catch === 'function') result.catch(e => console.error(`${name} failed to initialize:`, e));
+    } catch(e){ console.error(`${name} failed to initialize:`, e); }
+  }
+  safeInit('populateMechanicSelect', populateMechanicSelect);
+  safeInit('populateCompanyList', populateCompanyList);
+  safeInit('refreshShopData', refreshShopData);
+  safeInit('renderTeamList', renderTeamList);
+  safeInit('initInvoicesUI', initInvoicesUI);
+  safeInit('initBillingUI', initBillingUI);
+  safeInit('initHistoryUI', initHistoryUI);
+  safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
+  safeInit('initNewBadges', initNewBadges);
+  safeInit('announcementDismissWiring', ()=>{ document.getElementById('announcementDismiss').onclick = dismissAnnouncement; });
+  setInterval(refreshShopData, 60000); // fallback only - Realtime handles instant updates
+  setInterval(renderTeamList, 15000);
 
   document.getElementById('createJobBtn').onclick = async ()=>{
     const customer = document.getElementById('njCustomer').value.trim();
