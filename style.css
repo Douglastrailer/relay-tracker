@@ -122,8 +122,11 @@
   background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:1px 9px; font-size:0.75rem;
   font-weight:700; color:var(--ink-soft);
 }
-.kanban-col-list{ display:flex; flex-direction:column; gap:10px; min-height:60px; }
+.kanban-col-list{ display:flex; flex-direction:column; gap:10px; min-height:60px; border-radius:10px; transition:background .12s ease; }
 .kanban-col-list:empty::after{ content:'No jobs here'; color:var(--ink-faint); font-size:0.8rem; padding:14px 0; text-align:center; }
+.kanban-col-list.drag-over{ background:var(--panel); outline:2px dashed var(--accent); outline-offset:-2px; }
+.job-card[draggable="true"]{ cursor:grab; }
+.job-card.dragging{ opacity:0.4; }
 .kanban-column:nth-child(1) .kanban-col-header{ border-bottom-color:var(--pending); }
 .kanban-column:nth-child(2) .kanban-col-header{ border-bottom-color:var(--live); }
 .kanban-column:nth-child(3) .kanban-col-header{ border-bottom-color:var(--accent); }
