@@ -51,6 +51,47 @@ function milesBetween(lat1,lon1,lat2,lon2){
   const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
+// In-shop jobs never travel, so "en_route" is never a valid destination
+// for one — same rule already enforced by only showing "Start job" (no
+// "Heading there" step) on the mechanic's own in-shop job cards. This
+// keeps drag-and-drop from creating a state the rest of the app treats
+// as impossible.
+function isValidStatusMove(jobType, targetStatus){
+  if(jobType === 'inshop' && targetStatus === 'en_route') return false;
+  return targetStatus === 'assigned' || targetStatus === 'en_route' || targetStatus === 'on_site';
+}
+
+let draggedJobId = null;
+
+function wireKanbanDragDrop(board){
+  board.querySelectorAll('.job-card').forEach(card=>{
+    card.addEventListener('dragstart', ()=>{
+      draggedJobId = Number(card.dataset.job);
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', ()=>{
+      card.classList.remove('dragging');
+      draggedJobId = null;
+    });
+  });
+
+  board.querySelectorAll('.kanban-col-list').forEach(colList=>{
+    const targetStatus = colList.id.replace('kanban-', '');
+    colList.addEventListener('dragover', (e)=>{ e.preventDefault(); colList.classList.add('drag-over'); });
+    colList.addEventListener('dragleave', ()=> colList.classList.remove('drag-over'));
+    colList.addEventListener('drop', async (e)=>{
+      e.preventDefault();
+      colList.classList.remove('drag-over');
+      if(draggedJobId === null) return;
+      const card = board.querySelector(`.job-card[data-job="${draggedJobId}"]`);
+      const jobType = card ? card.dataset.jobtype : 'mobile';
+      if(!isValidStatusMove(jobType, targetStatus)) return;
+      const { error } = await sb.from('jobs').update({ status: targetStatus, updated_at: new Date().toISOString() }).eq('id', draggedJobId);
+      if(!error) refreshShopData();
+    });
+  });
+}
+
 function jobStatusBadge(status){
   const label = status.replace('_',' ');
   if(status === 'assigned') return `<span class="badge pending"><span class="bd"></span>${label}</span>`;
@@ -2116,7 +2157,7 @@ async function refreshShopData(){
   active.forEach(j => { if(columns[j.status]) columns[j.status].push(j); });
 
   function jobCardHtml(j){
-    return `<div class="job-card" data-job="${j.id}">
+    return `<div class="job-card" data-job="${j.id}" data-jobtype="${j.job_type}" draggable="true">
         <div class="job-card-top">
           <div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div>
           ${jobStatusBadge(j.status)}
@@ -2139,6 +2180,7 @@ async function refreshShopData(){
     if(countEl) countEl.textContent = String(jobsInCol.length);
   });
 
+  wireKanbanDragDrop(board);
   wireCommentToggles(board);
   wireAttachmentToggles(board);
   board.querySelectorAll('.job-card').forEach(card=>{
