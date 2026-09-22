@@ -426,7 +426,67 @@ let appEntered = false;
 const homeView = document.getElementById('homeView');
 const contactView = document.getElementById('contactView');
 const publicAuthView = document.getElementById('authView');
+const requestView = document.getElementById('requestView');
 const navHome = document.getElementById('navHome'), navSignin = document.getElementById('navSignin'), navContact = document.getElementById('navContact');
+
+// A visitor following a shop's shareable link (?request=<org_id>) has no
+// account at all — this runs independent of the normal auth flow and,
+// when the param is present, takes over the page instead of showing the
+// usual logged-out home screen.
+const requestOrgId = new URLSearchParams(window.location.search).get('request');
+if(requestOrgId){
+  homeView.classList.add('hidden');
+  requestView.classList.remove('hidden');
+  initPublicRequestPage(requestOrgId);
+}
+
+async function initPublicRequestPage(orgId){
+  const formCard = document.getElementById('requestFormCard');
+  const successCard = document.getElementById('requestSuccessCard');
+  const invalidCard = document.getElementById('requestInvalidCard');
+  const titleEl = document.getElementById('requestTitle');
+  const labelEl = document.getElementById('requestShopLabel');
+
+  const { data: orgRows, error: orgErr } = await sb.rpc('get_org_name_for_request', { target_org_id: orgId });
+  if(orgErr || !orgRows || orgRows.length === 0){
+    formCard.classList.add('hidden');
+    invalidCard.classList.remove('hidden');
+    return;
+  }
+  formCard.classList.remove('hidden');
+  const shopName = orgRows[0].name;
+  titleEl.textContent = `Request service from ${shopName}`;
+  labelEl.textContent = shopName.toUpperCase();
+
+  document.getElementById('requestSubmitBtn').onclick = async ()=>{
+    const customer_name = document.getElementById('reqCustomerName').value.trim();
+    const customer_phone = document.getElementById('reqCustomerPhone').value.trim();
+    const customer_email = document.getElementById('reqCustomerEmail').value.trim();
+    const vehicle = document.getElementById('reqVehicle').value.trim();
+    const issue_description = document.getElementById('reqIssue').value.trim();
+    const errEl = document.getElementById('requestError');
+    errEl.textContent = '';
+
+    if(!customer_name){ errEl.textContent = 'Enter your name.'; return; }
+    if(!customer_phone && !customer_email){ errEl.textContent = 'Enter a phone number or an email so the shop can reach you.'; return; }
+    if(!vehicle){ errEl.textContent = 'Enter your vehicle or unit.'; return; }
+    if(!issue_description){ errEl.textContent = "Describe what's going on."; return; }
+
+    const btn = document.getElementById('requestSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    const { error } = await sb.from('work_requests').insert([{
+      org_id: orgId, customer_name,
+      customer_phone: customer_phone || null,
+      customer_email: customer_email || null,
+      vehicle, issue_description,
+    }]);
+    btn.disabled = false; btn.textContent = 'Submit request';
+
+    if(error){ errEl.textContent = 'Could not send your request — please try again in a moment.'; return; }
+    formCard.classList.add('hidden');
+    successCard.classList.remove('hidden');
+  };
+}
 
 function showPublicView(which){
   [homeView, contactView, publicAuthView].forEach(v=>v.classList.add('hidden'));
@@ -1472,6 +1532,84 @@ function initInventoryUI(){
   document.getElementById('addInventoryItemBtn').onclick = addInventoryItem;
 }
 
+// ================= incoming work requests =================
+let pendingAcceptRequestId = null; // set when "Accept" is clicked, consumed once the job is actually created
+
+function setUpRequestLink(){
+  const url = `${window.location.origin}/?request=${session.orgId}`;
+  const input = document.getElementById('requestLinkDisplay');
+  if(input) input.value = url;
+  const btn = document.getElementById('copyRequestLinkBtn');
+  if(btn) btn.onclick = ()=>{
+    navigator.clipboard.writeText(url).then(()=>{
+      btn.textContent = 'Copied!';
+      setTimeout(()=>{ btn.textContent = 'Copy link'; }, 1800);
+    });
+  };
+}
+
+async function fetchPendingWorkRequests(){
+  const { data, error } = await sb.from('work_requests')
+    .select('id, customer_name, customer_phone, customer_email, vehicle, issue_description, created_at')
+    .eq('org_id', session.orgId).eq('status', 'pending')
+    .order('created_at', { ascending:false });
+  if(error){ console.error('fetchPendingWorkRequests', error); return []; }
+  return data || [];
+}
+
+function workRequestCardHtml(req){
+  const contact = [req.customer_phone, req.customer_email].filter(Boolean).join(' · ');
+  return `<div class="job-card">
+    <div class="job-card-top">
+      <div><b>${esc(req.customer_name)}</b><div class="meta">${esc(req.vehicle)} · ${new Date(req.created_at).toLocaleString()}</div></div>
+    </div>
+    <div class="meta" style="margin-top:6px;">${esc(contact)}</div>
+    <div style="margin-top:8px; font-size:0.85rem;">${esc(req.issue_description)}</div>
+    <div style="margin-top:10px; display:flex; gap:8px;">
+      <button class="text-btn wreq-accept-btn" data-id="${req.id}">Accept</button>
+      <button class="text-btn wreq-decline-btn" data-id="${req.id}">Decline</button>
+    </div>
+  </div>`;
+}
+
+async function refreshWorkRequests(){
+  const list = document.getElementById('workRequestsList');
+  const badge = document.getElementById('workRequestsBadge');
+  if(!list) return;
+  const requests = await fetchPendingWorkRequests();
+  list.innerHTML = requests.length ? requests.map(workRequestCardHtml).join('') : '<div class="empty-note">No pending requests.</div>';
+  if(badge){
+    if(requests.length){ badge.textContent = String(requests.length); badge.classList.remove('hidden'); }
+    else badge.classList.add('hidden');
+  }
+
+  list.querySelectorAll('.wreq-decline-btn').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const { error } = await sb.from('work_requests').update({ status:'declined', reviewed_at:new Date().toISOString() }).eq('id', Number(btn.dataset.id));
+      if(error){ alert('Could not decline: ' + error.message); return; }
+      refreshWorkRequests();
+    };
+  });
+  list.querySelectorAll('.wreq-accept-btn').forEach(btn=>{
+    btn.onclick = ()=>{
+      const req = requests.find(r => r.id === Number(btn.dataset.id));
+      if(!req) return;
+      pendingAcceptRequestId = req.id;
+      document.getElementById('njCustomer').value = req.customer_name;
+      document.getElementById('njVehicle').value = req.vehicle;
+      document.getElementById('njIssue').value = req.issue_description;
+      document.querySelector('[data-target="shop-jobs"]').click();
+      alert('Request details filled into the New Job form — finish assigning a mechanic and location, then create the job.');
+    };
+  });
+}
+
+function initWorkRequestsUI(){
+  setUpRequestLink();
+  refreshWorkRequests();
+  setInterval(refreshWorkRequests, 60000);
+}
+
 function initBillingUI(){
   populateBillingForm();
   document.getElementById('billingLogoInput').onchange = ()=>{
@@ -1760,6 +1898,7 @@ function initShopView(){
   safeInit('renderTeamList', renderTeamList);
   safeInit('initInvoicesUI', initInvoicesUI);
   safeInit('initInventoryUI', initInventoryUI);
+  safeInit('initWorkRequestsUI', initWorkRequestsUI);
   safeInit('initBillingUI', initBillingUI);
   safeInit('initHistoryUI', initHistoryUI);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
@@ -1789,6 +1928,14 @@ function initShopView(){
 
     if(issue && data && data[0]){
       await addJobComment(data[0].id, issue);
+    }
+
+    if(pendingAcceptRequestId && data && data[0]){
+      await sb.from('work_requests').update({
+        status: 'accepted', reviewed_at: new Date().toISOString(), converted_job_id: data[0].id,
+      }).eq('id', pendingAcceptRequestId);
+      pendingAcceptRequestId = null;
+      if(typeof refreshWorkRequests === 'function') refreshWorkRequests();
     }
 
     document.getElementById('njCustomer').value = ''; document.getElementById('njVehicle').value = ''; document.getElementById('njIssue').value = ''; addressInput.value = '';
