@@ -551,7 +551,7 @@ document.getElementById('loginSubmit').onclick = async (e)=>{
 document.getElementById('forgotPassBtn').onclick = async ()=>{
   const email = document.getElementById('loginEmail').value.trim();
   if(!email){ authError.textContent = 'Enter your email above first, then tap "Forgot password?" again.'; return; }
-  const { error } = await sb.auth.resetPasswordForEmail(email);
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
   authError.textContent = error ? error.message : '';
   if(!error) alert('Password reset email sent — check your inbox (and spam folder).');
 };
@@ -715,9 +715,21 @@ document.getElementById('pendingCheckBtn').onclick = async ()=>{
   }
 };
 
+// Set the moment a PASSWORD_RECOVERY event fires, and checked by the
+// SIGNED_IN branch below too — defense in depth in case a Supabase JS
+// version ever fires both events for the same recovery link, so a
+// recovery session can never fall through into a normal login before
+// the person has actually set a new password.
+let inRecoveryFlow = false;
+
 if(sb){
   sb.auth.onAuthStateChange((event, authSession) => {
-    if(event === 'SIGNED_IN' && authSession && !appEntered){
+    if(event === 'PASSWORD_RECOVERY'){
+      inRecoveryFlow = true;
+      document.getElementById('recoveryModalOverlay').classList.remove('hidden');
+      return;
+    }
+    if(event === 'SIGNED_IN' && authSession && !appEntered && !inRecoveryFlow){
       onAuthed(authSession.user.id);
     }
     if(event === 'SIGNED_OUT'){
@@ -725,9 +737,29 @@ if(sb){
     }
   });
   sb.auth.getSession().then(({ data }) => {
-    if(data.session && !appEntered) onAuthed(data.session.user.id);
+    if(data.session && !appEntered && !inRecoveryFlow) onAuthed(data.session.user.id);
   });
 }
+
+document.getElementById('recoverySubmitBtn').onclick = async ()=>{
+  const newPass = document.getElementById('recoveryNewPass').value;
+  const confirmPass = document.getElementById('recoveryConfirmPass').value;
+  const errEl = document.getElementById('recoveryError');
+  errEl.textContent = '';
+  if(newPass.length < 8){ errEl.textContent = 'Password must be at least 8 characters.'; return; }
+  if(newPass !== confirmPass){ errEl.textContent = 'Passwords do not match.'; return; }
+
+  const btn = document.getElementById('recoverySubmitBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const { error } = await sb.auth.updateUser({ password: newPass });
+  btn.disabled = false; btn.textContent = 'Set new password';
+  if(error){ errEl.textContent = error.message; return; }
+
+  document.getElementById('recoveryModalOverlay').classList.add('hidden');
+  inRecoveryFlow = false;
+  const { data } = await sb.auth.getSession();
+  if(data.session) onAuthed(data.session.user.id);
+};
 
 // ================= dashboard tabs =================
 function wireDashTabs(container){
@@ -1288,6 +1320,14 @@ function initInvoicesUI(){
   refreshInvoices();
   setInterval(refreshInvoices, 60000);
   document.getElementById('addInvItemBtn').onclick = ()=> addInvoiceItemRow();
+  const invItemPicker = document.getElementById('invItemPicker');
+  invItemPicker.onchange = ()=>{
+    const opt = invItemPicker.selectedOptions[0];
+    if(!opt || !opt.value) return;
+    addInvoiceItemRow({ description: opt.dataset.name, unit_price: opt.dataset.price });
+    invItemPicker.value = '';
+  };
+  populateInventoryPicker();
   document.getElementById('createInvoiceBtn').onclick = createInvoice;
   document.getElementById('kindInvoiceBtn').onclick = ()=> setInvoiceFormKind('invoice');
   document.getElementById('kindEstimateBtn').onclick = ()=> setInvoiceFormKind('estimate');
@@ -1356,6 +1396,80 @@ async function saveBillingProfile(){
   cachedReviewLink = document.getElementById('billingReviewLink').value.trim() || null;
   if(typeof refreshInvoices === 'function') refreshInvoices();
   alert('Billing info saved.');
+}
+
+// ================= inventory (price list) =================
+async function fetchInventoryItems(){
+  const { data, error } = await sb.from('inventory_items')
+    .select('id, name, description, unit_price, active')
+    .eq('org_id', session.orgId).eq('active', true)
+    .order('name', { ascending:true });
+  if(error){ console.error('fetchInventoryItems', error); return []; }
+  return data || [];
+}
+
+function inventoryItemCardHtml(item){
+  return `<div class="job-card">
+    <div class="job-card-top">
+      <div><b>${esc(item.name)}</b>${item.description ? `<div class="meta">${esc(item.description)}</div>` : ''}</div>
+      <b>$${Number(item.unit_price).toFixed(2)}</b>
+    </div>
+    <div style="margin-top:8px;"><button class="text-btn inv-item-delete-btn" data-id="${item.id}">Remove</button></div>
+  </div>`;
+}
+
+async function refreshInventory(){
+  const list = document.getElementById('inventoryList');
+  if(!list) return;
+  const items = await fetchInventoryItems();
+  list.innerHTML = items.length ? items.map(inventoryItemCardHtml).join('') : '<div class="empty-note">No items yet — add your common services and parts on the right.</div>';
+  list.querySelectorAll('.inv-item-delete-btn').forEach(btn=>{
+    btn.onclick = async ()=>{
+      if(!confirm('Remove this from your price list?')) return;
+      const { error } = await sb.from('inventory_items').update({ active:false }).eq('id', Number(btn.dataset.id));
+      if(error){ alert('Could not remove: ' + error.message); return; }
+      refreshInventory();
+      populateInventoryPicker();
+    };
+  });
+}
+
+async function addInventoryItem(){
+  const name = document.getElementById('invItemName').value.trim();
+  const description = document.getElementById('invItemDesc').value.trim();
+  const priceRaw = document.getElementById('invItemPrice').value;
+  const price = parseFloat(priceRaw);
+  if(!name){ alert('Enter a name.'); return; }
+  if(priceRaw === '' || isNaN(price) || price < 0){ alert('Enter a valid price (0 or more).'); return; }
+
+  const btn = document.getElementById('addInventoryItemBtn');
+  btn.disabled = true; btn.textContent = 'Adding…';
+  const { error } = await sb.from('inventory_items').insert([{
+    org_id: session.orgId, name, description: description || null, unit_price: price, created_by: session.id,
+  }]);
+  btn.disabled = false; btn.textContent = 'Add to price list';
+  if(error){ alert('Could not add item: ' + error.message); return; }
+
+  document.getElementById('invItemName').value = '';
+  document.getElementById('invItemDesc').value = '';
+  document.getElementById('invItemPrice').value = '';
+  refreshInventory();
+  populateInventoryPicker();
+}
+
+// Lets the invoice/estimate line-item form pull straight from the price
+// list instead of retyping a description and price that's already saved.
+async function populateInventoryPicker(){
+  const picker = document.getElementById('invItemPicker');
+  if(!picker) return;
+  const items = await fetchInventoryItems();
+  picker.innerHTML = '<option value="">+ Add from price list...</option>' +
+    items.map(i => `<option value="${i.id}" data-name="${esc(i.name)}" data-price="${i.unit_price}">${esc(i.name)} — $${Number(i.unit_price).toFixed(2)}</option>`).join('');
+}
+
+function initInventoryUI(){
+  refreshInventory();
+  document.getElementById('addInventoryItemBtn').onclick = addInventoryItem;
 }
 
 function initBillingUI(){
@@ -1645,6 +1759,7 @@ function initShopView(){
   safeInit('refreshShopData', refreshShopData);
   safeInit('renderTeamList', renderTeamList);
   safeInit('initInvoicesUI', initInvoicesUI);
+  safeInit('initInventoryUI', initInventoryUI);
   safeInit('initBillingUI', initBillingUI);
   safeInit('initHistoryUI', initHistoryUI);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
