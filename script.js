@@ -58,6 +58,33 @@ function jobStatusBadge(status){
   if(status === 'on_site') return `<span class="badge onsite"><span class="bd"></span>${label}</span>`;
   return `<span class="badge arrived"><span class="bd"></span>${label}</span>`; // complete
 }
+// A small, consistent icon set replacing emoji throughout the app.
+// Stroke-based, currentColor, so every icon automatically matches
+// whatever text color it sits in — no separate light/dark variants
+// needed. Kept to exactly the set the app actually uses, not a full
+// icon library, since anything unused is just dead weight.
+const ICONS = {
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
+  satellite: '<path d="M13 7l4 4-1.5 1.5L11 8.5 13 7z"/><path d="M8 12l4 4-4 4-4-4 4-4z"/><path d="M15.5 4.5L19.5 8.5"/><path d="M3 21l3-3"/>',
+  map: '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>',
+  chat: '<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+  paperclip: '<path d="M21.4 11.5l-9.2 9.2a5.5 5.5 0 0 1-7.8-7.8l9.2-9.2a3.5 3.5 0 0 1 5 5l-9.2 9.2a1.5 1.5 0 0 1-2.1-2.1l8.5-8.5"/>',
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>',
+  alert: '<path d="M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3.1l-8-14a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  compass: '<circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z"/>',
+  megaphone: '<path d="M3 11v2a2 2 0 0 0 2 2h1l4 4V5L6 9H5a2 2 0 0 0-2 2z"/><path d="M15 8a3 3 0 0 1 0 8M19 5a8 8 0 0 1 0 14"/>',
+  building: '<path d="M6 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v18"/><path d="M9 22V16h6v6"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1"/>',
+  key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.6 12.4L20 3M17 6l3 3M13.5 9.5l3 3"/>',
+  checkCircle: '<circle cx="12" cy="12" r="10"/><path d="M8.5 12.5l2.5 2.5 5-5"/>',
+  xCircle: '<circle cx="12" cy="12" r="10"/><path d="M9 9l6 6M15 9l-6 6"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+};
+function icon(name, size){
+  const px = size || 16;
+  return `<svg width="${px}" height="${px}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;">${ICONS[name] || ''}</svg>`;
+}
+
 function pinIcon(cls){
   return L.divIcon({ className:'', html:`<div class="relay-pin ${cls}"></div>`, iconSize:[16,16], iconAnchor:[8,8] });
 }
@@ -74,11 +101,11 @@ function addBaseMapToggle(map){
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'map-satellite-toggle';
-  btn.textContent = '🛰️ Satellite';
+  btn.innerHTML = icon('satellite') + ' Satellite';
   L.DomEvent.disableClickPropagation(btn); // don't let clicking the button also register as a map click (e.g. dropping a pin)
   btn.onclick = ()=>{
-    if(map.hasLayer(satelliteLayer)){ map.removeLayer(satelliteLayer); map.addLayer(streetLayer); btn.textContent = '🛰️ Satellite'; }
-    else{ map.removeLayer(streetLayer); map.addLayer(satelliteLayer); btn.textContent = '🗺️ Map'; }
+    if(map.hasLayer(satelliteLayer)){ map.removeLayer(satelliteLayer); map.addLayer(streetLayer); btn.innerHTML = icon('satellite') + ' Satellite'; }
+    else{ map.removeLayer(streetLayer); map.addLayer(satelliteLayer); btn.innerHTML = icon('map') + ' Map'; }
   };
   map.getContainer().appendChild(btn);
   return { streetLayer, satelliteLayer };
@@ -204,7 +231,7 @@ async function addJobComment(jobId, body){
 }
 function commentsBlockHtml(jobId){
   return `
-    <button class="comments-toggle" data-job="${jobId}">💬 Chat</button>
+    <button class="comments-toggle" data-job="${jobId}">${icon('chat')} Chat</button>
     <div class="comments-box hidden" id="comments-${jobId}">
       <div class="comment-list" id="comment-list-${jobId}"></div>
       <div class="comment-form">
@@ -295,7 +322,7 @@ function closeThread(jobId){
 const openAttachmentThreads = new Set();
 function attachmentsBlockHtml(jobId){
   return `
-    <button class="comments-toggle" data-attach-job="${jobId}">📎 Files</button>
+    <button class="comments-toggle" data-attach-job="${jobId}">${icon('paperclip')} Files</button>
     <div class="comments-box hidden" id="attachments-${jobId}">
       <div class="attach-list" id="attach-list-${jobId}"></div>
       <div class="attach-upload-row">
@@ -334,7 +361,7 @@ async function renderAttachmentList(jobId){
       <div class="attach-item">
         ${isImage
           ? `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" class="attach-thumb" alt="${esc(f.file_name)}"></a>`
-          : `<a href="${url}" target="_blank" rel="noopener" class="attach-file-link">📄 ${esc(f.file_name)}</a>`}
+          : `<a href="${url}" target="_blank" rel="noopener" class="attach-file-link">${icon('file')} ${esc(f.file_name)}</a>`}
         <div class="attach-meta">${photoTypeTag(f.photo_type)}${esc(f.profiles ? f.profiles.name : 'Someone')} · ${new Date(f.created_at).toLocaleDateString()}</div>
       </div>`;
   }));
@@ -746,12 +773,12 @@ function showPendingScreen(status){
   const view = document.getElementById('pendingApprovalView');
   view.classList.remove('hidden');
   if(status === 'rejected'){
-    document.getElementById('pendingIcon').textContent = '⚠️';
+    document.getElementById('pendingIcon').innerHTML = icon('alert', 40);
     document.getElementById('pendingTitle').textContent = "We couldn't approve this request";
     document.getElementById('pendingBody').textContent = "Your company's request to join Relay wasn't approved. If you think this is a mistake, reach out to us at hello@relayfleet.us.";
     document.getElementById('pendingCheckBtn').classList.add('hidden');
   } else {
-    document.getElementById('pendingIcon').textContent = '⏳';
+    document.getElementById('pendingIcon').innerHTML = icon('clock', 40);
     document.getElementById('pendingTitle').textContent = 'Your request is under review';
     document.getElementById('pendingBody').textContent = "Thanks for signing up for Relay. We're reviewing your company's request and will be in touch shortly.";
     document.getElementById('pendingCheckBtn').classList.remove('hidden');
@@ -1016,7 +1043,7 @@ async function renderMechJobs(){
         if(!mechDestMarkers[job.id]) mechDestMarkers[job.id] = L.marker([job.dest_lat, job.dest_lng], { icon: pinIcon('dest') }).addTo(mechMapObj);
       }
       const distRow = isInshop ? '' : `<div class="row"><span>Distance</span><b id="mech-dist-${job.id}">${distText}</b></div>`;
-      const directionsBtn = isInshop ? '' : `<a class="directions-btn" href="https://www.google.com/maps/dir/?api=1&destination=${job.dest_lat},${job.dest_lng}" target="_blank" rel="noopener">🧭 Get directions</a>`;
+      const directionsBtn = isInshop ? '' : `<a class="directions-btn" href="https://www.google.com/maps/dir/?api=1&destination=${job.dest_lat},${job.dest_lng}" target="_blank" rel="noopener">${icon('compass')} Get directions</a>`;
       // In-shop jobs skip "heading there" entirely — there's no travel,
       // so the job goes straight from assigned to being worked on.
       const actionButtons = isInshop
@@ -1632,7 +1659,7 @@ function initBillingUI(){
 // Still genuinely a client-side, low-stakes "have they seen this" flag,
 // not real app state — worst case on a new device, they see it again.
 const ANNOUNCEMENTS = [
-  { id: 'invoicing-2026-09', text: '🎉 New: create and send professional PDF invoices right from Relay — check out the Invoices and Billing tabs above.' },
+  { id: 'invoicing-2026-09', text: 'New: create and send professional PDF invoices right from Relay — check out the Invoices and Billing tabs above.' },
 ];
 
 function announcementsStorageKey(){ return 'dismissedAnnouncements_' + session.id; }
@@ -1646,7 +1673,7 @@ function renderAnnouncementBanner(){
   try { dismissed = JSON.parse(localStorage.getItem(announcementsStorageKey()) || '[]'); } catch(e){ dismissed = []; }
   const next = ANNOUNCEMENTS.find(a => !dismissed.includes(a.id));
   if(!next){ banner.classList.add('hidden'); return; }
-  textEl.textContent = next.text;
+  textEl.innerHTML = icon('megaphone') + ' ' + esc(next.text);
   banner.dataset.id = next.id;
   banner.classList.remove('hidden');
 }
@@ -2167,7 +2194,7 @@ async function loadFleetShops(){
   const listBox = document.getElementById('fleetShopList');
   const { data, error } = await sb.from('fleet_shop_links').select('org_id, organizations(name)').eq('fleet_id', session.id);
   if(error || !data || data.length === 0){ listBox.innerHTML = '<div class="empty-note">You haven\'t joined any shops yet.</div>'; return; }
-  listBox.innerHTML = data.map(l => `<span class="shop-chip">🏢 ${esc(l.organizations ? l.organizations.name : 'Unknown shop')}</span>`).join('');
+  listBox.innerHTML = data.map(l => `<span class="shop-chip">${icon('building')} ${esc(l.organizations ? l.organizations.name : 'Unknown shop')}</span>`).join('');
 }
 
 document.getElementById('fleetAddShopBtn').onclick = async ()=>{
@@ -2514,11 +2541,11 @@ async function refreshAdminData(){
 
   const btn = document.getElementById('themeToggle');
   const knob = btn.querySelector('.knob');
-  knob.textContent = theme === 'dark' ? '🌙' : '☀️';
+  knob.innerHTML = theme === 'dark' ? icon('moon', 14) : icon('sun', 14);
 
   btn.onclick = ()=>{
     const isDark = root.getAttribute('data-theme') === 'dark';
-    if(isDark){ root.removeAttribute('data-theme'); knob.textContent = '☀️'; localStorage.setItem('relay_theme','light'); }
-    else{ root.setAttribute('data-theme','dark'); knob.textContent = '🌙'; localStorage.setItem('relay_theme','dark'); }
+    if(isDark){ root.removeAttribute('data-theme'); knob.innerHTML = icon('sun', 14); localStorage.setItem('relay_theme','light'); }
+    else{ root.setAttribute('data-theme','dark'); knob.innerHTML = icon('moon', 14); localStorage.setItem('relay_theme','dark'); }
   };
 })();
