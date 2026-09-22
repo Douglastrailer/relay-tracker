@@ -55,6 +55,24 @@
       <div class="field" style="text-align:left;"><label>Phone</label><p style="margin-top:4px; color:var(--ink-soft);">+1 (417) 203-0461</p></div>
     </div>
   </div>
+
+  <div id="recoveryModalOverlay" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div style="font-size:1.8rem; margin-bottom:10px;">🔑</div>
+      <h2 style="font-family:var(--font-display); font-size:1.15rem; margin-bottom:8px;">Set a new password</h2>
+      <p class="auth-note" style="margin-top:0;">You followed a password reset link — choose a new password for your account below.</p>
+      <div class="field" style="margin-top:14px; text-align:left;">
+        <label>New password</label>
+        <input type="password" id="recoveryNewPass" placeholder="At least 8 characters">
+      </div>
+      <div class="field" style="text-align:left;">
+        <label>Confirm new password</label>
+        <input type="password" id="recoveryConfirmPass" placeholder="Re-enter the password above">
+      </div>
+      <p class="auth-error" id="recoveryError"></p>
+      <button class="auth-submit" id="recoverySubmitBtn" style="margin-top:6px;">Set new password</button>
+    </div>
+  </div>
 </div>
 
 <main>
@@ -296,6 +314,7 @@
       <button class="dash-tab" data-target="shop-jobs">Jobs</button>
       <button class="dash-tab" data-target="shop-history">History</button>
       <button class="dash-tab" data-target="shop-invoices">Invoices <span class="new-badge" id="invoicesNewBadge">NEW</span></button>
+      <button class="dash-tab" data-target="shop-inventory">Inventory</button>
       <button class="dash-tab" data-target="shop-billing">Billing <span class="new-badge" id="billingNewBadge">NEW</span></button>
       <button class="dash-tab" data-target="shop-team">Team</button>
       <button class="dash-tab" data-target="shop-analytics">Analytics</button>
@@ -390,12 +409,32 @@
             <div class="field"><label>Link to a job (optional)</label><select id="invJobSelect"><option value="">— No linked job —</option></select></div>
             <div class="field">
               <label>Line items</label>
+              <select id="invItemPicker" style="margin-bottom:8px;"><option value="">+ Add from price list...</option></select>
               <div id="invItemRows"></div>
               <button type="button" class="text-btn" id="addInvItemBtn">+ Add line item</button>
             </div>
             <div class="inv-total-row">Total: <b id="invTotalDisplay">$0.00</b></div>
             <div class="field"><label>Notes (optional)</label><textarea id="invNotes" rows="2" placeholder="e.g. Net 30 — thank you for your business"></textarea></div>
             <button id="createInvoiceBtn">Save invoice</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-panel hidden" id="shop-inventory">
+      <div class="grid-2 section">
+        <div>
+          <div class="section-head"><h2>Price list</h2></div>
+          <p class="meta" style="margin-bottom:12px;">Save your common services and parts once — pick them straight into any invoice or estimate instead of retyping.</p>
+          <div class="job-list" id="inventoryList"></div>
+        </div>
+        <div>
+          <div class="card new-job-form">
+            <h3>Add an item</h3>
+            <div class="field"><label>Name</label><input type="text" id="invItemName" placeholder="e.g. Oil change"></div>
+            <div class="field"><label>Description (optional)</label><textarea id="invItemDesc" rows="2" placeholder="e.g. Full synthetic, up to 5 quarts"></textarea></div>
+            <div class="field"><label>Price</label><input type="number" id="invItemPrice" min="0" step="0.01" placeholder="0.00"></div>
+            <button id="addInventoryItemBtn">Add to price list</button>
           </div>
         </div>
       </div>
