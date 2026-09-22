@@ -378,11 +378,26 @@
     </div>
 
     <div class="dash-panel hidden" id="shop-jobs">
+      <div class="section">
+        <div class="section-head"><h2>Active jobs</h2></div>
+        <div class="kanban-board" id="shopKanbanBoard">
+          <div class="kanban-column">
+            <div class="kanban-col-header"><span>Assigned</span><span class="kanban-count" id="kanbanCount-assigned">0</span></div>
+            <div class="kanban-col-list" id="kanban-assigned"></div>
+          </div>
+          <div class="kanban-column">
+            <div class="kanban-col-header"><span>Heading there</span><span class="kanban-count" id="kanbanCount-en_route">0</span></div>
+            <div class="kanban-col-list" id="kanban-en_route"></div>
+          </div>
+          <div class="kanban-column">
+            <div class="kanban-col-header"><span>On site</span><span class="kanban-count" id="kanbanCount-on_site">0</span></div>
+            <div class="kanban-col-list" id="kanban-on_site"></div>
+          </div>
+        </div>
+      </div>
       <div class="grid-2 section">
         <div>
-          <div class="section-head"><h2>Active jobs</h2></div>
-          <div class="job-list" id="shopJobList"></div>
-          <div class="section-head" style="margin-top:26px;"><h2>Completed history</h2></div>
+          <div class="section-head"><h2>Completed history</h2></div>
           <div class="job-list" id="shopHistoryList"></div>
         </div>
         <div>
