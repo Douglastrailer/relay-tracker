@@ -2080,12 +2080,16 @@ async function refreshShopData(){
   // follow-up, not done in this pass).
   renderAnalytics(active.concat(history), mechanics, mechName);
 
-  const list = document.getElementById('shopJobList');
-  const _s1 = preserveOpenChatNodes(list);
-  if(active.length === 0){ list.innerHTML = '<div class="empty-note">No active jobs — create one on the right.</div>'; }
-  else {
-    list.innerHTML = active.slice().reverse().map(j => `
-      <div class="job-card" data-job="${j.id}">
+  // Kanban board: same job cards as before, just grouped into columns by
+  // status instead of one flat list — "complete" jobs don't appear here
+  // at all now that there's a dedicated History tab for them.
+  const board = document.getElementById('shopKanbanBoard');
+  const _s1 = preserveOpenChatNodes(board);
+  const columns = { assigned: [], en_route: [], on_site: [] };
+  active.forEach(j => { if(columns[j.status]) columns[j.status].push(j); });
+
+  function jobCardHtml(j){
+    return `<div class="job-card" data-job="${j.id}">
         <div class="job-card-top">
           <div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div>
           ${jobStatusBadge(j.status)}
@@ -2097,34 +2101,42 @@ async function refreshShopData(){
         <div class="j-editbox"></div>
         ${commentsBlockHtml(j.id)}
         ${attachmentsBlockHtml(j.id)}
-      </div>`).join('');
+      </div>`;
+  }
 
-    wireCommentToggles(list);
-    wireAttachmentToggles(list);
-    list.querySelectorAll('.job-card').forEach(card=>{
-      const jobId = Number(card.dataset.job);
-      const job = active.find(j=>j.id===jobId);
-      card.querySelector('.j-delete').onclick = async ()=>{
-        if(!confirm('Delete this job? This cannot be undone.')) return;
-        const { error } = await sb.from('jobs').delete().eq('id', jobId);
+  Object.keys(columns).forEach(status=>{
+    const colList = document.getElementById('kanban-' + status);
+    const countEl = document.getElementById('kanbanCount-' + status);
+    const jobsInCol = columns[status].slice().reverse();
+    colList.innerHTML = jobsInCol.map(jobCardHtml).join('');
+    if(countEl) countEl.textContent = String(jobsInCol.length);
+  });
+
+  wireCommentToggles(board);
+  wireAttachmentToggles(board);
+  board.querySelectorAll('.job-card').forEach(card=>{
+    const jobId = Number(card.dataset.job);
+    const job = active.find(j=>j.id===jobId);
+    card.querySelector('.j-delete').onclick = async ()=>{
+      if(!confirm('Delete this job? This cannot be undone.')) return;
+      const { error } = await sb.from('jobs').delete().eq('id', jobId);
+      if(!error) refreshShopData();
+    };
+    card.querySelector('.j-edit').onclick = ()=>{
+      const box = card.querySelector('.j-editbox');
+      box.innerHTML = jobEditRowHtml(job, mechanics);
+      box.querySelector('.ej-cancel').onclick = ()=>{ box.innerHTML = ''; };
+      box.querySelector('.ej-save').onclick = async ()=>{
+        const customer = box.querySelector('.ej-customer').value.trim();
+        const vehicle = box.querySelector('.ej-vehicle').value.trim();
+        const mechanic_id = box.querySelector('.ej-mechanic').value;
+        if(!customer || !vehicle || !mechanic_id) return;
+        const { error } = await sb.from('jobs').update({ customer, vehicle, mechanic_id, updated_at:new Date().toISOString() }).eq('id', jobId);
         if(!error) refreshShopData();
       };
-      card.querySelector('.j-edit').onclick = ()=>{
-        const box = card.querySelector('.j-editbox');
-        box.innerHTML = jobEditRowHtml(job, mechanics);
-        box.querySelector('.ej-cancel').onclick = ()=>{ box.innerHTML = ''; };
-        box.querySelector('.ej-save').onclick = async ()=>{
-          const customer = box.querySelector('.ej-customer').value.trim();
-          const vehicle = box.querySelector('.ej-vehicle').value.trim();
-          const mechanic_id = box.querySelector('.ej-mechanic').value;
-          if(!customer || !vehicle || !mechanic_id) return;
-          const { error } = await sb.from('jobs').update({ customer, vehicle, mechanic_id, updated_at:new Date().toISOString() }).eq('id', jobId);
-          if(!error) refreshShopData();
-        };
-      };
-    });
-  }
-  restoreOpenChatNodes(list, _s1);
+    };
+  });
+  restoreOpenChatNodes(board, _s1);
 
   const histBox = document.getElementById('shopHistoryList');
   const _s2 = preserveOpenChatNodes(histBox);
