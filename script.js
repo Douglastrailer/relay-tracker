@@ -508,6 +508,59 @@ if(requestOrgId){
   initPublicRequestPage(requestOrgId);
 }
 
+let reqServiceType = 'mobile';
+let reqChosenPin = null; // { lat, lng, display_name } once a suggestion is picked
+
+function setReqTypeUI(type){
+  reqServiceType = type;
+  document.getElementById('reqTypeMobileBtn').classList.toggle('active', type === 'mobile');
+  document.getElementById('reqTypeInshopBtn').classList.toggle('active', type === 'inshop');
+  document.getElementById('reqLocationField').classList.toggle('hidden', type !== 'mobile');
+  document.getElementById('reqEtaField').classList.toggle('hidden', type !== 'inshop');
+}
+
+// Standalone address autocomplete for the public page — same debounced
+// Nominatim lookup pattern as the shop's own job-creation form, but
+// suggestions-only, no map/pin-drop. A customer picking their location
+// on a phone during a breakdown is better served by "type it, tap the
+// right suggestion" than dragging a pin on a small screen.
+function initReqAddressAutocomplete(){
+  const input = document.getElementById('reqAddressInput');
+  const suggestBox = document.getElementById('reqAddressSuggestions');
+  const hint = document.getElementById('reqAddressHint');
+  let debounce = null;
+
+  function hideSuggestions(){ suggestBox.classList.add('hidden'); suggestBox.innerHTML = ''; }
+  function renderSuggestions(results){
+    if(!results || results.length === 0){ hideSuggestions(); return; }
+    suggestBox.innerHTML = results.map((r, i) => `<button type="button" class="address-suggestion" data-i="${i}">${esc(r.display_name)}</button>`).join('');
+    suggestBox.classList.remove('hidden');
+    suggestBox.querySelectorAll('.address-suggestion').forEach(btn=>{
+      btn.onclick = ()=>{
+        const r = results[Number(btn.dataset.i)];
+        reqChosenPin = { lat: parseFloat(r.lat), lng: parseFloat(r.lon), display_name: r.display_name };
+        input.value = r.display_name;
+        hint.textContent = 'Location set.';
+        hideSuggestions();
+      };
+    });
+  }
+  input.addEventListener('input', ()=>{
+    reqChosenPin = null; // typing again invalidates whatever was picked before
+    const query = input.value;
+    clearTimeout(debounce);
+    if(!query || query.trim().length < 3){ hideSuggestions(); return; }
+    debounce = setTimeout(async ()=>{
+      try{
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(query)}`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+        renderSuggestions(await res.json());
+      }catch(e){ hideSuggestions(); }
+    }, 450);
+  });
+  document.addEventListener('click', (e)=>{ if(!suggestBox.contains(e.target) && e.target !== input) hideSuggestions(); });
+}
+
 async function initPublicRequestPage(orgId){
   const formCard = document.getElementById('requestFormCard');
   const successCard = document.getElementById('requestSuccessCard');
@@ -526,12 +579,18 @@ async function initPublicRequestPage(orgId){
   titleEl.textContent = `Request service from ${shopName}`;
   labelEl.textContent = shopName.toUpperCase();
 
+  document.getElementById('reqTypeMobileBtn').onclick = ()=> setReqTypeUI('mobile');
+  document.getElementById('reqTypeInshopBtn').onclick = ()=> setReqTypeUI('inshop');
+  initReqAddressAutocomplete();
+
   document.getElementById('requestSubmitBtn').onclick = async ()=>{
     const customer_name = document.getElementById('reqCustomerName').value.trim();
+    const company_name = document.getElementById('reqCompanyName').value.trim();
     const customer_phone = document.getElementById('reqCustomerPhone').value.trim();
     const customer_email = document.getElementById('reqCustomerEmail').value.trim();
     const vehicle = document.getElementById('reqVehicle').value.trim();
     const issue_description = document.getElementById('reqIssue').value.trim();
+    const eta_to_shop = document.getElementById('reqEta').value.trim();
     const errEl = document.getElementById('requestError');
     errEl.textContent = '';
 
@@ -539,15 +598,28 @@ async function initPublicRequestPage(orgId){
     if(!customer_phone && !customer_email){ errEl.textContent = 'Enter a phone number or an email so the shop can reach you.'; return; }
     if(!vehicle){ errEl.textContent = 'Enter your vehicle or unit.'; return; }
     if(!issue_description){ errEl.textContent = "Describe what's going on."; return; }
+    if(reqServiceType === 'mobile' && !reqChosenPin){ errEl.textContent = 'Enter your location and pick the exact match from the list.'; return; }
+    if(reqServiceType === 'inshop' && !eta_to_shop){ errEl.textContent = 'Let the shop know when you can bring it in.'; return; }
 
-    const btn = document.getElementById('requestSubmitBtn');
-    btn.disabled = true; btn.textContent = 'Sending…';
-    const { error } = await sb.from('work_requests').insert([{
+    const payload = {
       org_id: orgId, customer_name,
+      company_name: company_name || null,
       customer_phone: customer_phone || null,
       customer_email: customer_email || null,
       vehicle, issue_description,
-    }]);
+      job_type: reqServiceType,
+    };
+    if(reqServiceType === 'mobile'){
+      payload.breakdown_lat = reqChosenPin.lat;
+      payload.breakdown_lng = reqChosenPin.lng;
+      payload.breakdown_address = reqChosenPin.display_name;
+    } else {
+      payload.eta_to_shop = eta_to_shop;
+    }
+
+    const btn = document.getElementById('requestSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    const { error } = await sb.from('work_requests').insert([payload]);
     btn.disabled = false; btn.textContent = 'Submit request';
 
     if(error){ errEl.textContent = 'Could not send your request — please try again in a moment.'; return; }
@@ -1618,7 +1690,7 @@ function setUpRequestLink(){
 
 async function fetchPendingWorkRequests(){
   const { data, error } = await sb.from('work_requests')
-    .select('id, customer_name, customer_phone, customer_email, vehicle, issue_description, created_at')
+    .select('id, customer_name, company_name, customer_phone, customer_email, vehicle, issue_description, job_type, breakdown_lat, breakdown_lng, breakdown_address, eta_to_shop, created_at')
     .eq('org_id', session.orgId).eq('status', 'pending')
     .order('created_at', { ascending:false });
   if(error){ console.error('fetchPendingWorkRequests', error); return []; }
@@ -1626,12 +1698,18 @@ async function fetchPendingWorkRequests(){
 }
 
 function workRequestCardHtml(req){
+  const isInshop = req.job_type === 'inshop';
   const contact = [req.customer_phone, req.customer_email].filter(Boolean).join(' · ');
+  const nameLine = req.company_name ? `${esc(req.customer_name)} — ${esc(req.company_name)}` : esc(req.customer_name);
+  const typeDetail = isInshop
+    ? `<div class="meta" style="margin-top:4px;">Bringing it in: ${esc(req.eta_to_shop)}</div>`
+    : `<div class="meta" style="margin-top:4px;">Location: ${esc(req.breakdown_address)}</div>`;
   return `<div class="job-card">
     <div class="job-card-top">
-      <div><b>${esc(req.customer_name)}</b><div class="meta">${esc(req.vehicle)} · ${new Date(req.created_at).toLocaleString()}</div></div>
+      <div><span class="doc-kind-tag">${isInshop ? 'IN-SHOP' : 'MOBILE'}</span><b>${nameLine}</b><div class="meta">${esc(req.vehicle)} · ${new Date(req.created_at).toLocaleString()}</div></div>
     </div>
     <div class="meta" style="margin-top:6px;">${esc(contact)}</div>
+    ${typeDetail}
     <div style="margin-top:8px; font-size:0.85rem;">${esc(req.issue_description)}</div>
     <div style="margin-top:10px; display:flex; gap:8px;">
       <button class="text-btn wreq-accept-btn" data-id="${req.id}">Accept</button>
@@ -1663,11 +1741,21 @@ async function refreshWorkRequests(){
       const req = requests.find(r => r.id === Number(btn.dataset.id));
       if(!req) return;
       pendingAcceptRequestId = req.id;
-      document.getElementById('njCustomer').value = req.customer_name;
+      const company = req.company_name ? ` (${req.company_name})` : '';
+      document.getElementById('njCustomer').value = req.customer_name + company;
       document.getElementById('njVehicle').value = req.vehicle;
-      document.getElementById('njIssue').value = req.issue_description;
+      const issueWithEta = req.job_type === 'inshop' ? `${req.issue_description}\n\nCustomer's ETA: ${req.eta_to_shop}` : req.issue_description;
+      document.getElementById('njIssue').value = issueWithEta;
+
+      if(typeof window.__setJobTypeUI === 'function') window.__setJobTypeUI(req.job_type);
+      if(req.job_type === 'mobile' && req.breakdown_lat && typeof window.__setJobPin === 'function'){
+        window.__setJobPin(req.breakdown_lat, req.breakdown_lng, `From request: ${req.breakdown_address}`);
+        const addrInput = document.getElementById('addressInput');
+        if(addrInput) addrInput.value = req.breakdown_address;
+      }
+
       document.querySelector('[data-target="shop-jobs"]').click();
-      alert('Request details filled into the New Job form — finish assigning a mechanic and location, then create the job.');
+      alert('Request details filled into the New Job form, including location and service type — just assign a mechanic and create the job.');
     };
   });
 }
@@ -1849,6 +1937,7 @@ function initShopView(){
     pinMapObj.setView(latlng, 15);
     document.getElementById('pinHint').textContent = hintText;
   }
+  window.__setJobPin = setPin; // bridges to the accept-a-request flow, which lives outside this function's scope
 
   const addressInput = document.getElementById('addressInput');
   const addressBtn = document.getElementById('addressSearchBtn');
@@ -1942,6 +2031,7 @@ function initShopView(){
     document.getElementById('njLocationField').classList.toggle('hidden', type === 'inshop');
     document.getElementById('njInshopNote').classList.toggle('hidden', type !== 'inshop');
   }
+  window.__setJobTypeUI = setJobTypeUI; // bridges to the accept-a-request flow, same reason as __setJobPin above
   document.getElementById('jobTypeMobileBtn').onclick = ()=> setJobTypeUI('mobile');
   document.getElementById('jobTypeInshopBtn').onclick = ()=> setJobTypeUI('inshop');
 
