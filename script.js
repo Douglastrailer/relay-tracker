@@ -1067,6 +1067,7 @@ function enterApp(){
 
 // ================= MECHANIC VIEW =================
 function initMechanicView(){
+  if(mechMapObj){ mechMapObj.remove(); mechMapObj = null; } // this view's init can run more than once per page session — a fresh L.map() on an already-initialized container throws
   mechMapObj = L.map('mechMap', { zoomControl:true, attributionControl:false }).setView([42.45, -83.25], 10);
   addBaseMapToggle(mechMapObj);
 
@@ -1919,11 +1920,13 @@ function initHistoryUI(){
 }
 
 function initShopView(){
+  if(shopMap){ shopMap.remove(); shopMap = null; } // guards against initShopView running more than once per page session (e.g. sign-out then sign-in without a full reload)
   shopMap = L.map('shopOpsMap', { attributionControl:false }).setView([42.45, -83.25], 10);
   addBaseMapToggle(shopMap);
 
   loadInviteCode();
 
+  if(pinMapObj){ pinMapObj.remove(); pinMapObj = null; }
   pinMapObj = L.map('pinMap', { attributionControl:false }).setView([42.45, -83.25], 10);
   addBaseMapToggle(pinMapObj);
   pinMapObj.on('click', (e)=>{
@@ -2426,6 +2429,7 @@ let adminOpsMap = null;
 const adminMarkers = {};
 
 function initAdminView(){
+  if(adminOpsMap){ adminOpsMap.remove(); adminOpsMap = null; } // same guard as the other three view-init maps
   adminOpsMap = L.map('adminOpsMap', { attributionControl:false }).setView([42.45, -83.25], 9);
   addBaseMapToggle(adminOpsMap);
 
