@@ -80,9 +80,9 @@
   <!-- ================= PUBLIC HOME ================= -->
   <div id="homeView">
     <div class="landing-hero">
-      <span class="auth-eyebrow">RELAY · LIVE TRACKING &amp; INVOICING FOR SERVICE COMPANIES</span>
-      <h1>From breakdown call to<br>paid invoice. All in Relay.</h1>
-      <p>Relay connects your mechanics, your dispatch team, and the customers you serve — one shared, real-time view of every job, from breakdown to completion. Then it turns the finished work straight into a professional invoice, no separate app for billing.</p>
+      <span class="auth-eyebrow">RELAY · DISPATCH, IN-SHOP &amp; INVOICING FOR SERVICE COMPANIES</span>
+      <h1>From first contact to<br>paid invoice. All in Relay.</h1>
+      <p>Relay connects your mechanics, your dispatch team, and the customers you serve — one shared, real-time view of every job, whether it's a live-tracked roadside call or work done right in your bay. Customers can even request service themselves through your own link. Then it turns the finished work straight into a professional invoice, no separate app for billing.</p>
       <div class="hero-cta">
         <button class="auth-submit landing-cta" id="landingSignup">Get started</button>
         <button class="btn-ghost" id="landingLogin">I already have an account</button>
@@ -93,17 +93,17 @@
       <div class="hiw-step">
         <div class="hiw-num">1</div>
         <div class="hiw-title">Create a job</div>
-        <div class="hiw-desc">Log the breakdown location and pick a technician.</div>
+        <div class="hiw-desc">Log it yourself, or let a customer request service through your own link.</div>
       </div>
       <div class="hiw-step">
         <div class="hiw-num">2</div>
-        <div class="hiw-title">Go live</div>
-        <div class="hiw-desc">The technician shares real GPS location the moment they head out.</div>
+        <div class="hiw-title">Get to work</div>
+        <div class="hiw-desc">Mobile jobs track live GPS to the breakdown. In-shop jobs move straight to the bay.</div>
       </div>
       <div class="hiw-step">
         <div class="hiw-num">3</div>
-        <div class="hiw-title">Track live</div>
-        <div class="hiw-desc">Everyone involved sees the same real-time status, together.</div>
+        <div class="hiw-title">Track progress</div>
+        <div class="hiw-desc">A real workflow board — drag a job from assigned to done, everyone sees the same status.</div>
       </div>
       <div class="hiw-step">
         <div class="hiw-num">4</div>
@@ -115,16 +115,30 @@
     <div class="feature-grid">
       <div class="feature-card">
         <h3>For shop owners</h3>
-        <p>See your whole team on one live map, assign jobs, and send professional PDF invoices the moment a job wraps up — without a single phone call or a separate invoicing app.</p>
+        <p>Run mobile dispatch and in-shop work on one workflow board, let customers request service through your own link, and send professional PDF invoices the moment a job wraps up — no phone tag, no separate invoicing app.</p>
       </div>
       <div class="feature-card">
         <h3>For mechanics</h3>
-        <p>One tap to go live. Turn-by-turn directions to every job, and a direct line to dispatch when you need it.</p>
+        <p>One tap to go live on a roadside call, with turn-by-turn directions and a direct line to dispatch. In-shop jobs skip the GPS entirely — just start the job and mark it done.</p>
       </div>
       <div class="feature-card">
         <h3>For fleet managers</h3>
         <p>Know exactly when help will arrive — real distance, real ETA, not a guess from a dispatcher — then get a clean, professional invoice the moment the job's done.</p>
       </div>
+    </div>
+
+    <div class="invoicing-showcase">
+      <span class="auth-eyebrow">NEW · CUSTOMER SELF-SERVICE</span>
+      <h2>Let customers request service themselves — no phone call needed.</h2>
+      <p>Share one link. They tell you what's wrong and where they are, you decide when to start.</p>
+      <ul class="invoicing-checklist">
+        <li>No login or app required for your customer</li>
+        <li>Works for both mobile breakdowns and in-shop drop-offs</li>
+        <li>Real address for mobile requests — you know exactly where they are</li>
+        <li>Company name, contact info, and vehicle, all captured up front</li>
+        <li>Nothing becomes a real job until you review and accept it</li>
+        <li>Accepted requests turn straight into a job — no re-typing</li>
+      </ul>
     </div>
 
     <div class="invoicing-showcase">
@@ -174,11 +188,35 @@
 
     <div class="card new-job-form" style="max-width:560px; margin:0 auto;" id="requestFormCard">
       <div class="field"><label>Your name</label><input type="text" id="reqCustomerName" placeholder="e.g. Jane Smith"></div>
+      <div class="field"><label>Company name (optional)</label><input type="text" id="reqCompanyName" placeholder="e.g. Acme Logistics"></div>
       <div class="field"><label>Phone</label><input type="tel" id="reqCustomerPhone" placeholder="e.g. (555) 123-4567"></div>
       <div class="field"><label>Email</label><input type="email" id="reqCustomerEmail" placeholder="you@example.com"></div>
       <p class="meta" style="margin:-6px 0 4px;">At least a phone or an email, so we can reach you back.</p>
       <div class="field"><label>Vehicle / unit</label><input type="text" id="reqVehicle" placeholder="e.g. Ford F-150, Trailer #7790"></div>
       <div class="field"><label>What's going on?</label><textarea id="reqIssue" rows="4" placeholder="e.g. Grinding noise when braking, started yesterday"></textarea></div>
+
+      <div class="field">
+        <label>What do you need?</label>
+        <div class="kind-toggle">
+          <button type="button" class="kind-toggle-btn active" data-reqtype="mobile" id="reqTypeMobileBtn">Someone comes to me</button>
+          <button type="button" class="kind-toggle-btn" data-reqtype="inshop" id="reqTypeInshopBtn">I'll bring it in</button>
+        </div>
+      </div>
+
+      <div class="field" id="reqLocationField">
+        <label>Where are you?</label>
+        <div class="address-search" style="position:relative;">
+          <input type="text" id="reqAddressInput" placeholder="Start typing your location..." autocomplete="off">
+          <div class="address-suggestions hidden" id="reqAddressSuggestions"></div>
+        </div>
+        <p class="meta" id="reqAddressHint" style="margin-top:6px;">Pick the exact match from the list.</p>
+      </div>
+
+      <div class="field hidden" id="reqEtaField">
+        <label>When can you bring it in?</label>
+        <input type="text" id="reqEta" placeholder="e.g. Tomorrow around 9am">
+      </div>
+
       <p class="auth-error" id="requestError"></p>
       <button class="auth-submit" id="requestSubmitBtn">Submit request</button>
     </div>
