@@ -282,11 +282,23 @@ function commentsBlockHtml(jobId){
     </div>`;
 }
 const openCommentThreads = new Set();
+// The same job can be rendered on more than one tab at once (e.g. the Jobs
+// tab's "Completed history" and the History page), which means two
+// elements share an id. getElementById only ever returns the first one —
+// usually the copy on a hidden tab — so lookups here are scoped to the
+// panel next to the button that was clicked, and list renders update
+// every copy.
+function allById(id){ return document.querySelectorAll('[id="'+id+'"]'); }
+function panelForToggle(btn, prefix, jobId){
+  const next = btn.nextElementSibling;
+  if(next && next.id === prefix + jobId) return next;
+  return document.getElementById(prefix + jobId);
+}
 async function renderCommentList(jobId){
-  const listEl = document.getElementById('comment-list-'+jobId);
-  if(!listEl) return;
+  const listEls = allById('comment-list-'+jobId);
+  if(listEls.length === 0) return;
   const comments = await fetchJobComments(jobId);
-  listEl.innerHTML = comments.length === 0 ? '<div class="empty-note">No messages yet.</div>' :
+  const html = comments.length === 0 ? '<div class="empty-note">No messages yet.</div>' :
     comments.map(c => {
       const mine = c.author_id === session.id;
       return `<div class="comment-item ${mine?'mine':''}">
@@ -297,7 +309,7 @@ async function renderCommentList(jobId){
         </div>
       </div>`;
     }).join('');
-  listEl.scrollTop = listEl.scrollHeight;
+  listEls.forEach(listEl=>{ listEl.innerHTML = html; listEl.scrollTop = listEl.scrollHeight; });
 }
 // Keeps an open chat's actual input box alive across a page rebuild,
 // instead of destroying it and copying the text back in. Copying text
@@ -323,22 +335,24 @@ function restoreOpenChatNodes(container, preserved){
 function wireCommentToggles(container){
   container.querySelectorAll('.comments-toggle').forEach(btn=>{
     const jobId = btn.dataset.job;
+    const box = panelForToggle(btn, 'comments-', jobId);
     btn.onclick = ()=>{
-      const box = document.getElementById('comments-'+jobId);
-      if(box.classList.contains('hidden')) openThread(jobId); else closeThread(jobId);
+      if(!box) return;
+      if(box.classList.contains('hidden')) openThread(jobId, box); else closeThread(jobId, box);
     };
-    if(openCommentThreads.has(jobId)) openThread(jobId);
+    if(openCommentThreads.has(jobId) && box) openThread(jobId, box);
   });
 }
 const commentDrafts = {};
-function openThread(jobId){
-  const box = document.getElementById('comments-'+jobId);
+function openThread(jobId, box){
+  box = box || document.getElementById('comments-'+jobId);
   if(!box) return;
   box.classList.remove('hidden');
   openCommentThreads.add(jobId);
   renderCommentList(jobId);
-  const input = document.getElementById('comment-input-'+jobId);
-  const send = document.getElementById('comment-send-'+jobId);
+  const input = box.querySelector('#comment-input-'+jobId);
+  const send = box.querySelector('#comment-send-'+jobId);
+  if(!input || !send) return;
   if(commentDrafts[jobId]) input.value = commentDrafts[jobId];
   input.oninput = ()=>{ commentDrafts[jobId] = input.value; };
   const submit = async ()=>{
@@ -353,8 +367,8 @@ function openThread(jobId){
   send.onclick = submit;
   input.onkeydown = (e)=>{ if(e.key === 'Enter') submit(); };
 }
-function closeThread(jobId){
-  const box = document.getElementById('comments-'+jobId);
+function closeThread(jobId, box){
+  box = box || document.getElementById('comments-'+jobId);
   if(box) box.classList.add('hidden');
   openCommentThreads.delete(jobId);
 }
@@ -390,10 +404,10 @@ async function fetchAttachments(jobId){
   return data || [];
 }
 async function renderAttachmentList(jobId){
-  const listEl = document.getElementById('attach-list-'+jobId);
-  if(!listEl) return;
+  const listEls = allById('attach-list-'+jobId);
+  if(listEls.length === 0) return;
   const files = await fetchAttachments(jobId);
-  if(files.length === 0){ listEl.innerHTML = '<div class="empty-note">No files yet.</div>'; return; }
+  if(files.length === 0){ listEls.forEach(el=>{ el.innerHTML = '<div class="empty-note">No files yet.</div>'; }); return; }
   const items = await Promise.all(files.map(async f=>{
     const { data: signed } = await sb.storage.from('job-attachments').createSignedUrl(f.file_path, 3600);
     const url = signed ? signed.signedUrl : '#';
@@ -406,16 +420,18 @@ async function renderAttachmentList(jobId){
         <div class="attach-meta">${photoTypeTag(f.photo_type)}${esc(f.profiles ? f.profiles.name : 'Someone')} · ${new Date(f.created_at).toLocaleDateString()}</div>
       </div>`;
   }));
-  listEl.innerHTML = items.join('');
+  const html = items.join('');
+  listEls.forEach(el=>{ el.innerHTML = html; });
 }
-function openAttachmentThread(jobId){
-  const box = document.getElementById('attachments-'+jobId);
+function openAttachmentThread(jobId, box){
+  box = box || document.getElementById('attachments-'+jobId);
   if(!box) return;
   box.classList.remove('hidden');
   openAttachmentThreads.add(jobId);
   renderAttachmentList(jobId);
-  const input = document.getElementById('attach-input-'+jobId);
-  const typeSelect = document.getElementById('attach-type-'+jobId);
+  const input = box.querySelector('#attach-input-'+jobId);
+  const typeSelect = box.querySelector('#attach-type-'+jobId);
+  if(!input) return;
   input.onchange = async ()=>{
     const file = input.files[0];
     if(!file) return;
@@ -430,19 +446,20 @@ function openAttachmentThread(jobId){
     renderAttachmentList(jobId);
   };
 }
-function closeAttachmentThread(jobId){
-  const box = document.getElementById('attachments-'+jobId);
+function closeAttachmentThread(jobId, box){
+  box = box || document.getElementById('attachments-'+jobId);
   if(box) box.classList.add('hidden');
   openAttachmentThreads.delete(jobId);
 }
 function wireAttachmentToggles(container){
   container.querySelectorAll('[data-attach-job]').forEach(btn=>{
     const jobId = btn.dataset.attachJob;
+    const box = panelForToggle(btn, 'attachments-', jobId);
     btn.onclick = ()=>{
-      const box = document.getElementById('attachments-'+jobId);
-      if(box.classList.contains('hidden')) openAttachmentThread(jobId); else closeAttachmentThread(jobId);
+      if(!box) return;
+      if(box.classList.contains('hidden')) openAttachmentThread(jobId, box); else closeAttachmentThread(jobId, box);
     };
-    if(openAttachmentThreads.has(jobId)) openAttachmentThread(jobId);
+    if(openAttachmentThreads.has(jobId) && box) openAttachmentThread(jobId, box);
   });
 }
 
