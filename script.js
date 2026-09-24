@@ -811,7 +811,7 @@ document.getElementById('editCompanyBtn').onclick = async ()=>{
   const { error } = await sb.from('organizations').update({ name: newName.trim() }).eq('id', session.orgId);
   if(error){ alert('Could not update company name: ' + error.message); return; }
   session.orgName = newName.trim();
-  document.getElementById('whoOrg').textContent = '· ' + session.orgName;
+  document.getElementById('whoOrg').textContent = session.orgName || '';
   alert('Company name updated.');
 };
 
@@ -880,7 +880,7 @@ function showPendingScreen(status){
   document.getElementById('whoRole').textContent =
     session.role === 'shop' ? 'Shop owner' :
     session.role === 'fleet' ? 'Fleet manager' : 'Mechanic';
-  document.getElementById('whoOrg').textContent = session.orgName ? '· ' + session.orgName : '';
+  document.getElementById('whoOrg').textContent = session.orgName || '';
   document.getElementById('editCompanyBtn').classList.add('hidden');
 
   const view = document.getElementById('pendingApprovalView');
@@ -961,27 +961,82 @@ document.getElementById('recoverySubmitBtn').onclick = async ()=>{
   if(data.session) onAuthed(data.session.user.id);
 };
 
-// ================= dashboard tabs =================
+// ================= dashboard tabs / sidebar =================
+// The tab bars are rendered as the left sidebar purely through CSS — the
+// wiring below is unchanged in spirit (same buttons, same data-targets,
+// same panels), it just also keeps the page title in sync and closes the
+// mobile drawer after a pick.
+function refreshMapSizes(delay){
+  // Leaflet maps only learn their real size when told to recalculate —
+  // needed after a hidden tab becomes visible, and after the sidebar
+  // collapses or expands and changes how wide the content area is.
+  setTimeout(()=>{
+    [shopMap, pinMapObj, adminOpsMap, mechMapObj].forEach(m=>{ if(m && m.invalidateSize) m.invalidateSize(); });
+  }, delay || 50);
+}
+function tabLabel(tab){
+  const label = tab.querySelector('.nav-label');
+  return (label ? label.textContent : tab.textContent).trim();
+}
+function ensurePageTitle(container){
+  const view = container.parentElement;
+  let header = view.querySelector(':scope > .page-header');
+  if(!header){
+    header = document.createElement('div');
+    header.className = 'page-header';
+    header.innerHTML = '<h1 class="page-title"></h1>';
+    view.insertBefore(header, view.firstChild);
+  }
+  return header.querySelector('.page-title');
+}
+function setNavOpen(open){
+  document.body.classList.toggle('nav-open', open);
+  const toggle = document.getElementById('navToggle');
+  if(toggle && window.matchMedia('(max-width: 900px)').matches) toggle.setAttribute('aria-expanded', String(open));
+}
 function wireDashTabs(container){
   const tabs = container.querySelectorAll('.dash-tab');
   const panelParent = container.parentElement; // the view div that holds both the tab bar and the panels
+  const titleEl = ensurePageTitle(container);
+  const initial = container.querySelector('.dash-tab.active') || tabs[0];
+  if(initial) titleEl.textContent = tabLabel(initial);
   tabs.forEach(tab=>{
     tab.onclick = ()=>{
-      tabs.forEach(t=>t.classList.remove('active'));
+      tabs.forEach(t=>{ t.classList.remove('active'); t.removeAttribute('aria-current'); });
       tab.classList.add('active');
+      tab.setAttribute('aria-current', 'page');
+      titleEl.textContent = tabLabel(tab);
       panelParent.querySelectorAll(':scope > .dash-panel').forEach(p=>p.classList.add('hidden'));
       const target = document.getElementById(tab.dataset.target);
       if(target) target.classList.remove('hidden');
-      // Leaflet maps initialized while their tab was hidden render blank —
-      // they never learn their real size until told to recalculate, which
-      // can only happen once the tab is actually visible in the DOM.
-      setTimeout(()=>{
-        [shopMap, pinMapObj, adminOpsMap].forEach(m=>{ if(m && m.invalidateSize) m.invalidateSize(); });
-      }, 50);
+      setNavOpen(false);
+      refreshMapSizes();
     };
   });
 }
 document.querySelectorAll('.dash-tabs').forEach(wireDashTabs);
+(function initAppNav(){
+  const toggle = document.getElementById('navToggle');
+  const backdrop = document.getElementById('navBackdrop');
+  if(!toggle) return;
+  const mobile = window.matchMedia('(max-width: 900px)');
+  let collapsed = false;
+  try { collapsed = localStorage.getItem('relay_nav_collapsed') === '1'; } catch(e){}
+  document.body.classList.toggle('nav-collapsed', collapsed);
+  toggle.setAttribute('aria-expanded', String(mobile.matches ? false : !collapsed));
+  toggle.onclick = ()=>{
+    if(mobile.matches){ setNavOpen(!document.body.classList.contains('nav-open')); return; }
+    const nowCollapsed = document.body.classList.toggle('nav-collapsed');
+    toggle.setAttribute('aria-expanded', String(!nowCollapsed));
+    try { localStorage.setItem('relay_nav_collapsed', nowCollapsed ? '1' : '0'); } catch(e){}
+    refreshMapSizes(220); // wait for the width transition to finish
+  };
+  if(backdrop) backdrop.onclick = ()=> setNavOpen(false);
+  document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && document.body.classList.contains('nav-open')) setNavOpen(false); });
+  document.querySelectorAll('.nav-help').forEach(btn=>{
+    btn.onclick = ()=>{ setNavOpen(false); document.getElementById('contactUsBtn').click(); };
+  });
+})();
 
 // ================= app entry =================
 // ================= realtime sync =================
@@ -1040,13 +1095,20 @@ function enterApp(){
     session.role === 'admin' ? 'Admin' :
     session.role === 'shop' ? 'Shop owner' :
     session.role === 'fleet' ? 'Fleet manager' : 'Mechanic';
-  document.getElementById('whoOrg').textContent = session.orgName ? '· ' + session.orgName : '';
+  document.getElementById('whoOrg').textContent = session.orgName || '';
   document.getElementById('editCompanyBtn').classList.toggle('hidden', session.role !== 'shop');
+
+  document.body.classList.add('in-app');
+  if(session.role === 'shop' || session.role === 'admin'){
+    document.body.classList.add('has-sidebar');
+    document.getElementById('navToggle').classList.remove('hidden');
+  }
 
   if(session.role === 'mechanic'){ document.getElementById('mechanicView').classList.remove('hidden'); initMechanicView(); }
   else if(session.role === 'shop'){ document.getElementById('shopView').classList.remove('hidden'); initShopView(); }
   else if(session.role === 'admin'){ document.getElementById('adminView').classList.remove('hidden'); initAdminView(); }
   else { document.getElementById('fleetView').classList.remove('hidden'); initFleetView(); }
+
 
   setupRealtimeSync();
 
@@ -1060,6 +1122,8 @@ function enterApp(){
       document.getElementById('shopView').classList.add('hidden');
       document.getElementById('adminView').classList.add('hidden');
       document.getElementById('fleetView').classList.add('hidden');
+      document.body.classList.remove('has-sidebar', 'nav-open');
+      document.getElementById('navToggle').classList.add('hidden');
       showInactiveScreen();
     }
   }, 15000);
@@ -1789,7 +1853,7 @@ function initBillingUI(){
 // Still genuinely a client-side, low-stakes "have they seen this" flag,
 // not real app state — worst case on a new device, they see it again.
 const ANNOUNCEMENTS = [
-  { id: 'invoicing-2026-09', text: 'New: create and send professional PDF invoices right from Relay — check out the Invoices and Billing tabs above.' },
+  { id: 'invoicing-2026-09', text: 'New: create and send professional PDF invoices right from Relay — find Invoices and Billing in the sidebar.' },
 ];
 
 function announcementsStorageKey(){ return 'dismissedAnnouncements_' + session.id; }
@@ -2671,8 +2735,7 @@ async function refreshAdminData(){
 (function initTheme(){
   const root = document.documentElement;
   const saved = localStorage.getItem('relay_theme');
-  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const theme = saved || (prefersDark ? 'dark' : 'light');
+  const theme = saved || 'light';
   if(theme === 'dark') root.setAttribute('data-theme', 'dark');
 
   const btn = document.getElementById('themeToggle');
