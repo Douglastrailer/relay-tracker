@@ -1,16 +1,31 @@
+/* ================= Relay design tokens =================
+   Petrol accent: a deep blue-teal that sits outside the traffic-light
+   colors the statuses need (amber / orange / green / red / blue), so the
+   brand never reads as a status. Cool neutral canvas, one family (IBM
+   Plex Sans), small radii, borders instead of shadows. */
 :root{
-    --bg:#EEF1F5; --panel:#FFFFFF; --panel-2:#F6F8FA; --ink:#161B22; --ink-soft:#5C6672; --ink-faint:#93A0AC;
-    --line:#E1E6EB; --live:#FF4D2E; --pending:#E8A93B; --done:#22A06B; --accent:#3457D5; --accent-2:#6E8BFF; --accent-soft:#EAEFFC;
-    --bg-rgb:238,241,245; --navy:#141C33; --navy-2:#1D2749;
-    --font-display:'Sora', sans-serif; --font-body:'Manrope', -apple-system, sans-serif; --font-mono:'JetBrains Mono','Courier New', monospace;
+    --bg:#F3F5F7; --panel:#FFFFFF; --panel-2:#F7F8FA; --ink:#141A21; --ink-soft:#4E5864; --ink-faint:#697380;
+    --line:#E1E5EA; --line-strong:#CDD3DA;
+    --accent:#0D5C6E; --accent-2:#137A91; --accent-soft:#E4F0F2;
+    --live:#D9480F; --pending:#B7791F; --done:#15803D; --info:#2563EB; --danger:#C62828;
+    --bg-rgb:243,245,247; --navy:#0E2A31; --navy-2:#153942;
+    --font-display:'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
+    --font-body:'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
+    --font-mono:'IBM Plex Mono', ui-monospace, 'Courier New', monospace;
+    --r-sm:4px; --r-md:6px; --r-lg:8px;
+    --shadow-pop:0 8px 24px rgba(20,26,33,0.12);
+    --topbar-h:56px; --sidebar-w:232px;
   }
   [data-theme="dark"]{
-    --bg:#12161D; --panel:#1B212B; --panel-2:#212836; --ink:#EDEFF3; --ink-soft:#A2ACBA; --ink-faint:#6E7889;
-    --line:#2C3444; --live:#FF7A5C; --pending:#F4BE6B; --done:#3ED9A0; --accent:#7C97FF; --accent-2:#9CB1FF; --accent-soft:#232B4A;
-    --bg-rgb:18,22,29;
+    --bg:#0F1318; --panel:#161B22; --panel-2:#1C222B; --ink:#E7EAEE; --ink-soft:#A4ADB8; --ink-faint:#838D99;
+    --line:#29303A; --line-strong:#39414D;
+    --accent:#1A8199; --accent-2:#2A98B1; --accent-soft:#12313A;
+    --live:#FF7A4D; --pending:#F2B34C; --done:#3CC47E; --info:#6EA0FF; --danger:#F26B6B;
+    --bg-rgb:15,19,24;
+    --shadow-pop:0 8px 24px rgba(0,0,0,0.45);
   }
   body{ transition:background .2s ease, color .2s ease; }
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  
   *{box-sizing:border-box; margin:0; padding:0;}
   body{ background:var(--bg); color:var(--ink); font-family:var(--font-body); line-height:1.5; -webkit-font-smoothing:antialiased; }
   button{ font-family:inherit; cursor:pointer; }
@@ -567,4 +582,150 @@ main{ padding-top:36px; }
 .attach-type-select{
   background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:8px 10px;
   font-size:0.78rem; color:var(--ink); font-weight:600;
+}
+
+/* =====================================================================
+   RELAY DESIGN SYSTEM — v2 layer
+   Loaded last on purpose: normalizes the components above to the new
+   tokens and adds the app shell. Later cleanup phases fold these rules
+   back into the originals.
+   ===================================================================== */
+body{ font-size:15px; }
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+input, select, textarea{ border-radius:var(--r-md) !important; }
+.num, .stat-box b{ font-variant-numeric:tabular-nums; }
+
+/* ---------- surfaces: small radii, borders not shadows, no hover lift ---------- */
+.card, .job-card, .stat-box, .kanban-column, .feature-card, .hiw-step,
+.request-card, .map-box, .ops-map, .pin-map, .invoicing-showcase,
+.landing-cta-band, .complete-toast{ border-radius:var(--r-lg); }
+.auth-card, .modal-card{ border-radius:var(--r-lg); box-shadow:var(--shadow-pop); }
+.job-card, .van-card, .card, .stat-box{ box-shadow:none; }
+.job-card:hover, .van-card:hover{ transform:none; box-shadow:none; border-color:var(--line-strong); }
+[data-theme="dark"] .job-card:hover, [data-theme="dark"] .van-card:hover{ box-shadow:none; }
+.more-menu, .address-suggestions{ border-radius:var(--r-lg); box-shadow:var(--shadow-pop); }
+.map-satellite-toggle{ border-radius:var(--r-md); box-shadow:0 1px 3px rgba(20,26,33,0.2); }
+
+/* ---------- type ---------- */
+.section-head h2{ font-family:var(--font-body); font-size:1.0625rem; font-weight:600; letter-spacing:0; }
+.card h3{ font-weight:600; }
+.stat-box b{ font-family:var(--font-body); font-size:1.625rem; font-weight:600; color:var(--ink); letter-spacing:-0.01em; }
+.stat-box span{ font-size:0.8125rem; }
+
+/* ---------- status badges: compact, readable, not shouting ---------- */
+.badge{ font-family:var(--font-body); font-size:0.75rem; font-weight:600; letter-spacing:0; text-transform:capitalize;
+  padding:3px 8px; border-radius:var(--r-sm); }
+.badge .bd{ width:6px; height:6px; }
+
+/* ---------- buttons ---------- */
+.text-btn{ color:var(--accent); font-weight:600; }
+.brand-mark{ background:var(--accent); box-shadow:none; border-radius:7px; }
+.go-live-btn{ background:var(--live) !important; box-shadow:none !important; border-radius:var(--r-md); }
+.go-live-btn.offline-state{ background:#2F3742 !important; }
+
+/* ---------- top bar: light, quiet ---------- */
+.topbar{ background:var(--panel); border-bottom:1px solid var(--line); }
+.topbar-inner{ padding:10px 24px; min-height:var(--topbar-h); }
+.brand-text b{ color:var(--ink); font-weight:700; font-size:1.05rem; }
+.brand-text span{ color:var(--ink-faint); font-weight:500; }
+.who .name{ color:var(--ink); font-weight:600; }
+.who .role{ font-family:var(--font-body); font-size:0.75rem; font-weight:600; text-transform:none; letter-spacing:0;
+  color:var(--ink-soft); background:var(--panel-2); border-color:var(--line); border-radius:var(--r-sm); }
+.org-badge{ color:var(--ink-soft); font-weight:500; }
+.theme-toggle{ background:var(--panel-2); border-color:var(--line); }
+[data-theme="dark"] .theme-toggle{ background:var(--panel-2); }
+.icon-btn{ color:var(--ink-soft); background:transparent; border-color:var(--line); }
+.icon-btn:hover{ background:var(--panel-2); color:var(--ink); }
+.public-nav{ background:var(--panel-2); border:1px solid var(--line); border-radius:var(--r-lg); }
+.public-nav .nav-link{ color:var(--ink-soft); border-radius:var(--r-md); font-weight:600; }
+.public-nav .nav-link:hover:not(.active){ color:var(--ink); }
+.nav-toggle{ display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; margin-right:4px;
+  background:none; border:1px solid transparent; border-radius:var(--r-md); color:var(--ink-soft); }
+.nav-toggle:hover{ background:var(--panel-2); color:var(--ink); }
+.nav-toggle.hidden{ display:none; }
+
+/* ---------- app shell ---------- */
+body.in-app footer{ display:none; }
+body.in-app .topbar-inner{ max-width:none; flex-wrap:nowrap; }
+body.in-app:not(.has-sidebar) main{ max-width:1120px; }
+body.has-sidebar main{ max-width:none; margin:0 0 0 var(--sidebar-w); padding:24px 32px 64px; transition:margin-left .18s ease; }
+body.has-sidebar #shopView, body.has-sidebar #adminView{ max-width:1440px; }
+
+body.has-sidebar .dash-tabs{
+  position:fixed; top:var(--topbar-h); left:0; bottom:0; width:var(--sidebar-w); z-index:900;
+  display:flex; flex-direction:column; gap:1px; margin:0; padding:10px 10px 12px; max-width:none;
+  background:var(--panel); border:none; border-right:1px solid var(--line); border-radius:0;
+  overflow-y:auto; overflow-x:hidden; transition:width .18s ease, transform .2s ease;
+}
+body.has-sidebar .dash-tab, .nav-foot{
+  position:relative; display:flex; align-items:center; gap:10px; width:100%; flex:none; min-height:36px;
+  padding:7px 10px; border:none; border-radius:var(--r-md); background:none; text-align:left; white-space:nowrap;
+  font-size:0.875rem; font-weight:500; color:var(--ink-soft);
+}
+body.has-sidebar .dash-tab:hover:not(.active), .nav-foot:hover{ background:var(--panel-2); color:var(--ink); }
+body.has-sidebar .dash-tab.active{ background:var(--accent-soft); color:var(--accent); font-weight:600; }
+[data-theme="dark"] body.has-sidebar .dash-tab.active{ color:#7FD0E0; }
+.nav-ico{ width:18px; height:18px; flex-shrink:0; }
+.nav-label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+body.has-sidebar .dash-tab .req-badge, body.has-sidebar .dash-tab .new-badge{ margin-left:auto; }
+body.has-sidebar .dash-tab.active .new-badge{ background:var(--accent); color:#fff; }
+.nav-group{ padding:14px 10px 4px; font-size:0.75rem; font-weight:600; color:var(--ink-faint); white-space:nowrap; }
+.nav-group:first-child{ padding-top:4px; }
+.nav-foot{ margin-top:auto; }
+.nav-backdrop{ display:none; }
+
+.page-header{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin:0 0 20px; }
+.page-title{ font-size:1.375rem; font-weight:600; line-height:1.3; letter-spacing:-0.01em; color:var(--ink); }
+body:not(.has-sidebar) .page-header{ display:none; }
+
+/* collapsed rail (desktop only) */
+@media (min-width:901px){
+  body.has-sidebar.nav-collapsed{ --sidebar-w:64px; }
+  body.has-sidebar.nav-collapsed .dash-tabs{ padding:10px 8px; }
+  body.has-sidebar.nav-collapsed .dash-tab, body.has-sidebar.nav-collapsed .nav-foot{ justify-content:center; padding:9px 0; }
+  body.has-sidebar.nav-collapsed .nav-label{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  body.has-sidebar.nav-collapsed .nav-group{ font-size:0; padding:0; height:1px; margin:8px 6px; background:var(--line); }
+  body.has-sidebar.nav-collapsed .nav-group:first-child{ display:none; }
+  body.has-sidebar.nav-collapsed .dash-tab .new-badge{ display:none; }
+  body.has-sidebar.nav-collapsed .dash-tab .req-badge{ position:absolute; top:3px; right:5px; margin:0; font-size:0.625rem; min-width:16px; padding:0 4px; }
+}
+
+/* drawer (tablet + phone) */
+@media (max-width:900px){
+  body.has-sidebar main{ margin-left:0; padding:18px 16px 56px; }
+  body.has-sidebar .dash-tabs{ width:260px; transform:translateX(-100%); box-shadow:none; }
+  body.has-sidebar.nav-open .dash-tabs{ transform:none; box-shadow:var(--shadow-pop); }
+  body.has-sidebar.nav-open .nav-backdrop{ display:block; position:fixed; inset:var(--topbar-h) 0 0 0; z-index:890; background:rgba(15,19,24,0.4); }
+  .topbar-inner{ padding:8px 14px; }
+  body.in-app .who .name{ display:none; }
+}
+@media (prefers-reduced-motion: reduce){
+  body.has-sidebar main, body.has-sidebar .dash-tabs{ transition:none; }
+}
+body.in-app .topbar-inner{ height:var(--topbar-h); padding-top:0; padding-bottom:0; }
+
+/* ---------- fixes from the first visual review ---------- */
+/* brand sits with the menu button on the left; account controls pushed right */
+.topbar-right-group{ margin-left:auto; }
+body.in-app .topbar-inner{ justify-content:flex-start; gap:8px; }
+/* no decorative wash behind the app */
+body{ background-image:none; }
+/* flat primary buttons (older rules forced gradients with !important) */
+.auth-submit, .btn-primary{ background:var(--accent) !important; box-shadow:none; border-radius:var(--r-md); }
+.auth-submit:hover, .btn-primary:hover{ background:var(--accent-2) !important; }
+.go-live-btn.offline-state{ box-shadow:none !important; }
+/* announcement: informative, not a slab of brand color */
+.announcement-banner{ background:var(--accent-soft); color:var(--ink); border:1px solid var(--line); border-left:3px solid var(--accent);
+  border-radius:var(--r-md); font-weight:500; }
+.announcement-banner svg{ color:var(--accent); }
+.announcement-dismiss{ background:transparent; color:var(--ink-soft); }
+.announcement-dismiss:hover{ background:var(--panel-2); color:var(--ink); }
+/* segmented toggles: the unselected option must actually look unselected.
+   (.new-job-form button was painting both halves petrol — pre-existing bug) */
+.kind-toggle{ border-radius:var(--r-md); padding:3px; }
+.kind-toggle .kind-toggle-btn{ background:none; color:var(--ink-soft); padding:7px 14px; border:none; border-radius:4px; font-weight:600; }
+.kind-toggle .kind-toggle-btn:hover:not(.active){ color:var(--ink); background:var(--panel); }
+.kind-toggle .kind-toggle-btn.active{ background:var(--accent); color:#fff; }
+@media (max-width:600px){
+  body.in-app .brand-text span, body.in-app .who .role{ display:none; }
 }
