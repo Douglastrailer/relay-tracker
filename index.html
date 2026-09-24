@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=23"/>
+<link rel="stylesheet" href="style.css?v=24"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -80,88 +80,184 @@
 <main>
 
   <!-- ================= PUBLIC HOME ================= -->
-  <div id="homeView">
-    <div class="landing-hero">
-      <span class="auth-eyebrow">RELAY · DISPATCH, IN-SHOP &amp; INVOICING FOR SERVICE COMPANIES</span>
-      <h1>From first contact to<br>paid invoice. All in Relay.</h1>
-      <p>Relay connects your mechanics, your dispatch team, and the customers you serve — one shared, real-time view of every job, whether it's a live-tracked roadside call or work done right in your bay. Customers can even request service themselves through your own link. Then it turns the finished work straight into a professional invoice, no separate app for billing.</p>
-      <div class="hero-cta">
-        <button class="auth-submit landing-cta" id="landingSignup">Get started</button>
-        <button class="btn-ghost" id="landingLogin">I already have an account</button>
-      </div>
-    </div>
+  <div id="homeView" class="lp">
 
-    <div class="how-it-works how-it-works-4">
-      <div class="hiw-step">
-        <div class="hiw-num">1</div>
-        <div class="hiw-title">Create a job</div>
-        <div class="hiw-desc">Log it yourself, or let a customer request service through your own link.</div>
+    <section class="lp-hero">
+      <div class="lp-hero-copy">
+        <h1>Know where every mechanic is and where every job stands.</h1>
+        <p class="lp-lead">Relay is dispatch and shop software for truck and trailer service. Send mechanics to roadside calls and watch them live, run in-shop work on the same board, and invoice the customer the moment the job is done.</p>
+        <div class="lp-actions">
+          <button class="lp-btn lp-btn-primary" id="landingSignup">Set up your company</button>
+          <button class="lp-btn lp-btn-quiet" id="landingLogin">Sign in</button>
+        </div>
+        <button type="button" class="lp-textlink" onclick="document.getElementById('lp-how').scrollIntoView({behavior:'smooth'})">See how a roadside call runs in Relay</button>
       </div>
-      <div class="hiw-step">
-        <div class="hiw-num">2</div>
-        <div class="hiw-title">Get to work</div>
-        <div class="hiw-desc">Mobile jobs track live GPS to the breakdown. In-shop jobs move straight to the bay.</div>
-      </div>
-      <div class="hiw-step">
-        <div class="hiw-num">3</div>
-        <div class="hiw-title">Track progress</div>
-        <div class="hiw-desc">A real workflow board — drag a job from assigned to done, everyone sees the same status.</div>
-      </div>
-      <div class="hiw-step">
-        <div class="hiw-num">4</div>
-        <div class="hiw-title">Send the invoice</div>
-        <div class="hiw-desc">Job done? Generate a branded PDF and send it — from the same job, no extra app.</div>
-      </div>
-    </div>
 
-    <div class="feature-grid">
-      <div class="feature-card">
-        <h3>For shop owners</h3>
-        <p>Run mobile dispatch and in-shop work on one workflow board, let customers request service through your own link, and send professional PDF invoices the moment a job wraps up — no phone tag, no separate invoicing app.</p>
-      </div>
-      <div class="feature-card">
-        <h3>For mechanics</h3>
-        <p>One tap to go live on a roadside call, with turn-by-turn directions and a direct line to dispatch. In-shop jobs skip the GPS entirely — just start the job and mark it done.</p>
-      </div>
-      <div class="feature-card">
-        <h3>For fleet managers</h3>
-        <p>Know exactly when help will arrive — real distance, real ETA, not a guess from a dispatcher — then get a clean, professional invoice the moment the job's done.</p>
-      </div>
-    </div>
+      <figure class="lp-demo" aria-label="Relay live map showing a mechanic driving toward a broken-down trailer, with the status card the fleet customer sees">
+        <div class="lp-demo-head">
+          <span class="lp-demo-title">Live operations</span>
+          <span class="lp-demo-live"><span class="lp-pulse"></span>3 mechanics live</span>
+        </div>
+        <div class="lp-map">
+          <svg viewBox="0 0 440 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <g class="lp-roads">
+              <path d="M0 250H440M0 150H440M0 70H440M40 0V300M140 0V300M300 0V300M400 0V300"/>
+              <path class="lp-hwy" d="M0 290L440 20"/>
+            </g>
+            <path class="lp-route" d="M40 70H300V150H400V230"/>
+            <g class="lp-shop"><rect x="28" y="58" width="24" height="24" rx="4"/><path d="M34 76v-8l6-4 6 4v8" /></g>
+            <g class="lp-breakdown"><circle class="lp-ring" cx="400" cy="230" r="16"/><circle cx="400" cy="230" r="7"/></g>
+            <g class="lp-tech"><circle r="9"/><circle r="3.5" class="lp-tech-core"/></g>
+            <g class="lp-tech-static"><circle cx="334" cy="150" r="9"/><circle cx="334" cy="150" r="3.5" class="lp-tech-core"/></g>
+          </svg>
+          <div class="lp-eta">
+            <span class="lp-eta-tag">What your fleet customer sees</span>
+            <b>Robert is on the way</b>
+            <span class="lp-eta-meta">6.2 miles away, updated a few seconds ago</span>
+            <span class="lp-eta-unit">Unit 4521, 53' dry van, air leak at the gladhand</span>
+            <ol class="lp-stages">
+              <li class="done">Assigned</li>
+              <li class="now">Heading there</li>
+              <li>On site</li>
+              <li>Complete</li>
+            </ol>
+          </div>
+        </div>
+        <div class="lp-board" aria-hidden="true">
+          <div class="lp-col"><span class="lp-col-h amber">Assigned <i>2</i></span><span class="lp-chip"></span><span class="lp-chip short"></span></div>
+          <div class="lp-col"><span class="lp-col-h orange">Heading there <i>1</i></span><span class="lp-chip hl"></span></div>
+          <div class="lp-col"><span class="lp-col-h blue">On site <i>3</i></span><span class="lp-chip"></span><span class="lp-chip short"></span><span class="lp-chip"></span></div>
+        </div>
+      </figure>
+    </section>
 
-    <div class="invoicing-showcase">
-      <span class="auth-eyebrow">NEW · CUSTOMER SELF-SERVICE</span>
-      <h2>Let customers request service themselves — no phone call needed.</h2>
-      <p>Share one link. They tell you what's wrong and where they are, you decide when to start.</p>
-      <ul class="invoicing-checklist">
-        <li>No login or app required for your customer</li>
-        <li>Works for both mobile breakdowns and in-shop drop-offs</li>
-        <li>Real address for mobile requests — you know exactly where they are</li>
-        <li>Company name, contact info, and vehicle, all captured up front</li>
-        <li>Nothing becomes a real job until you review and accept it</li>
-        <li>Accepted requests turn straight into a job — no re-typing</li>
+    <section class="lp-section" id="lp-how">
+      <h2>How a roadside call runs in Relay</h2>
+      <ol class="lp-steps">
+        <li>
+          <h3>The request comes in</h3>
+          <p>Your customer fills out your request link with their unit, the problem, and their location. No account needed. Or you take the call and create the job yourself.</p>
+        </li>
+        <li>
+          <h3>You dispatch a mechanic</h3>
+          <p>Assign the job and the mechanic goes live. You see them on the map, and the fleet customer sees how far away help is.</p>
+        </li>
+        <li>
+          <h3>The work gets documented</h3>
+          <p>Status moves across the board as the job progresses. Chat and before/after photos stay attached to the job.</p>
+        </li>
+        <li>
+          <h3>The invoice goes out</h3>
+          <p>Send a branded PDF invoice from the finished job, mark it paid, and ask for a review.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="lp-section lp-row">
+      <div class="lp-row-copy">
+        <h2>Roadside calls and bay work on one board</h2>
+        <p>Mobile jobs and in-shop jobs share one workflow board. Drag a job from assigned to heading there to on site, and everyone on your team sees the change at once. In-shop jobs skip the driving step automatically.</p>
+      </div>
+      <div class="lp-visual lp-visual-board" aria-hidden="true">
+        <div class="lp-vcol"><span class="lp-col-h amber">Assigned</span>
+          <div class="lp-card"><b>Unit 1187</b><span>Brake adjustment</span><em class="lp-tag">In-shop</em></div>
+          <div class="lp-card"><b>Unit 3302</b><span>Reefer won't start</span></div>
+        </div>
+        <div class="lp-vcol"><span class="lp-col-h orange">Heading there</span>
+          <div class="lp-card"><b>Unit 4521</b><span>Air leak, I-94 exit 41</span></div>
+        </div>
+        <div class="lp-vcol"><span class="lp-col-h blue">On site</span>
+          <div class="lp-card"><b>Unit 0930</b><span>Tire replacement</span></div>
+          <div class="lp-card"><b>Unit 2254</b><span>PM service</span><em class="lp-tag">In-shop</em></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-section lp-row lp-row-flip">
+      <div class="lp-row-copy">
+        <h2>Customers request service without calling you</h2>
+        <p>Share one link. Your customer picks roadside or drop-off, types their location or when they can bring the unit in, and describes the problem. You review each request and turn it into a job with one click, with the details already filled in.</p>
+      </div>
+      <div class="lp-visual lp-visual-phone" aria-hidden="true">
+        <div class="lp-phone">
+          <b>Request service</b>
+          <span class="lp-field">Company name<i>Northline Freight</i></span>
+          <span class="lp-field">Vehicle or unit<i>Unit 4521, trailer</i></span>
+          <span class="lp-seg"><i class="on">Someone comes to me</i><i>I'll bring it in</i></span>
+          <span class="lp-field">Where are you?<i>I-94 E, exit 41</i></span>
+          <span class="lp-submit">Submit request</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-section lp-row">
+      <div class="lp-row-copy">
+        <h2>Estimates and invoices from the job itself</h2>
+        <p>Send an estimate for approval, convert it to an invoice when the work is done, and email it as a PDF with your logo and payment details. Save your common services with prices once and add them to any invoice in a click. Paid and unpaid stay visible at a glance.</p>
+      </div>
+      <div class="lp-visual lp-visual-invoice" aria-hidden="true">
+        <div class="lp-doc">
+          <div class="lp-doc-top"><b>Invoice 1042</b><span class="lp-paid">Paid</span></div>
+          <span class="lp-doc-to">Northline Freight, Unit 4521</span>
+          <div class="lp-doc-line"><span>Road call, 1 hr labor</span><span>$185.00</span></div>
+          <div class="lp-doc-line"><span>Gladhand seal kit</span><span>$24.50</span></div>
+          <div class="lp-doc-line"><span>Mileage, 12 mi</span><span>$36.00</span></div>
+          <div class="lp-doc-total"><span>Total</span><span>$245.50</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-section">
+      <h2>Also in Relay</h2>
+      <ul class="lp-also">
+        <li><b>Job history</b><span>Search every completed job by customer or unit.</span></li>
+        <li><b>Chat and photos per job</b><span>Before and after photos and messages stay with the work.</span></li>
+        <li><b>Price list</b><span>Your services and parts with prices, visible only to the owner.</span></li>
+        <li><b>Team and roles</b><span>Invite mechanics with your company code and manage who has access.</span></li>
+        <li><b>Analytics</b><span>Completion times and job volume by mechanic.</span></li>
+        <li><b>Review requests</b><span>Ask for a Google review once an invoice is paid.</span></li>
       </ul>
-    </div>
+    </section>
 
-    <div class="invoicing-showcase">
-      <span class="auth-eyebrow">NEW · BUILT-IN INVOICING</span>
-      <h2>Billing that lives inside the job — not a separate app.</h2>
-      <p>Every invoice pulls straight from the work you already tracked in Relay — nothing to re-type.</p>
-      <ul class="invoicing-checklist">
-        <li>Your logo, address, and payment info on every invoice</li>
-        <li>Real PDF invoices, not plain text</li>
-        <li>Sent straight to your customer's inbox in one click</li>
-        <li>Track exactly which invoices are paid and which aren't</li>
-        <li>Unit number and billing address on every invoice</li>
-        <li>No separate invoicing app or login</li>
-      </ul>
-    </div>
+    <section class="lp-section lp-roles">
+      <h2>Built for everyone on the job</h2>
+      <input type="radio" name="lp-role" id="lp-role-shop" class="lp-radio" checked>
+      <input type="radio" name="lp-role" id="lp-role-mech" class="lp-radio">
+      <input type="radio" name="lp-role" id="lp-role-fleet" class="lp-radio">
+      <div class="lp-tabs">
+        <label for="lp-role-shop">Shop owners</label>
+        <label for="lp-role-mech">Mechanics</label>
+        <label for="lp-role-fleet">Fleet managers</label>
+      </div>
+      <div class="lp-panels">
+        <div class="lp-panel lp-p-shop">
+          <p>See your whole operation on one screen: who is live, which jobs are waiting, and what has been invoiced. Take requests from your link, see which mechanic is closest, and bill from the finished job.</p>
+        </div>
+        <div class="lp-panel lp-p-mech">
+          <p>One tap to go live on a roadside call, with turn-by-turn directions and a direct chat with dispatch. Update the job status and add photos from your phone. In-shop jobs need no GPS at all.</p>
+        </div>
+        <div class="lp-panel lp-p-fleet">
+          <p>See every job for your units across the shops you work with, how far away the mechanic is, and the status of each repair, without calling anyone for an update.</p>
+        </div>
+      </div>
+    </section>
 
-    <div class="landing-cta-band">
-      <h2>Each company gets its own private workspace.</h2>
-      <p>Your team, your jobs, your data — completely separate from every other business using Relay.</p>
-      <button class="auth-submit landing-cta" id="landingSignup2">Set up your company</button>
-    </div>
+    <section class="lp-section lp-trust">
+      <h2>Your data stays yours</h2>
+      <p class="lp-trust-body">Every company gets its own private workspace. Jobs, customers, prices, and invoices are separated at the database level, so no other business on Relay can see them. You decide who joins your team, and a deactivated account loses access immediately.</p>
+    </section>
+
+    <section class="lp-cta">
+      <div>
+        <h2>Put your next roadside call on the map.</h2>
+        <p>Set up your company in a few minutes. We review each new company before it goes live.</p>
+      </div>
+      <div class="lp-actions">
+        <button class="lp-btn lp-btn-onDark" id="landingSignup2">Set up your company</button>
+        <button type="button" class="lp-btn lp-btn-ghostDark" onclick="document.getElementById('navContact').click()">Talk to us</button>
+      </div>
+    </section>
+
   </div>
 
   <!-- ================= CONTACT ================= -->
