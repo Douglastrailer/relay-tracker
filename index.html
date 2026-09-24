@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Relay — Live GPS Tracking for Fleets &amp; Service Providers</title>
+<title>Relay — Shop management and dispatch for truck and trailer repair</title>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2"/>
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=24"/>
+<link rel="stylesheet" href="style.css?v=25"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -20,7 +20,7 @@
     <button type="button" class="nav-toggle hidden" id="navToggle" aria-label="Toggle navigation" aria-expanded="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
     <div class="brand" id="brandHome" style="cursor:pointer;">
       <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12h11M15 12l-3.5-3.5M15 12l-3.5 3.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="19" cy="12" r="2" fill="#fff"/></svg></div>
-      <div class="brand-text"><b>Relay</b><span>Live GPS tracking</span></div>
+      <div class="brand-text"><b>Relay</b><span>Shop &amp; road service</span></div>
     </div>
     <nav class="public-nav" id="publicNav">
       <button class="nav-link active" id="navHome">Home</button>
@@ -84,20 +84,65 @@
 
     <section class="lp-hero">
       <div class="lp-hero-copy">
-        <h1>Know where every mechanic is and where every job stands.</h1>
-        <p class="lp-lead">Relay is dispatch and shop software for truck and trailer service. Send mechanics to roadside calls and watch them live, run in-shop work on the same board, and invoice the customer the moment the job is done.</p>
+        <h1>Run your shop floor and your road calls from one screen.</h1>
+        <p class="lp-lead">Relay is shop management and dispatch software for truck and trailer repair. Track every job in the bay on one workflow board, send mechanics out on road calls and see them on the map, and invoice from the finished job.</p>
         <div class="lp-actions">
           <button class="lp-btn lp-btn-primary" id="landingSignup">Set up your company</button>
           <button class="lp-btn lp-btn-quiet" id="landingLogin">Sign in</button>
         </div>
-        <button type="button" class="lp-textlink" onclick="document.getElementById('lp-how').scrollIntoView({behavior:'smooth'})">See how a roadside call runs in Relay</button>
+        <button type="button" class="lp-textlink" onclick="document.getElementById('lp-how').scrollIntoView({behavior:'smooth'})">See how a job moves through Relay</button>
       </div>
 
-      <figure class="lp-demo" aria-label="Relay live map showing a mechanic driving toward a broken-down trailer, with the status card the fleet customer sees">
+      <figure class="lp-demo" aria-label="Relay workflow board with in-shop and roadside jobs in the columns Assigned, Heading there, and On site">
         <div class="lp-demo-head">
-          <span class="lp-demo-title">Live operations</span>
-          <span class="lp-demo-live"><span class="lp-pulse"></span>3 mechanics live</span>
+          <span class="lp-demo-title">Workflow board</span>
+          <span class="lp-demo-live">5 open jobs: 2 in-shop, 3 roadside</span>
         </div>
+        <div class="lp-hero-board">
+          <div class="lp-vcol"><span class="lp-col-h amber">Assigned <i>2</i></span>
+            <div class="lp-card"><b>Unit 1187</b><span>Brake adjustment</span><em class="lp-tag">In-shop</em></div>
+            <div class="lp-card"><b>Unit 3302</b><span>Reefer won't start</span><em class="lp-tag lp-tag-road">Roadside</em></div>
+          </div>
+          <div class="lp-vcol"><span class="lp-col-h orange">Heading there <i>1</i></span>
+            <div class="lp-card lp-card-live"><b>Unit 4521</b><span>Air leak, I-94 exit 41</span><span class="lp-card-eta"><span class="lp-pulse"></span>Robert, 6.2 miles away</span><em class="lp-tag lp-tag-road">Roadside</em></div>
+          </div>
+          <div class="lp-vcol"><span class="lp-col-h blue">On site <i>2</i></span>
+            <div class="lp-card"><b>Unit 2254</b><span>PM service</span><em class="lp-tag">In-shop</em></div>
+            <div class="lp-card"><b>Unit 0930</b><span>Tire replacement</span><em class="lp-tag lp-tag-road">Roadside</em></div>
+          </div>
+        </div>
+        <figcaption class="lp-demo-foot">Drag a card to change its status. In-shop jobs skip the driving step.</figcaption>
+      </figure>
+    </section>
+
+    <section class="lp-section" id="lp-how">
+      <h2>How a job moves through Relay</h2>
+      <ol class="lp-steps">
+        <li>
+          <h3>The request comes in</h3>
+          <p>Your customer fills out your request link: their unit, the problem, and either where they broke down or when they can bring it in. No account needed. Or you create the job yourself.</p>
+        </li>
+        <li>
+          <h3>You assign a mechanic</h3>
+          <p>In-shop jobs go straight onto the board. For a road call, the mechanic goes live and you see them on the map, and so does your fleet customer.</p>
+        </li>
+        <li>
+          <h3>The work gets documented</h3>
+          <p>Status moves across the board as the job progresses. Chat and before/after photos stay attached to the job.</p>
+        </li>
+        <li>
+          <h3>The invoice goes out</h3>
+          <p>Send a branded PDF invoice from the finished job, mark it paid, and ask for a review.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="lp-section lp-row">
+      <div class="lp-row-copy">
+        <h2>Live GPS when the job is on the road</h2>
+        <p>When a mechanic heads out to a breakdown, they go live from their phone and you follow them on the map, with directions to the exact location. Fleet customers see the same progress in their own account, so nobody has to call you for an update. Jobs in the bay don't use GPS at all.</p>
+      </div>
+      <div class="lp-visual lp-visual-map">
         <div class="lp-map">
           <svg viewBox="0 0 440 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
             <g class="lp-roads">
@@ -123,53 +168,6 @@
             </ol>
           </div>
         </div>
-        <div class="lp-board" aria-hidden="true">
-          <div class="lp-col"><span class="lp-col-h amber">Assigned <i>2</i></span><span class="lp-chip"></span><span class="lp-chip short"></span></div>
-          <div class="lp-col"><span class="lp-col-h orange">Heading there <i>1</i></span><span class="lp-chip hl"></span></div>
-          <div class="lp-col"><span class="lp-col-h blue">On site <i>3</i></span><span class="lp-chip"></span><span class="lp-chip short"></span><span class="lp-chip"></span></div>
-        </div>
-      </figure>
-    </section>
-
-    <section class="lp-section" id="lp-how">
-      <h2>How a roadside call runs in Relay</h2>
-      <ol class="lp-steps">
-        <li>
-          <h3>The request comes in</h3>
-          <p>Your customer fills out your request link with their unit, the problem, and their location. No account needed. Or you take the call and create the job yourself.</p>
-        </li>
-        <li>
-          <h3>You dispatch a mechanic</h3>
-          <p>Assign the job and the mechanic goes live. You see them on the map, and the fleet customer sees how far away help is.</p>
-        </li>
-        <li>
-          <h3>The work gets documented</h3>
-          <p>Status moves across the board as the job progresses. Chat and before/after photos stay attached to the job.</p>
-        </li>
-        <li>
-          <h3>The invoice goes out</h3>
-          <p>Send a branded PDF invoice from the finished job, mark it paid, and ask for a review.</p>
-        </li>
-      </ol>
-    </section>
-
-    <section class="lp-section lp-row">
-      <div class="lp-row-copy">
-        <h2>Roadside calls and bay work on one board</h2>
-        <p>Mobile jobs and in-shop jobs share one workflow board. Drag a job from assigned to heading there to on site, and everyone on your team sees the change at once. In-shop jobs skip the driving step automatically.</p>
-      </div>
-      <div class="lp-visual lp-visual-board" aria-hidden="true">
-        <div class="lp-vcol"><span class="lp-col-h amber">Assigned</span>
-          <div class="lp-card"><b>Unit 1187</b><span>Brake adjustment</span><em class="lp-tag">In-shop</em></div>
-          <div class="lp-card"><b>Unit 3302</b><span>Reefer won't start</span></div>
-        </div>
-        <div class="lp-vcol"><span class="lp-col-h orange">Heading there</span>
-          <div class="lp-card"><b>Unit 4521</b><span>Air leak, I-94 exit 41</span></div>
-        </div>
-        <div class="lp-vcol"><span class="lp-col-h blue">On site</span>
-          <div class="lp-card"><b>Unit 0930</b><span>Tire replacement</span></div>
-          <div class="lp-card"><b>Unit 2254</b><span>PM service</span><em class="lp-tag">In-shop</em></div>
-        </div>
       </div>
     </section>
 
@@ -182,9 +180,9 @@
         <div class="lp-phone">
           <b>Request service</b>
           <span class="lp-field">Company name<i>Northline Freight</i></span>
-          <span class="lp-field">Vehicle or unit<i>Unit 4521, trailer</i></span>
-          <span class="lp-seg"><i class="on">Someone comes to me</i><i>I'll bring it in</i></span>
-          <span class="lp-field">Where are you?<i>I-94 E, exit 41</i></span>
+          <span class="lp-field">Vehicle or unit<i>Unit 1187, tractor</i></span>
+          <span class="lp-seg"><i>Someone comes to me</i><i class="on">I'll bring it in</i></span>
+          <span class="lp-field">When can you bring it in?<i>Tomorrow around 8am</i></span>
           <span class="lp-submit">Submit request</span>
         </div>
       </div>
@@ -249,7 +247,7 @@
 
     <section class="lp-cta">
       <div>
-        <h2>Put your next roadside call on the map.</h2>
+        <h2>Bring your shop and your road calls into one place.</h2>
         <p>Set up your company in a few minutes. We review each new company before it goes live.</p>
       </div>
       <div class="lp-actions">
@@ -799,7 +797,7 @@
 
 </main>
 
-<footer>© 2026 Relay — Live tracking for fleets &amp; service providers</footer>
+<footer>© 2026 Relay — Shop management and dispatch for truck and trailer repair</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
