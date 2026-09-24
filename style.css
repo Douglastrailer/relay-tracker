@@ -729,3 +729,176 @@ body{ background-image:none; }
 @media (max-width:600px){
   body.in-app .brand-text span, body.in-app .who .role{ display:none; }
 }
+
+/* ================= Landing page (public home) =================
+   Scoped to .lp so none of it reaches the app. Uses the same tokens as
+   the app (petrol accent, navy, IBM Plex Sans); status colors appear only
+   inside the product preview, where they mean what they mean in the app. */
+.lp{ --lp-gap:112px; color:var(--ink); }
+.lp h1, .lp h2, .lp h3{ font-family:var(--font-display); color:var(--ink); }
+.lp h2{ font-size:clamp(1.55rem, 2.4vw, 2.1rem); font-weight:700; letter-spacing:-0.015em; line-height:1.15; max-width:24ch; }
+.lp p{ color:var(--ink-soft); }
+
+.lp-btn{ font:inherit; font-weight:600; font-size:0.95rem; border-radius:var(--r-md); padding:12px 20px; border:1px solid transparent; }
+.lp-btn-primary{ background:var(--accent); color:#fff; }
+.lp-btn-primary:hover{ background:var(--accent-2); }
+.lp-btn-quiet{ background:transparent; border-color:var(--line-strong); color:var(--ink); }
+.lp-btn-quiet:hover{ border-color:var(--ink-faint); }
+.lp-btn:focus-visible, .lp-textlink:focus-visible{ outline:2px solid var(--accent-2); outline-offset:3px; }
+.lp-actions{ display:flex; gap:12px; flex-wrap:wrap; }
+.lp-textlink{ background:none; border:none; padding:0; margin-top:18px; color:var(--accent); font-weight:600; font-size:0.92rem; text-decoration:underline; text-underline-offset:3px; }
+[data-theme="dark"] .lp-textlink{ color:var(--accent-2); }
+
+/* ---------- hero ---------- */
+.lp-hero{ display:grid; grid-template-columns:minmax(0,0.92fr) minmax(0,1.08fr); gap:56px; align-items:center; margin:40px 0 0; }
+.lp-hero h1{ font-size:clamp(2.1rem, 4.1vw, 3.3rem); font-weight:700; line-height:1.06; letter-spacing:-0.025em; max-width:15ch; }
+.lp-lead{ font-size:1.08rem; line-height:1.6; margin:20px 0 28px; max-width:46ch; }
+
+.lp-demo{ margin:0; background:var(--panel); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; box-shadow:0 1px 0 var(--line), 0 18px 40px -24px rgba(14,42,49,0.35); }
+.lp-demo-head{ display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-bottom:1px solid var(--line); font-size:0.78rem; }
+.lp-demo-title{ font-weight:700; }
+.lp-demo-live{ display:flex; align-items:center; gap:7px; color:var(--ink-soft); }
+.lp-pulse{ width:8px; height:8px; border-radius:50%; background:var(--done); box-shadow:0 0 0 3px color-mix(in srgb, var(--done) 25%, transparent); }
+
+.lp-map{ position:relative; height:300px; background:var(--panel-2); }
+.lp-map svg{ position:absolute; inset:0; width:100%; height:100%; }
+.lp-roads path{ stroke:var(--line); stroke-width:10; fill:none; }
+.lp-roads .lp-hwy{ stroke:var(--line-strong); stroke-width:14; }
+.lp-route{ fill:none; stroke:var(--accent); stroke-width:4; stroke-linejoin:round; stroke-dasharray:8 7; }
+.lp-shop rect{ fill:var(--navy); }
+[data-theme="dark"] .lp-shop rect{ fill:var(--accent); }
+.lp-shop path{ fill:none; stroke:#fff; stroke-width:1.8; stroke-linejoin:round; }
+.lp-breakdown circle{ fill:var(--live); }
+.lp-breakdown .lp-ring{ fill:none; stroke:var(--live); stroke-width:2; opacity:0.45; }
+.lp-tech circle, .lp-tech-static circle{ fill:var(--accent); stroke:#fff; stroke-width:3; }
+.lp-tech .lp-tech-core, .lp-tech-static .lp-tech-core{ fill:#fff; stroke:none; }
+
+/* The one motion on the page: the mechanic drives the route once and stops
+   short of the breakdown, still en route. Without offset-path support, or
+   with reduced motion, a static pin sits at the same stopping point. */
+.lp-tech{ display:none; }
+@supports (offset-path: path('M0 0')){
+  .lp-tech{ display:block; offset-path:path('M40 70H300V150H400V230'); offset-rotate:0deg; offset-distance:72%; animation:lp-drive 3.6s cubic-bezier(.45,.05,.3,1) 0.4s both; }
+  .lp-tech-static{ display:none; }
+}
+@keyframes lp-drive{ from{ offset-distance:0%; } to{ offset-distance:72%; } }
+@media (prefers-reduced-motion: reduce){
+  .lp-tech{ animation:none; }
+}
+
+.lp-eta{ position:absolute; left:14px; bottom:14px; width:min(290px, calc(100% - 28px)); background:var(--panel); border:1px solid var(--line); border-radius:var(--r-lg); padding:12px 14px; display:flex; flex-direction:column; gap:3px; box-shadow:var(--shadow-pop); }
+.lp-eta-tag{ font-size:0.72rem; color:var(--accent); font-weight:600; }
+[data-theme="dark"] .lp-eta-tag{ color:var(--accent-2); }
+.lp-eta b{ font-size:1rem; }
+.lp-eta-meta{ font-size:0.82rem; color:var(--ink); }
+.lp-eta-unit{ font-size:0.76rem; color:var(--ink-faint); }
+.lp-stages{ list-style:none; display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin-top:8px; }
+.lp-stages li{ font-size:0.64rem; color:var(--ink-faint); padding-top:7px; border-top:3px solid var(--line); line-height:1.2; }
+.lp-stages li.done{ border-top-color:var(--pending); color:var(--ink-soft); }
+.lp-stages li.now{ border-top-color:var(--live); color:var(--ink); font-weight:600; }
+
+.lp-board{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:12px 14px 14px; border-top:1px solid var(--line); }
+.lp-col{ display:flex; flex-direction:column; gap:6px; }
+.lp-col-h{ font-size:0.72rem; font-weight:600; color:var(--ink-soft); padding-bottom:6px; border-bottom:3px solid var(--line); display:flex; justify-content:space-between; }
+.lp-col-h i{ font-style:normal; color:var(--ink-faint); }
+.lp-col-h.amber{ border-bottom-color:var(--pending); }
+.lp-col-h.orange{ border-bottom-color:var(--live); }
+.lp-col-h.blue{ border-bottom-color:var(--info); }
+.lp-chip{ height:10px; border-radius:3px; background:var(--line); }
+.lp-chip.short{ width:65%; }
+.lp-chip.hl{ background:color-mix(in srgb, var(--live) 30%, var(--line)); }
+
+/* ---------- sections ---------- */
+.lp-section{ margin-top:var(--lp-gap); }
+.lp-section > h2{ margin-bottom:28px; }
+
+.lp-steps{ list-style:none; counter-reset:lp-step; display:grid; grid-template-columns:repeat(4,1fr); gap:28px; }
+.lp-steps li{ counter-increment:lp-step; border-top:2px solid var(--line-strong); padding-top:16px; position:relative; }
+.lp-steps li::before{ content:counter(lp-step); position:absolute; top:-15px; left:0; width:28px; height:28px; border-radius:50%; background:var(--bg); border:2px solid var(--accent); color:var(--accent); font-weight:700; font-size:0.8rem; display:flex; align-items:center; justify-content:center; }
+[data-theme="dark"] .lp-steps li::before{ border-color:var(--accent-2); color:var(--accent-2); }
+.lp-steps h3{ font-size:1rem; font-weight:700; margin:12px 0 6px; }
+.lp-steps p{ font-size:0.92rem; line-height:1.55; }
+
+.lp-row{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); gap:64px; align-items:center; }
+.lp-row-flip .lp-row-copy{ order:2; }
+.lp-row-copy p{ margin-top:14px; font-size:1rem; line-height:1.65; max-width:52ch; }
+.lp-visual{ background:var(--panel-2); border:1px solid var(--line); border-radius:var(--r-lg); padding:22px; }
+
+.lp-visual-board{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.lp-vcol{ display:flex; flex-direction:column; gap:8px; }
+.lp-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--r-md); padding:9px 10px; display:flex; flex-direction:column; gap:2px; font-size:0.8rem; }
+.lp-card span{ color:var(--ink-soft); font-size:0.74rem; }
+.lp-tag{ font-style:normal; align-self:flex-start; margin-top:4px; font-size:0.66rem; font-weight:600; color:var(--accent); background:var(--accent-soft); padding:1px 6px; border-radius:var(--r-sm); }
+[data-theme="dark"] .lp-tag{ color:var(--accent-2); }
+
+.lp-visual-phone{ display:flex; justify-content:center; }
+.lp-phone{ width:250px; background:var(--panel); border:1px solid var(--line-strong); border-radius:22px; padding:22px 16px 18px; display:flex; flex-direction:column; gap:10px; font-size:0.8rem; }
+.lp-field{ display:flex; flex-direction:column; gap:3px; color:var(--ink-soft); font-size:0.7rem; }
+.lp-field i{ font-style:normal; color:var(--ink); font-size:0.8rem; border:1px solid var(--line); border-radius:var(--r-sm); padding:6px 8px; background:var(--panel-2); }
+.lp-seg{ display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; }
+.lp-seg i{ font-style:normal; font-size:0.68rem; text-align:center; padding:6px 4px; color:var(--ink-soft); }
+.lp-seg i.on{ background:var(--accent); color:#fff; }
+.lp-submit{ margin-top:4px; background:var(--accent); color:#fff; text-align:center; border-radius:var(--r-sm); padding:8px; font-weight:600; }
+
+.lp-visual-invoice{ display:flex; justify-content:center; }
+.lp-doc{ width:min(340px, 100%); background:var(--panel); border:1px solid var(--line); border-radius:var(--r-md); padding:20px; font-size:0.84rem; }
+.lp-doc-top{ display:flex; justify-content:space-between; align-items:center; }
+.lp-paid{ font-size:0.7rem; font-weight:600; color:var(--done); background:color-mix(in srgb, var(--done) 12%, transparent); padding:2px 8px; border-radius:var(--r-sm); }
+.lp-doc-to{ display:block; color:var(--ink-faint); font-size:0.76rem; margin:4px 0 14px; }
+.lp-doc-line, .lp-doc-total{ display:flex; justify-content:space-between; padding:7px 0; border-top:1px solid var(--line); color:var(--ink-soft); }
+.lp-doc-line span:last-child, .lp-doc-total span:last-child{ font-variant-numeric:tabular-nums; }
+.lp-doc-total{ border-top:2px solid var(--ink); color:var(--ink); font-weight:700; }
+
+.lp-also{ list-style:none; display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:1px solid var(--line); }
+.lp-also li{ padding:20px 24px 20px 0; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:4px; }
+.lp-also b{ font-size:0.95rem; }
+.lp-also span{ color:var(--ink-soft); font-size:0.9rem; line-height:1.5; }
+
+.lp-radio{ position:absolute; opacity:0; pointer-events:none; }
+.lp-tabs{ display:flex; gap:6px; border-bottom:1px solid var(--line); }
+.lp-tabs label{ padding:10px 14px; font-weight:600; font-size:0.92rem; color:var(--ink-soft); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+#lp-role-shop:checked ~ .lp-tabs label[for="lp-role-shop"],
+#lp-role-mech:checked ~ .lp-tabs label[for="lp-role-mech"],
+#lp-role-fleet:checked ~ .lp-tabs label[for="lp-role-fleet"]{ color:var(--ink); border-bottom-color:var(--accent); }
+#lp-role-shop:focus-visible ~ .lp-tabs label[for="lp-role-shop"],
+#lp-role-mech:focus-visible ~ .lp-tabs label[for="lp-role-mech"],
+#lp-role-fleet:focus-visible ~ .lp-tabs label[for="lp-role-fleet"]{ outline:2px solid var(--accent-2); outline-offset:2px; }
+.lp-panel{ display:none; padding-top:20px; }
+.lp-panel p{ font-size:1.05rem; line-height:1.65; max-width:60ch; }
+#lp-role-shop:checked ~ .lp-panels .lp-p-shop,
+#lp-role-mech:checked ~ .lp-panels .lp-p-mech,
+#lp-role-fleet:checked ~ .lp-panels .lp-p-fleet{ display:block; }
+
+.lp-trust{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); gap:64px; align-items:start; padding-top:40px; border-top:1px solid var(--line); }
+.lp-trust > h2{ margin-bottom:0; }
+.lp-trust-body{ font-size:1.05rem; line-height:1.65; max-width:58ch; }
+
+.lp-cta{ margin-top:var(--lp-gap); background:var(--navy); border-radius:var(--r-lg); padding:52px 48px; display:flex; justify-content:space-between; align-items:center; gap:32px; flex-wrap:wrap; }
+.lp-cta .lp-actions{ flex-shrink:0; }
+.lp-cta h2{ color:#fff; max-width:22ch; }
+.lp-cta p{ color:#AFC2C7; margin-top:12px; max-width:52ch; }
+.lp-btn-onDark{ background:#fff; color:var(--navy); }
+.lp-btn-onDark:hover{ background:#E4F0F2; }
+.lp-btn-ghostDark{ background:transparent; color:#fff; border-color:rgba(255,255,255,0.3); }
+.lp-btn-ghostDark:hover{ border-color:#fff; }
+
+
+@media (max-width:960px){
+  .lp{ --lp-gap:80px; }
+  .lp-hero, .lp-row, .lp-trust{ grid-template-columns:1fr; gap:36px; }
+  .lp-trust{ gap:14px; }
+  .lp-row-flip .lp-row-copy{ order:0; }
+  .lp-steps{ grid-template-columns:repeat(2,1fr); row-gap:40px; }
+  .lp-also{ grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:600px){
+  .lp{ --lp-gap:64px; }
+  .lp-hero{ margin-top:16px; }
+  .lp-map{ height:auto; display:flex; flex-direction:column; }
+  .lp-map svg{ position:static; height:220px; }
+  .lp-eta{ position:static; width:auto; margin:0; border:none; border-top:1px solid var(--line); border-radius:0; box-shadow:none; }
+  .lp-steps, .lp-also{ grid-template-columns:1fr; }
+  .lp-visual-board{ grid-template-columns:1fr; }
+  .lp-cta{ padding:40px 24px; }
+  .lp-actions .lp-btn{ flex:1 1 auto; }
+}
