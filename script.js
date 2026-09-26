@@ -1,3 +1,12 @@
+// Platform contact details shown on Contact, sign-up help, and inactive-account
+// screens. Change them here only.
+const PLATFORM_CONTACT = { email: 'dustinashford06@gmail.com', phone: '+1 (417) 203-0461' };
+function applyPlatformContact(){
+  document.querySelectorAll('[data-contact="email"]').forEach(a => { a.textContent = PLATFORM_CONTACT.email; a.href = 'mailto:' + PLATFORM_CONTACT.email; });
+  document.querySelectorAll('[data-contact="phone"]').forEach(el => { el.textContent = PLATFORM_CONTACT.phone; });
+}
+applyPlatformContact();
+
 // surface any uncaught error instead of failing silently
 async function logErrorToServer(message, stack){
   try{
@@ -191,6 +200,24 @@ async function fetchOrgMembers(){
 
   return [...(mechanics || []), ...fleetMembers];
 }
+// Fleet accounts linked to this shop, for the "Fleet customer" dropdown.
+// A job is visible to a fleet only when it is assigned to that fleet here.
+async function fetchLinkedFleets(){
+  const { data, error } = await sb.from('fleet_shop_links').select('profiles:fleet_id(id, name, company, active)').eq('org_id', session.orgId);
+  if(error){ console.error('fetchLinkedFleets', error); return []; }
+  return (data || []).map(l => l.profiles).filter(p => p && p.active);
+}
+function fleetOptionsHtml(fleets, selectedId){
+  return '<option value="">No fleet account (only your shop sees it)</option>' +
+    fleets.map(f => `<option value="${f.id}" ${f.id === selectedId ? 'selected' : ''}>${esc(f.company || f.name)}${f.company && f.name ? ' (' + esc(f.name) + ')' : ''}</option>`).join('');
+}
+async function populateFleetSelect(){
+  const sel = document.getElementById('njFleet');
+  if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = fleetOptionsHtml(await fetchLinkedFleets(), current);
+}
+
 async function fetchAllProfiles(){
   const { data, error } = await sb.from('profiles').select('id, name, active, company, org_id, role, email, phone').order('created_at', { ascending:true });
   if(error){ console.error('fetchAllProfiles', error); return []; }
@@ -488,7 +515,7 @@ async function fetchLocationsFor(mechanicIds){
 }
 async function upsertLocation(mechanicId, lat, lng, status){
   const { error } = await sb.from('locations').upsert(
-    { mechanic_id:mechanicId, lat, lng, status, updated_at:new Date().toISOString() },
+    { mechanic_id:mechanicId, lat, lng, status, is_live:true, updated_at:new Date().toISOString() },
     { onConflict:'mechanic_id' }
   );
   if(error){ console.error('upsertLocation', error); return false; }
@@ -700,11 +727,18 @@ async function rotateInviteCode(orgId){
   await sb.from('organizations').update({ invite_code: generateInviteCode() }).eq('id', orgId);
 }
 
+// If profile setup fails after the company was created, clicking the button
+// again must not create a second company: reuse the first one this session.
+let signupCreatedOrg = null; // { name, orgId }
 async function resolveOrgForSignup(role, shopName, inviteCode){
   if(role === 'shop'){
     if(!shopName) return { error: 'Enter your company / shop name.' };
+    if(signupCreatedOrg && signupCreatedOrg.name.toLowerCase() === shopName.toLowerCase()){
+      return { orgId: signupCreatedOrg.orgId, joinedViaInvite: false };
+    }
     const { data, error } = await sb.from('organizations').insert([{ name: shopName }]).select();
     if(error) return { error: 'Could not create your company: ' + error.message };
+    signupCreatedOrg = { name: shopName, orgId: data[0].id };
     return { orgId: data[0].id, joinedViaInvite: false };
   } else {
     if(!inviteCode) return { error: 'Enter the invite code from your shop owner.' };
@@ -1204,6 +1238,11 @@ function initMechanicView(){
 
   function stopTracking(){
     if(watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+    // Mark the saved position as not live, so fleet customers stop seeing it
+    // right away (the database also hides positions older than 10 minutes,
+    // which covers a phone that closes the tab without pressing Go offline).
+    sb.from('locations').update({ is_live:false }).eq('mechanic_id', session.id)
+      .then(({ error }) => { if(error) console.error('mark offline', error); });
     goLiveBtn.textContent = 'Go live';
     goLiveBtn.classList.add('offline-state');
     document.getElementById('liveBadge').className = 'badge offline';
@@ -2135,6 +2174,7 @@ function initShopView(){
     } catch(e){ console.error(`${name} failed to initialize:`, e); }
   }
   safeInit('populateMechanicSelect', populateMechanicSelect);
+  safeInit('populateFleetSelect', populateFleetSelect);
   safeInit('populateCompanyList', populateCompanyList);
   safeInit('refreshShopData', refreshShopData);
   safeInit('renderTeamList', renderTeamList);
@@ -2158,7 +2198,8 @@ function initShopView(){
     if(!customer || !vehicle || !mechanicId){ alert('Fill in every field.'); return; }
     if(jobType === 'mobile' && !chosenPin){ alert('Set a breakdown location (address or pin) for a mobile job.'); return; }
 
-    const payload = { customer, vehicle, mechanic_id:mechanicId, job_type:jobType, status:'assigned', created_by:session.id, org_id:session.orgId };
+    const fleetSel = document.getElementById('njFleet');
+    const payload = { customer, vehicle, mechanic_id:mechanicId, job_type:jobType, status:'assigned', created_by:session.id, org_id:session.orgId, fleet_profile_id: fleetSel && fleetSel.value ? fleetSel.value : null };
     if(jobType === 'mobile'){ payload.dest_lat = chosenPin.lat; payload.dest_lng = chosenPin.lng; }
 
     const { data, error } = await sb.from('jobs').insert([payload]).select();
@@ -2233,12 +2274,13 @@ async function renderTeamList(){
   });
 }
 
-function jobEditRowHtml(job, mechanics){
+function jobEditRowHtml(job, mechanics, fleets){
   return `
     <div class="edit-grid">
       <input type="text" class="ej-customer" value="${esc(job.customer)}" placeholder="Customer">
       <input type="text" class="ej-vehicle" value="${esc(job.vehicle)}" placeholder="Vehicle">
       <select class="ej-mechanic">${mechanics.map(m=>`<option value="${m.id}" ${m.id===job.mechanic_id?'selected':''}>${esc(m.name)}</option>`).join('')}</select>
+      <select class="ej-fleet" title="Fleet customer account that can track this job">${fleetOptionsHtml(fleets || [], job.fleet_profile_id)}</select>
     </div>
     <div class="job-actions">
       <button class="ej-save">Save</button>
@@ -2365,17 +2407,20 @@ async function refreshShopData(){
       const { error } = await sb.from('jobs').delete().eq('id', jobId);
       if(!error) refreshShopData();
     };
-    card.querySelector('.j-edit').onclick = ()=>{
+    card.querySelector('.j-edit').onclick = async ()=>{
       const box = card.querySelector('.j-editbox');
-      box.innerHTML = jobEditRowHtml(job, mechanics);
+      box.innerHTML = jobEditRowHtml(job, mechanics, await fetchLinkedFleets());
       box.querySelector('.ej-cancel').onclick = ()=>{ box.innerHTML = ''; };
       box.querySelector('.ej-save').onclick = async ()=>{
         const customer = box.querySelector('.ej-customer').value.trim();
         const vehicle = box.querySelector('.ej-vehicle').value.trim();
         const mechanic_id = box.querySelector('.ej-mechanic').value;
+        const fleetSel = box.querySelector('.ej-fleet');
+        const fleet_profile_id = fleetSel && fleetSel.value ? fleetSel.value : null;
         if(!customer || !vehicle || !mechanic_id) return;
-        const { error } = await sb.from('jobs').update({ customer, vehicle, mechanic_id, updated_at:new Date().toISOString() }).eq('id', jobId);
-        if(!error) refreshShopData();
+        const { error } = await sb.from('jobs').update({ customer, vehicle, mechanic_id, fleet_profile_id, updated_at:new Date().toISOString() }).eq('id', jobId);
+        if(error){ alert('Could not save the job: ' + error.message); return; }
+        refreshShopData();
       };
     };
   });
