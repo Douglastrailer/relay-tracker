@@ -1136,3 +1136,46 @@ alter table organizations drop constraint if exists organizations_name_key;
 
 -- Make the API aware of the new columns right away.
 notify pgrst, 'reload schema';
+-- ============================================================
+-- Migration 0002 — HOTFIX for migration 0001
+-- Symptom: "infinite recursion detected in policy for relation jobs"
+-- when a shop edits a job, drags it on the board, or a mechanic changes
+-- its status. Creating and viewing jobs was not affected.
+-- Cause: the job-edit rule read the profiles table, and 0001's new
+-- fleet rule on profiles read the jobs table, so each triggered the other.
+-- Fix: both lookups go through protected functions that don't re-enter
+-- the security rules. Same permissions as before, no loop.
+-- Safe to run more than once. All-or-nothing.
+-- ============================================================
+begin;
+
+create or replace function public.is_org_mechanic(p_mechanic uuid, p_org uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (select 1 from profiles m where m.id = p_mechanic and m.org_id = p_org and m.role = 'mechanic');
+$$;
+
+create or replace function public.fleet_sees_mechanic(p_profile uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from jobs j
+    where j.mechanic_id = p_profile
+      and j.fleet_profile_id = auth.uid()
+      and exists (select 1 from fleet_shop_links fsl where fsl.fleet_id = auth.uid() and fsl.org_id = j.org_id)
+  );
+$$;
+
+drop policy if exists "jobs_update_shop" on jobs;
+create policy "jobs_update_shop" on jobs
+  for update
+  using (org_id = public.current_org_id() and public.current_role() = 'shop')
+  with check (org_id = public.current_org_id() and public.is_org_mechanic(jobs.mechanic_id, jobs.org_id));
+
+drop policy if exists "profiles_select_fleet_view_shops" on profiles;
+create policy "profiles_select_fleet_view_shops" on profiles
+  for select using (public.fleet_sees_mechanic(profiles.id));
+
+grant execute on function public.is_org_mechanic(uuid, uuid) to authenticated;
+grant execute on function public.fleet_sees_mechanic(uuid) to authenticated;
+
+notify pgrst, 'reload schema';
+commit;
