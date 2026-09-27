@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=25"/>
+<link rel="stylesheet" href="style.css?v=26"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -480,6 +480,8 @@
       <button class="dash-tab active" data-target="shop-overview" title="Overview" aria-current="page"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span class="nav-label">Overview</span></button>
       <button class="dash-tab" data-target="shop-requests" title="Requests"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><span class="nav-label">Requests</span> <span id="workRequestsBadge" class="req-badge hidden">0</span></button>
       <button class="dash-tab" data-target="shop-jobs" title="Jobs"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="nav-label">Jobs</span></button>
+      <button class="dash-tab" data-target="shop-customers" title="Customers"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg><span class="nav-label">Customers</span></button>
+      <button class="dash-tab" data-target="shop-units" title="Units"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="7" width="13" height="10" rx="1"/><path d="M14 10h4l3 3v4h-7"/><circle cx="5.5" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/></svg><span class="nav-label">Units</span></button>
       <button class="dash-tab" data-target="shop-history" title="History"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg><span class="nav-label">History</span></button>
       <div class="nav-group">Finance</div>
       <button class="dash-tab" data-target="shop-invoices" title="Invoices"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></svg><span class="nav-label">Invoices</span> <span class="new-badge" id="invoicesNewBadge">NEW</span></button>
@@ -518,18 +520,26 @@
     <div class="dash-panel hidden" id="shop-jobs">
       <div class="section">
         <div class="section-head"><h2>Active jobs</h2></div>
-        <div class="kanban-board" id="shopKanbanBoard">
-          <div class="kanban-column">
-            <div class="kanban-col-header"><span>Assigned</span><span class="kanban-count" id="kanbanCount-assigned">0</span></div>
-            <div class="kanban-col-list" id="kanban-assigned"></div>
+        <div class="kanban-board kanban-5" id="shopKanbanBoard">
+          <div class="kanban-column kcol-todo">
+            <div class="kanban-col-header" title="New and assigned"><span>To do</span><span class="kanban-count" id="kanbanCount-todo">0</span></div>
+            <div class="kanban-col-list" id="kanban-todo"></div>
           </div>
-          <div class="kanban-column">
-            <div class="kanban-col-header"><span>Heading there</span><span class="kanban-count" id="kanbanCount-en_route">0</span></div>
-            <div class="kanban-col-list" id="kanban-en_route"></div>
+          <div class="kanban-column kcol-onroad">
+            <div class="kanban-col-header" title="Mechanic driving to the unit"><span>Heading there</span><span class="kanban-count" id="kanbanCount-onroad">0</span></div>
+            <div class="kanban-col-list" id="kanban-onroad"></div>
           </div>
-          <div class="kanban-column">
-            <div class="kanban-col-header"><span>On site</span><span class="kanban-count" id="kanbanCount-on_site">0</span></div>
-            <div class="kanban-col-list" id="kanban-on_site"></div>
+          <div class="kanban-column kcol-working">
+            <div class="kanban-col-header" title="On site, diagnosing, repairing, quality check"><span>In progress</span><span class="kanban-count" id="kanbanCount-working">0</span></div>
+            <div class="kanban-col-list" id="kanban-working"></div>
+          </div>
+          <div class="kanban-column kcol-approval">
+            <div class="kanban-col-header" title="Customer needs to approve"><span>Waiting for approval</span><span class="kanban-count" id="kanbanCount-approval">0</span></div>
+            <div class="kanban-col-list" id="kanban-approval"></div>
+          </div>
+          <div class="kanban-column kcol-parts">
+            <div class="kanban-col-header" title="Parts ordered"><span>Waiting for parts</span><span class="kanban-count" id="kanbanCount-parts">0</span></div>
+            <div class="kanban-col-list" id="kanban-parts"></div>
           </div>
         </div>
       </div>
@@ -552,8 +562,16 @@
               <input type="text" id="njCustomer" list="companyList" placeholder="e.g. FedEx">
               <datalist id="companyList"></datalist>
             </div>
-            <div class="field"><label>Vehicle / unit</label><input type="text" id="njVehicle" placeholder="e.g. Trailer #7790"></div>
-            <div class="field"><label>Describe the issue</label><textarea id="njIssue" rows="3" placeholder="e.g. Customer says it's making a grinding noise when braking"></textarea></div>
+            <div class="rec-grid">
+              <div class="field"><label>Unit number</label><input type="text" id="njVehicle" list="unitList" placeholder="e.g. 7790"><datalist id="unitList"></datalist></div>
+              <div class="field"><label>Unit type</label><select id="njUnitType"><option value="trailer">Trailer</option><option value="truck">Truck</option><option value="other">Other</option></select></div>
+            </div>
+            <div class="field"><label>Customer complaint</label><textarea id="njIssue" rows="3" placeholder="e.g. Grinding noise when braking, right rear"></textarea></div>
+            <div class="rec-grid">
+              <div class="field"><label>Priority</label><select id="njPriority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option><option value="low">Low</option></select></div>
+              <div class="field"><label>Drivable?</label><select id="njDrivable"><option value="">Unknown</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+            </div>
+            <label class="rec-check"><input type="checkbox" id="njSafety"> Safety issue (brakes, tires, lights, coupling…)</label>
             <div class="field"><label>Assign mechanic</label><select id="njMechanic"></select></div>
             <div class="field"><label>Fleet customer account (optional)</label><select id="njFleet"><option value="">No fleet account (only your shop sees it)</option></select><p class="meta" style="margin-top:4px;">Only the fleet you pick here can see this job and track the mechanic.</p></div>
             <div class="field" id="njLocationField">
@@ -571,6 +589,28 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="dash-panel hidden" id="shop-customers">
+      <div class="rec-toolbar">
+        <input type="search" id="customersSearch" placeholder="Search by name, contact, phone, email" aria-label="Search customers">
+        <label class="rec-check"><input type="checkbox" id="customersShowInactive"> Show inactive</label>
+        <span class="meta" id="customersCount"></span>
+        <button type="button" id="addCustomerBtn">Add customer</button>
+      </div>
+      <div id="customerFormBox" class="hidden"></div>
+      <div class="rec-list" id="customersList"><div class="meta">Loading…</div></div>
+    </div>
+
+    <div class="dash-panel hidden" id="shop-units">
+      <div class="rec-toolbar">
+        <input type="search" id="unitsSearch" placeholder="Search by unit number, VIN, plate, customer" aria-label="Search units">
+        <label class="rec-check"><input type="checkbox" id="unitsShowInactive"> Show inactive</label>
+        <span class="meta" id="unitsCount"></span>
+        <button type="button" id="addUnitBtn">Add unit</button>
+      </div>
+      <div id="unitFormBox" class="hidden"></div>
+      <div class="rec-list" id="unitsList"><div class="meta">Loading…</div></div>
     </div>
 
     <div class="dash-panel hidden" id="shop-history">
@@ -803,7 +843,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <div id="fatalError" style="display:none; position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:999; background:#FFEAE4; color:#C23A1E; border:1px solid #F3B7A8; padding:12px 18px; border-radius:10px; font-family:var(--font-mono); font-size:0.8rem; max-width:90vw; box-shadow:0 8px 24px rgba(0,0,0,0.12);"></div>
-<script src="script.js?v=38"></script>
+<div id="roModal" class="modal-overlay ro-overlay hidden" role="dialog" aria-modal="true" aria-label="Repair order">
+  <div class="modal-card ro-card">
+    <button class="modal-close" id="roClose" aria-label="Close">×</button>
+    <div id="roBody"></div>
+  </div>
+</div>
+<script src="script.js?v=39"></script>
+<script src="ro.js?v=1"></script>
 
 </body>
 </html>
