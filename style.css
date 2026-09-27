@@ -1026,3 +1026,88 @@ body.modal-open{ overflow:hidden; }
 @media (max-width:900px){ .kanban-board.kanban-5{ grid-template-columns:1fr; } .kanban-5 .kanban-column{ min-width:0; } }
 .ro-comms{ align-items:flex-start; }
 @media (max-width:640px){ .ro-status-row button, #roSave{ width:100%; } }
+
+/* ============================================================
+   Phase 2 — inspections
+   ============================================================ */
+.insp-overlay{ z-index:1200; }
+.insp-card{ max-width:760px; }
+.insp-head{ margin:0 28px 12px 0; }
+.insp-head h2{ margin:2px 0 4px; font-size:20px; }
+.insp-row{ display:flex; align-items:center; gap:12px; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); }
+.insp-row:last-of-type{ border-bottom:0; }
+.insp-row-main{ min-width:0; }
+.insp-chips, .insp-summary{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; align-items:center; }
+.insp-chip{ font-size:12px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--panel-2, #F3F4F6); color:var(--ink-soft); white-space:nowrap; }
+.insp-chip.r-repair{ background:#FDE2DE; color:#B42318; }
+.insp-chip.r-monitor{ background:#FFF4D6; color:#8A5A00; }
+.insp-chip.r-good{ background:#E7F5EF; color:#177A50; }
+.insp-chip.r-na{ background:#EEF0F3; color:#5B6472; }
+.insp-start{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+.insp-start select, .insp-start input{ flex:1 1 220px; min-height:44px; padding:10px 12px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); font-size:.9rem; }
+.insp-start button, .insp-row button, #inspComplete, #inspPrint{
+  background:var(--accent); color:#fff; border:none; padding:11px 18px; border-radius:9px; font-weight:700; font-size:.85rem; min-height:44px; cursor:pointer; }
+.ghost-btn{ background:none; border:1px solid var(--line); color:var(--ink-soft); padding:10px 14px; border-radius:9px; font-weight:600; font-size:.85rem; min-height:44px; cursor:pointer; }
+button:disabled{ opacity:.55; cursor:default; }
+.rec-rep{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px dashed var(--line); }
+.rec-rep-text{ flex:1; min-width:0; overflow-wrap:anywhere; }
+.rec-rep select{ min-height:40px; padding:6px 8px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); }
+
+/* Inspection screen: built for one hand on a phone */
+.insp-meta-row{ display:grid; grid-template-columns:200px 1fr; gap:12px; }
+.insp-group{ margin-top:16px; }
+.insp-group h4{ margin:0 0 8px; font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); }
+.insp-item{ border:1px solid var(--line); border-left:5px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; background:var(--panel); }
+.insp-item.has-good{ border-left-color:#1F9D63; }
+.insp-item.has-monitor{ border-left-color:#E0A100; }
+.insp-item.has-repair{ border-left-color:#D92D20; }
+.insp-item.has-na{ border-left-color:#8A93A0; }
+.insp-item-label{ font-weight:600; margin-bottom:8px; }
+.insp-seg{ display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; }
+.insp-seg button{ min-height:48px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); border-radius:10px; font-weight:700; font-size:.85rem; cursor:pointer; }
+.insp-seg .seg-good.on{ background:#1F9D63; border-color:#1F9D63; color:#fff; }
+.insp-seg .seg-monitor.on{ background:#E0A100; border-color:#E0A100; color:#1B1300; }
+.insp-seg .seg-repair.on{ background:#D92D20; border-color:#D92D20; color:#fff; }
+.insp-seg .seg-na.on{ background:#5B6472; border-color:#5B6472; color:#fff; }
+.insp-detail{ margin-top:10px; }
+.insp-detail textarea{ width:100%; padding:10px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); font:inherit; }
+.insp-media{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:8px; }
+.insp-cam{ display:inline-flex; align-items:center; gap:6px; min-height:40px; padding:8px 12px; border:1px dashed var(--line-strong, #C9CDD3); border-radius:10px; font-size:.85rem; font-weight:600; color:var(--accent); cursor:pointer; }
+.insp-thumbs{ display:flex; flex-wrap:wrap; gap:6px; }
+.insp-thumb{ width:56px; height:56px; border-radius:8px; overflow:hidden; display:inline-flex; align-items:center; justify-content:center; background:#111827; color:#fff; font-size:20px; text-decoration:none; }
+.insp-thumb img{ width:100%; height:100%; object-fit:cover; }
+.insp-uploading{ font-size:.8rem; color:var(--ink-soft); }
+.insp-footer{ position:sticky; bottom:-24px; display:flex; flex-wrap:wrap; align-items:center; gap:10px; justify-content:flex-end;
+  background:var(--panel); border-top:1px solid var(--line); padding:12px 0 16px; margin-top:16px; }
+.insp-progress{ margin-right:auto; font-weight:700; color:var(--ink-soft); }
+.insp-finding{ border-left:5px solid var(--line); padding:8px 12px; margin-bottom:8px; background:var(--panel-2, #F7F7F8); border-radius:8px; }
+.insp-finding.r-repair{ border-left-color:#D92D20; }
+.insp-finding.r-monitor{ border-left-color:#E0A100; }
+.insp-finding p{ margin:6px 0 0; }
+.insp-table{ width:100%; border-collapse:collapse; }
+.insp-table td{ padding:7px 4px; border-bottom:1px solid var(--line); vertical-align:top; }
+.insp-res{ width:140px; font-weight:700; text-align:right; }
+.insp-res.r-good{ color:#177A50; } .insp-res.r-monitor{ color:#8A5A00; } .insp-res.r-repair{ color:#B42318; } .insp-res.r-na{ color:#5B6472; }
+.insp-banner{ background:#FFF4D6; color:#8A5A00; padding:8px 12px; border-radius:8px; }
+.insp-gen-notes{ background:var(--panel-2, #F7F7F8); padding:10px 12px; border-radius:8px; }
+.tpl-row{ cursor:default; }
+@media (max-width:640px){
+  .insp-meta-row{ grid-template-columns:1fr; }
+  .insp-seg button{ min-height:52px; font-size:.8rem; }
+  .insp-footer{ bottom:-18px; }
+  .insp-footer button{ flex:1 1 auto; }
+  .insp-progress{ width:100%; }
+}
+/* Printing a report: only the report, on white */
+@media print{
+  body.printing-insp > *:not(#inspModal){ display:none !important; }
+  body.printing-insp #inspModal{ position:static; background:none; padding:0; overflow:visible; }
+  body.printing-insp .insp-card{ box-shadow:none; max-width:none; width:100%; padding:0; }
+  body.printing-insp .modal-close, body.printing-insp .insp-no-print{ display:none !important; }
+  body.printing-insp .insp-thumb img{ width:80px; height:80px; }
+}
+/* Inspection footer sits flush at the bottom of the screen */
+.modal-overlay.insp-overlay{ padding-bottom:0; }
+.insp-card{ padding-bottom:0; border-bottom-left-radius:0; border-bottom-right-radius:0; }
+.insp-footer{ bottom:0; box-shadow:0 -8px 16px -12px rgba(0,0,0,.25); }
+@media (max-width:640px){ .insp-footer{ bottom:0; } }
