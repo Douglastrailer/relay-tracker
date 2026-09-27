@@ -349,6 +349,9 @@ async function openRepairOrder(jobId){
     </section>
     ${(canEditRequest || canEditDiagnosis) ? `<p class="form-error" id="roError"></p><div class="job-actions"><button type="button" id="roSave">Save repair order</button></div>` : ''}
 
+    <section class="ro-sec" id="roInspections"><h4>Inspections</h4><p class="meta">Loading…</p></section>
+    <section class="ro-sec" id="roRecommended"></section>
+
     ${isShop ? `<section class="ro-sec"><h4>Estimates &amp; invoices</h4>${(invs.data || []).length ? (invs.data || []).map(i => `<div class="ro-inv"><span>${i.kind === 'estimate' ? 'Estimate' : 'Invoice'} #${i.id}</span><span class="meta">${fmtDate(i.created_at)}</span><span class="rec-tag">${esc(String(i.status).replace(/_/g, ' '))}</span></div>`).join('') : '<p class="meta">None yet. Create one from the Invoices page.</p>'}</section>` : ''}
 
     <section class="ro-sec">
@@ -363,6 +366,7 @@ async function openRepairOrder(jobId){
 
   wireCommentToggles(body);
   wireAttachmentToggles(body);
+  if(typeof loadRoInspections === 'function') loadRoInspections(job, { canWork: canEditDiagnosis, isShop });
   const saveStatus = document.getElementById('roStatusSave');
   if(saveStatus) saveStatus.onclick = () => roUpdateStatus(job);
   const saveBtn = document.getElementById('roSave');
@@ -377,6 +381,9 @@ function roTimelineHtml(hist, audit, names){
   audit.filter(a => a.action !== 'status_changed' && a.action !== 'created').forEach(a => {
     const t = a.action === 'mechanic_assigned' ? `Mechanic changed to <b>${esc(who(a.details && a.details.to))}</b>`
       : a.action === 'customer_or_unit_changed' ? `Customer/unit set to <b>${esc((a.details && a.details.customer) || '')} ${esc((a.details && a.details.unit) || '')}</b>`
+      : a.action === 'inspection_started' ? `Inspection started: <b>${esc((a.details && a.details.template) || '')}</b>`
+      : a.action === 'inspection_completed' ? `Inspection completed: <b>${esc((a.details && a.details.template) || '')}</b>`
+      : a.action === 'inspection_reopened' ? `Inspection reopened: <b>${esc((a.details && a.details.template) || '')}</b>`
       : esc(a.action.replace(/_/g, ' '));
     items.push({ at: a.created_at, text: t, by: who(a.actor_id) });
   });
