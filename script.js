@@ -65,9 +65,50 @@ function milesBetween(lat1,lon1,lat2,lon2){
 // "Heading there" step) on the mechanic's own in-shop job cards. This
 // keeps drag-and-drop from creating a state the rest of the app treats
 // as impossible.
-function isValidStatusMove(jobType, targetStatus){
-  if(jobType === 'inshop' && targetStatus === 'en_route') return false;
-  return targetStatus === 'assigned' || targetStatus === 'en_route' || targetStatus === 'on_site';
+// ---- Repair order statuses (Phase 1) ----
+// 'complete' keeps its original stored name so older screens and data keep
+// working; people see it as "Completed".
+const STATUS_LABELS = {
+  new:'New', assigned:'Assigned', en_route:'Heading there', on_site:'On site',
+  diagnosing:'Diagnosing', waiting_approval:'Waiting for approval', waiting_parts:'Waiting for parts',
+  repairing:'Repairing', quality_control:'Quality check', complete:'Completed',
+  invoiced:'Invoiced', paid:'Paid', cancelled:'Cancelled'
+};
+const STATUS_ORDER = Object.keys(STATUS_LABELS);
+const CLOSED_STATUSES = ['complete','invoiced','paid','cancelled'];   // not on the board
+const DONE_STATUSES = ['complete','invoiced','paid'];                  // finished work (history, analytics)
+const WORKING_STATUSES = ['on_site','diagnosing','repairing','quality_control'];
+const MECHANIC_STATUSES = ['en_route','on_site','diagnosing','waiting_parts','repairing','quality_control','complete'];
+function statusLabel(status){ return STATUS_LABELS[status] || String(status || '').replace(/_/g,' '); }
+function isClosedStatus(status){ return CLOSED_STATUSES.includes(status); }
+// Board columns show *why* a job is where it is.
+const BOARD_COLUMNS = {
+  todo: ['new','assigned'],
+  onroad: ['en_route'],
+  working: WORKING_STATUSES,
+  approval: ['waiting_approval'],
+  parts: ['waiting_parts']
+};
+function boardColumnFor(status){
+  for(const col in BOARD_COLUMNS){ if(BOARD_COLUMNS[col].includes(status)) return col; }
+  return 'todo';
+}
+// Status a job gets when dropped into a column; null = not allowed.
+// Dropping inside a column keeps the more specific status it already has.
+function kanbanDropStatus(jobType, currentStatus, column){
+  if(!BOARD_COLUMNS[column]) return null;
+  if(column === 'onroad' && jobType === 'inshop') return null;   // in-shop jobs never travel
+  if(BOARD_COLUMNS[column].includes(currentStatus)) return currentStatus;
+  return { todo:'assigned', onroad:'en_route', working:'on_site', approval:'waiting_approval', parts:'waiting_parts' }[column];
+}
+const PRIORITY_LABELS = { low:'Low', normal:'Normal', high:'High', urgent:'Urgent' };
+function roChipsHtml(j){
+  let out = '';
+  if(j.ro_number) out += `<span class="ro-num">${esc(j.ro_number)}</span>`;
+  if(j.priority && j.priority !== 'normal') out += `<span class="prio-chip prio-${esc(j.priority)}">${esc(PRIORITY_LABELS[j.priority] || j.priority)}</span>`;
+  if(j.safety_issue) out += `<span class="prio-chip prio-safety">Safety</span>`;
+  if(j.drivable === false) out += `<span class="prio-chip prio-nodrive">Not drivable</span>`;
+  return out ? `<div class="ro-chips">${out}</div>` : '';
 }
 
 let draggedJobId = null;
@@ -85,7 +126,7 @@ function wireKanbanDragDrop(board){
   });
 
   board.querySelectorAll('.kanban-col-list').forEach(colList=>{
-    const targetStatus = colList.id.replace('kanban-', '');
+    const column = colList.id.replace('kanban-', '');
     colList.addEventListener('dragover', (e)=>{ e.preventDefault(); colList.classList.add('drag-over'); });
     colList.addEventListener('dragleave', ()=> colList.classList.remove('drag-over'));
     colList.addEventListener('drop', async (e)=>{
@@ -94,19 +135,26 @@ function wireKanbanDragDrop(board){
       if(draggedJobId === null) return;
       const card = board.querySelector(`.job-card[data-job="${draggedJobId}"]`);
       const jobType = card ? card.dataset.jobtype : 'mobile';
-      if(!isValidStatusMove(jobType, targetStatus)) return;
+      const currentStatus = card ? card.dataset.status : '';
+      const targetStatus = kanbanDropStatus(jobType, currentStatus, column);
+      if(!targetStatus){ if(column === 'onroad') alert('In-shop jobs don\'t travel, so they can\'t be "Heading there".'); return; }
+      if(targetStatus === currentStatus) return;
       const { error } = await sb.from('jobs').update({ status: targetStatus, updated_at: new Date().toISOString() }).eq('id', draggedJobId);
-      if(!error) refreshShopData();
+      if(error){ alert('Could not move the job: ' + error.message); return; }
+      refreshShopData();
     });
   });
 }
 
 function jobStatusBadge(status){
-  const label = status.replace('_',' ');
-  if(status === 'assigned') return `<span class="badge pending"><span class="bd"></span>${label}</span>`;
-  if(status === 'en_route') return `<span class="badge live"><span class="bd"></span>${label}</span>`;
-  if(status === 'on_site') return `<span class="badge onsite"><span class="bd"></span>${label}</span>`;
-  return `<span class="badge arrived"><span class="bd"></span>${label}</span>`; // complete
+  const label = esc(statusLabel(status));
+  let cls = 'arrived';
+  if(status === 'new' || status === 'assigned') cls = 'pending';
+  else if(status === 'en_route') cls = 'live';
+  else if(WORKING_STATUSES.includes(status)) cls = 'onsite';
+  else if(status === 'waiting_approval' || status === 'waiting_parts') cls = 'waiting';
+  else if(status === 'cancelled') cls = 'cancelled';
+  return `<span class="badge ${cls}"><span class="bd"></span>${label}</span>`;
 }
 // A small, consistent icon set replacing emoji throughout the app.
 // Stroke-based, currentColor, so every icon automatically matches
@@ -258,9 +306,9 @@ async function fetchJobsForInvoiceLink(){
 // ever had and slicing it down in the browser.
 // Column list excludes only "created_by" — the one job column never
 // actually read anywhere in the app after being set on creation.
-const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, job_type, dest_lat, dest_lng, status, created_at, updated_at, org_id';
+const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, job_type, dest_lat, dest_lng, status, created_at, updated_at, org_id, fleet_profile_id, ro_number, customer_id, unit_id, priority, safety_issue, drivable, complaint, diagnosis, fault_codes, completed_at';
 async function fetchActiveJobs(scope){
-  let q = sb.from('jobs').select(JOB_COLUMNS).neq('status','complete').order('created_at', { ascending:true });
+  let q = sb.from('jobs').select(JOB_COLUMNS).not('status','in','(' + CLOSED_STATUSES.join(',') + ')').order('created_at', { ascending:true });
   // Scoping here is a query-planning aid, not the security boundary — RLS
   // still enforces access underneath regardless of what's passed in. But
   // without it, Postgres can't use idx_jobs_org_status / idx_jobs_mechanic_status
@@ -276,7 +324,7 @@ async function fetchActiveJobs(scope){
   return data || [];
 }
 async function fetchCompletedJobs(limit, scope){
-  let q = sb.from('jobs').select(JOB_COLUMNS).eq('status','complete').order('updated_at', { ascending:false }).limit(limit);
+  let q = sb.from('jobs').select(JOB_COLUMNS).in('status', DONE_STATUSES).order('updated_at', { ascending:false }).limit(limit);
   if(scope && scope.orgId) q = q.eq('org_id', scope.orgId);
   else if(scope && scope.mechanicId) q = q.eq('mechanic_id', scope.mechanicId);
   else if(scope && scope.orgIds && scope.orgIds.length) q = q.in('org_id', scope.orgIds);
@@ -1291,11 +1339,14 @@ async function renderMechJobs(){
           <div class="job-card-top">
             <div>${isInshop ? '<span class="doc-kind-tag">IN-SHOP</span>' : ''}<b>${esc(job.customer)}</b><div class="meta">${esc(job.vehicle)}</div></div>
           </div>
+          ${roChipsHtml(job)}
+          ${job.complaint ? `<div class="ro-complaint">${esc(job.complaint)}</div>` : ''}
           ${distRow}
-          <div class="row"><span>Status</span><b>${job.status.replace('_',' ')}</b></div>
+          <div class="row"><span>Status</span><b>${esc(statusLabel(job.status))}</b></div>
           ${directionsBtn}
           <div class="job-actions">
             ${actionButtons}
+            <button class="j-open-ro" data-job="${job.id}">Open repair order</button>
           </div>
           ${commentsBlockHtml(job.id)}
           ${attachmentsBlockHtml(job.id)}
@@ -1971,7 +2022,7 @@ let historyOffset = 0;
 let historyReachedEnd = false;
 
 async function fetchJobHistoryPage({ orgId, search, jobType, offset, limit }){
-  let q = sb.from('jobs').select(JOB_COLUMNS).eq('org_id', orgId).eq('status', 'complete')
+  let q = sb.from('jobs').select(JOB_COLUMNS).eq('org_id', orgId).in('status', DONE_STATUSES)
     .order('updated_at', { ascending:false }).range(offset, offset + limit - 1);
   if(jobType) q = q.eq('job_type', jobType);
   if(search) q = q.or(`customer.ilike.%${search}%,vehicle.ilike.%${search}%`);
@@ -2183,6 +2234,7 @@ function initShopView(){
   safeInit('initWorkRequestsUI', initWorkRequestsUI);
   safeInit('initBillingUI', initBillingUI);
   safeInit('initHistoryUI', initHistoryUI);
+  if(typeof initRecordsUI === 'function') safeInit('initRecordsUI', initRecordsUI);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
   safeInit('announcementDismissWiring', ()=>{ document.getElementById('announcementDismiss').onclick = dismissAnnouncement; });
@@ -2195,23 +2247,35 @@ function initShopView(){
     const issue = document.getElementById('njIssue').value.trim();
     const mechanicId = document.getElementById('njMechanic').value;
     const jobType = selectedJobType;
-    if(!customer || !vehicle || !mechanicId){ alert('Fill in every field.'); return; }
+    if(!customer || !vehicle || !mechanicId){ alert('Fill in customer, unit, and mechanic.'); return; }
     if(jobType === 'mobile' && !chosenPin){ alert('Set a breakdown location (address or pin) for a mobile job.'); return; }
 
+    const createBtn = document.getElementById('createJobBtn');
+    createBtn.disabled = true;
+    const unitTypeSel = document.getElementById('njUnitType');
+    const rec = await resolveCustomerAndUnit(customer, vehicle, unitTypeSel ? unitTypeSel.value : 'trailer');
+    if(rec.error){ createBtn.disabled = false; alert(rec.error); return; }
+    const drivableVal = (document.getElementById('njDrivable') || {}).value;
     const fleetSel = document.getElementById('njFleet');
-    const payload = { customer, vehicle, mechanic_id:mechanicId, job_type:jobType, status:'assigned', created_by:session.id, org_id:session.orgId, fleet_profile_id: fleetSel && fleetSel.value ? fleetSel.value : null };
+    const payload = {
+      customer, vehicle, customer_id: rec.customerId, unit_id: rec.unitId,
+      mechanic_id:mechanicId, job_type:jobType, status:'assigned', created_by:session.id, org_id:session.orgId,
+      fleet_profile_id: fleetSel && fleetSel.value ? fleetSel.value : null,
+      complaint: issue || null,
+      priority: (document.getElementById('njPriority') || {}).value || 'normal',
+      safety_issue: !!(document.getElementById('njSafety') || {}).checked,
+      drivable: drivableVal === 'yes' ? true : drivableVal === 'no' ? false : null
+    };
     if(jobType === 'mobile'){ payload.dest_lat = chosenPin.lat; payload.dest_lng = chosenPin.lng; }
 
     const { data, error } = await sb.from('jobs').insert([payload]).select();
+    createBtn.disabled = false;
     if(error){
       if(error.code === '42501') alert("Could not create the job — you may be creating jobs too quickly, or the assigned mechanic may no longer be on your team. Wait a moment and try again, or refresh and check the mechanic list.");
       else alert('Could not create job: ' + error.message);
       return;
     }
 
-    if(issue && data && data[0]){
-      await addJobComment(data[0].id, issue);
-    }
 
     if(pendingAcceptRequestId && data && data[0]){
       await sb.from('work_requests').update({
@@ -2222,6 +2286,8 @@ function initShopView(){
     }
 
     document.getElementById('njCustomer').value = ''; document.getElementById('njVehicle').value = ''; document.getElementById('njIssue').value = ''; addressInput.value = '';
+    ['njPriority','njDrivable'].forEach(id => { const el = document.getElementById(id); if(el) el.selectedIndex = 0; });
+    const safetyBox = document.getElementById('njSafety'); if(safetyBox) safetyBox.checked = false;
     if(pinMarker){ pinMapObj.removeLayer(pinMarker); pinMarker = null; } chosenPin = null;
     document.getElementById('pinHint').textContent = 'Type an address and hit Find, or click the map to drop a pin directly.';
     setJobTypeUI('mobile');
@@ -2237,8 +2303,58 @@ async function populateMechanicSelect(){
 }
 
 async function populateCompanyList(){
-  const companies = await fetchCompanies();
-  document.getElementById('companyList').innerHTML = companies.map(c=>`<option value="${esc(c)}"></option>`).join('');
+  const [fleetCompanies, custRes] = await Promise.all([
+    fetchCompanies(),
+    sb.from('customers').select('company_name').eq('org_id', session.orgId).eq('active', true).order('company_name').limit(1000)
+  ]);
+  const names = (custRes.data || []).map(c => c.company_name);
+  fleetCompanies.forEach(n => { if(!names.some(x => x.toLowerCase() === n.toLowerCase())) names.push(n); });
+  document.getElementById('companyList').innerHTML = names.map(c=>`<option value="${esc(c)}"></option>`).join('');
+  await populateUnitList();
+}
+// Units offered in the job form: the chosen customer's units, or all if none chosen.
+async function populateUnitList(){
+  const list = document.getElementById('unitList');
+  if(!list) return;
+  const customerName = (document.getElementById('njCustomer').value || '').trim();
+  let q = sb.from('units').select('unit_number, unit_type, customer_id, customers(company_name)').eq('org_id', session.orgId).eq('active', true).order('unit_number').limit(1000);
+  const { data } = await q;
+  const rows = (data || []).filter(u => !customerName || (u.customers && u.customers.company_name.toLowerCase() === customerName.toLowerCase()));
+  list.innerHTML = rows.map(u => `<option value="${esc(u.unit_number)}">${esc(u.unit_type)}${u.customers ? ' · ' + esc(u.customers.company_name) : ''}</option>`).join('');
+}
+// Escape % and _ so a customer or unit typed by a person is matched literally.
+function ilikeExact(v){ return String(v).replace(/[\\%_]/g, m => '\\' + m); }
+// Find the customer and unit records for what was typed on the job form,
+// creating them if they are new. Returns { customerId, unitId } or { error }.
+async function resolveCustomerAndUnit(customerName, unitNumber, unitType){
+  customerName = customerName.trim(); unitNumber = unitNumber.trim();
+  let { data: cust, error } = await sb.from('customers').select('id').eq('org_id', session.orgId).ilike('company_name', ilikeExact(customerName)).limit(1);
+  if(error) return { error: 'Could not look up the customer: ' + error.message };
+  let customerId = cust && cust[0] ? cust[0].id : null;
+  if(!customerId){
+    const ins = await sb.from('customers').insert([{ org_id: session.orgId, company_name: customerName }]).select('id');
+    if(ins.error){
+      const again = await sb.from('customers').select('id').eq('org_id', session.orgId).ilike('company_name', ilikeExact(customerName)).limit(1);
+      if(again.data && again.data[0]) customerId = again.data[0].id;
+      else return { error: 'Could not save the customer: ' + ins.error.message };
+    } else customerId = ins.data[0].id;
+  }
+  const u = await sb.from('units').select('id, customer_id').eq('org_id', session.orgId).ilike('unit_number', ilikeExact(unitNumber)).limit(1);
+  if(u.error) return { error: 'Could not look up the unit: ' + u.error.message };
+  let unitId = null;
+  if(u.data && u.data[0]){
+    const unit = u.data[0];
+    if(unit.customer_id && unit.customer_id !== customerId){
+      return { error: `Unit "${unitNumber}" is already on file for a different customer. Check the unit number, or move the unit on the Units page.` };
+    }
+    unitId = unit.id;
+    if(!unit.customer_id) await sb.from('units').update({ customer_id: customerId }).eq('id', unitId);
+  } else if(unitType){
+    const insU = await sb.from('units').insert([{ org_id: session.orgId, customer_id: customerId, unit_number: unitNumber, unit_type: unitType }]).select('id');
+    if(insU.error) return { error: 'Could not save the unit: ' + insU.error.message };
+    unitId = insU.data[0].id;
+  }
+  return { customerId, unitId };
 }
 
 async function renderTeamList(){
@@ -2289,7 +2405,7 @@ function jobEditRowHtml(job, mechanics, fleets){
 }
 
 function renderAnalytics(jobs, mechanics, mechName){
-  const completed = jobs.filter(j => j.status === 'complete');
+  const completed = jobs.filter(j => DONE_STATUSES.includes(j.status));
   const barsBox = document.getElementById('analyticsBars');
   const statsBox = document.getElementById('analyticsStats');
   if(!barsBox || !statsBox) return;
@@ -2369,16 +2485,19 @@ async function refreshShopData(){
   // at all now that there's a dedicated History tab for them.
   const board = document.getElementById('shopKanbanBoard');
   const _s1 = preserveOpenChatNodes(board);
-  const columns = { assigned: [], en_route: [], on_site: [] };
-  active.forEach(j => { if(columns[j.status]) columns[j.status].push(j); });
+  const columns = { todo: [], onroad: [], working: [], approval: [], parts: [] };
+  active.forEach(j => { columns[boardColumnFor(j.status)].push(j); });
 
   function jobCardHtml(j){
-    return `<div class="job-card" data-job="${j.id}" data-jobtype="${j.job_type}" draggable="true">
+    return `<div class="job-card${j.safety_issue ? ' is-safety' : ''}" data-job="${j.id}" data-jobtype="${j.job_type}" data-status="${esc(j.status)}" draggable="true">
+        ${roChipsHtml(j)}
         <div class="job-card-top">
           <div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div>
           ${jobStatusBadge(j.status)}
         </div>
+        ${j.complaint ? `<div class="ro-complaint">${esc(j.complaint)}</div>` : ''}
         <div class="job-actions">
+          <button class="j-open-ro" data-job="${j.id}">Open</button>
           <button class="j-edit">Edit</button>
           <button class="j-delete danger">Delete</button>
         </div>
@@ -2388,10 +2507,11 @@ async function refreshShopData(){
       </div>`;
   }
 
-  Object.keys(columns).forEach(status=>{
-    const colList = document.getElementById('kanban-' + status);
-    const countEl = document.getElementById('kanbanCount-' + status);
-    const jobsInCol = columns[status].slice().reverse();
+  Object.keys(columns).forEach(col=>{
+    const colList = document.getElementById('kanban-' + col);
+    const countEl = document.getElementById('kanbanCount-' + col);
+    if(!colList) return;
+    const jobsInCol = columns[col].slice().reverse();
     colList.innerHTML = jobsInCol.map(jobCardHtml).join('');
     if(countEl) countEl.textContent = String(jobsInCol.length);
   });
@@ -2418,7 +2538,9 @@ async function refreshShopData(){
         const fleetSel = box.querySelector('.ej-fleet');
         const fleet_profile_id = fleetSel && fleetSel.value ? fleetSel.value : null;
         if(!customer || !vehicle || !mechanic_id) return;
-        const { error } = await sb.from('jobs').update({ customer, vehicle, mechanic_id, fleet_profile_id, updated_at:new Date().toISOString() }).eq('id', jobId);
+        const rec = await resolveCustomerAndUnit(customer, vehicle, null);
+        if(rec.error){ alert(rec.error); return; }
+        const { error } = await sb.from('jobs').update({ customer, vehicle, customer_id: rec.customerId, unit_id: rec.unitId, mechanic_id, fleet_profile_id, updated_at:new Date().toISOString() }).eq('id', jobId);
         if(error){ alert('Could not save the job: ' + error.message); return; }
         refreshShopData();
       };
@@ -2432,7 +2554,9 @@ async function refreshShopData(){
     ? '<div class="empty-note">No completed jobs yet.</div>'
     : history.map(j => `
       <div class="job-card">
-        <div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>
+        ${roChipsHtml(j)}
+        <div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div>${jobStatusBadge(j.status)}</div>
+        <div class="job-actions"><button class="j-open-ro" data-job="${j.id}">Open</button></div>
         ${commentsBlockHtml(j.id)}
         ${attachmentsBlockHtml(j.id)}
       </div>`).join('');
@@ -2502,7 +2626,8 @@ async function refreshFleetData(){
     for(const j of active){
       const isInshop = j.job_type === 'inshop';
       html += `<div class="card" style="margin-bottom:14px;">
-        <div class="job-card-top"><div>${isInshop ? '<span class="doc-kind-tag">IN-SHOP</span>' : ''}<b>${esc(j.vehicle)}</b><div class="meta">Shop: ${esc(orgName(j.org_id))}</div></div>${jobStatusBadge(j.status)}</div>
+        <div class="job-card-top"><div>${isInshop ? '<span class="doc-kind-tag">IN-SHOP</span>' : ''}<b>${esc(j.vehicle)}</b><div class="meta">Shop: ${esc(orgName(j.org_id))}${j.ro_number ? ' · ' + esc(j.ro_number) : ''}</div></div>${jobStatusBadge(j.status)}</div>
+        <div class="job-actions"><button class="j-open-ro" data-job="${j.id}">Details</button></div>
         ${isInshop ? '<p class="meta" style="margin-top:10px;">This job is being done at the shop — no live location to track.</p>' : `
         <div class="ops-map" style="height:280px; margin-top:12px;" id="fleetMap${j.id}"></div>
         <div class="gps-readout" id="fleetDist${j.id}" style="margin-top:10px;"></div>`}
@@ -2590,7 +2715,7 @@ async function refreshAdminData(){
   // downloading every row, which matters once job history is in the
   // thousands. This is what Phase 15 of the audit asks for: efficient
   // aggregation instead of scanning the whole table into the browser.
-  const { count: completeCount } = await sb.from('jobs').select('*', { count:'exact', head:true }).eq('status','complete');
+  const { count: completeCount } = await sb.from('jobs').select('*', { count:'exact', head:true }).in('status', DONE_STATUSES);
   document.getElementById('adminStats').innerHTML = `
     <div class="stat-box"><b>${profiles.length}</b><span>Total accounts</span></div>
     <div class="stat-box"><b>${liveCount}</b><span>Mechanics live now</span></div>
