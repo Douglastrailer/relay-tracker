@@ -1154,3 +1154,53 @@ button:disabled{ opacity:.55; cursor:default; }
 .modal-overlay.est-overlay{ padding-bottom:0; }
 .est-card{ padding-bottom:0; border-bottom-left-radius:0; border-bottom-right-radius:0; }
 .est-actions{ bottom:0; box-shadow:0 -8px 16px -12px rgba(0,0,0,.25); }
+
+/* ============================================================
+   Phase 4 — time tracking, availability, skills
+   ============================================================ */
+.work-overlay{ z-index:1150; }
+.work-card{ max-width:560px; }
+.work-head h2{ margin:2px 28px 6px 0; font-size:20px; }
+.work-complaint{ color:var(--ink-soft); margin:0 0 8px; }
+.work-clock{ text-align:center; border-radius:16px; padding:18px 12px; margin:14px 0; background:var(--panel-2, #F3F4F6); border:1px solid var(--line); }
+.work-clock.on{ background:#E7F5EF; border-color:#9FD4BA; }
+.work-clock-label{ font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; font-size:.8rem; }
+.work-clock-time{ font-size:3rem; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1; margin:4px 0; }
+.work-clock.on .work-clock-time{ color:#135E3E; }
+.work-clock-sub{ color:var(--ink-soft); font-size:.9rem; }
+.work-note{ background:#FFF4D6; color:#6B4700; border-radius:10px; padding:10px 12px; font-weight:600; }
+.work-buttons{ display:flex; flex-direction:column; gap:10px; margin:12px 0; }
+.work-btn{ min-height:64px; border-radius:14px; font-size:1.15rem; font-weight:800; border:2px solid var(--line); background:var(--panel); color:var(--ink); cursor:pointer; }
+.work-btn.go{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.work-btn.done{ background:#177A50; border-color:#177A50; color:#fff; }
+.work-btn:disabled{ opacity:.55; }
+.work-links{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+.work-links .ghost-btn{ flex:1 1 auto; text-align:center; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+.work-launch{ min-height:52px !important; font-size:1rem !important; font-weight:800 !important; background:var(--accent) !important; color:#fff !important; border:none !important; flex:1 1 100%; border-radius:12px !important; }
+.avail-chip{ font-size:12px; font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap; }
+.av-available{ background:#E7F5EF; color:#177A50; } .av-busy{ background:#FDF0DC; color:#93651A; }
+.av-off_duty{ background:#EEF0F3; color:#5B6472; } .av-offline{ background:#EEF0F3; color:#8A93A0; }
+.team-skills{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:6px; }
+.skill-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:0 12px; }
+.time-stats{ display:grid; grid-template-columns:repeat(auto-fit, minmax(90px, 1fr)); gap:8px; margin:6px 0 10px; }
+.time-stats > div{ background:var(--panel-2, #F7F7F8); border-radius:10px; padding:8px 10px; }
+.time-stats span{ display:block; font-size:12px; color:var(--ink-soft); font-weight:600; }
+.time-stats b{ font-size:1.05rem; font-variant-numeric:tabular-nums; }
+.time-mini > div{ display:grid; grid-template-columns:60px 1fr 1.6fr auto; gap:8px; padding:5px 0; border-bottom:1px dashed var(--line); font-size:.88rem; }
+.time-summary{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; margin-bottom:12px; }
+.time-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--r-md, 12px); padding:14px; }
+.time-card-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.time-table{ display:flex; flex-direction:column; }
+.time-row{ display:grid; grid-template-columns:64px 1fr 1.4fr 70px 1.3fr 70px 60px auto; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); font-size:.9rem; }
+.time-actions{ display:flex; gap:6px; }
+.text-btn.danger{ color:var(--danger, #B42318); }
+.rec-toolbar select, .rec-toolbar input[type="date"]{ min-height:44px; padding:8px 10px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); }
+.work-open{ background:var(--accent); color:#fff; border:none; padding:11px 18px; border-radius:9px; font-weight:700; min-height:44px; cursor:pointer; margin-top:6px; }
+@media (max-width:760px){
+  .time-row{ grid-template-columns:1fr 1fr; }
+  .time-mini > div{ grid-template-columns:1fr 1fr; }
+  .work-clock-time{ font-size:2.6rem; }
+}
+/* Secondary buttons inside toolbars stay secondary */
+.rec-toolbar .ghost-btn{ background:none; color:var(--ink-soft); border:1px solid var(--line); margin-left:auto; }
+.rec-toolbar .ghost-btn + button{ margin-left:0; }

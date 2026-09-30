@@ -349,6 +349,7 @@ async function openRepairOrder(jobId){
     </section>
     ${(canEditRequest || canEditDiagnosis) ? `<p class="form-error" id="roError"></p><div class="job-actions"><button type="button" id="roSave">Save repair order</button></div>` : ''}
 
+    <section class="ro-sec hidden" id="roTime"></section>
     <section class="ro-sec" id="roInspections"><h4>Inspections</h4><p class="meta">Loading…</p></section>
     <section class="ro-sec" id="roRecommended"></section>
 
@@ -368,6 +369,7 @@ async function openRepairOrder(jobId){
   wireAttachmentToggles(body);
   if(typeof loadRoInspections === 'function') loadRoInspections(job, { canWork: canEditDiagnosis, isShop });
   if(typeof loadRoEstimates === 'function') loadRoEstimates(job, { isShop });
+  if(typeof loadRoTime === 'function') loadRoTime(job, { canWork: canEditDiagnosis });
   const saveStatus = document.getElementById('roStatusSave');
   if(saveStatus) saveStatus.onclick = () => roUpdateStatus(job);
   const saveBtn = document.getElementById('roSave');

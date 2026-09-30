@@ -97,8 +97,10 @@ async function openEstimateEditor(docId, suggestRecs){
     sb.from('organizations').select('labor_rate, default_tax_rate').eq('id', doc.org_id).maybeSingle(),
     sb.from('inventory_items').select('id, name, description, price').eq('org_id', doc.org_id).order('name')
   ]);
+  const timeRes = doc.job_id ? await sb.from('job_time_summary').select('labor_minutes').eq('job_id', doc.job_id).maybeSingle() : { data:null };
   const recsRes = doc.job_id ? await sb.from('recommended_repairs').select('id, description, severity, status').eq('job_id', doc.job_id).in('status', ['recommended','approved']) : { data: [] };
-  estCurrent = { doc, lines: (linesRes.data || []).map(l => ({ ...l })), job: jobRes.data, org: orgRes.data || {}, recs: recsRes.data || [], priceList: priceRes.data || [] };
+  estCurrent = { doc, lines: (linesRes.data || []).map(l => ({ ...l })), job: jobRes.data, org: orgRes.data || {}, recs: recsRes.data || [], priceList: priceRes.data || [],
+                 laborMinutes: timeRes.data ? Number(timeRes.data.labor_minutes) || 0 : 0 };
   if(suggestRecs && estCurrent.recs.length && !estCurrent.lines.length) addRecommendedLines();
   renderEstimateEditor();
 }
@@ -132,6 +134,7 @@ function renderEstimateEditor(){
       <button type="button" class="ghost-btn" data-add="fee">+ Fee</button><button type="button" class="ghost-btn" data-add="mileage">+ Mileage</button>
       ${estCurrent.priceList.length ? `<select id="estPriceList" aria-label="Add from price list"><option value="">+ From price list…</option>${estCurrent.priceList.map(p => `<option value="${p.id}">${esc(p.name)} — ${money2(p.price)}</option>`).join('')}</select>` : ''}
       ${unusedRecs.length ? `<button type="button" class="ghost-btn" id="estAddRecs">+ Recommended repairs (${unusedRecs.length})</button>` : ''}
+      ${estCurrent.laborMinutes ? `<button type="button" class="ghost-btn" id="estAddTime">+ Labor from tracked time (${(Math.round(estCurrent.laborMinutes / 15) / 4).toFixed(2)} h)</button>` : ''}
     </div>` : ''}
     <div class="est-totals">
       <div><span>Subtotal</span><b>${money2(t.subtotal)}</b></div>
@@ -229,6 +232,13 @@ function wireEditor(editable){
       if(!p) return;
       collectEditor();
       estCurrent.lines.push({ item_type: 'part', description: p.name + (p.description ? ' — ' + p.description : ''), quantity: 1, unit_price: Number(p.price), taxable: true });
+      renderEstimateEditor();
+    };
+    const at = document.getElementById('estAddTime');
+    if(at) at.onclick = () => {
+      collectEditor();
+      // Tracked labor, rounded to the nearest quarter hour, at the shop's labor rate.
+      estCurrent.lines.push({ item_type: 'labor', description: 'Labor (tracked time)', quantity: Math.max(0.25, Math.round(estCurrent.laborMinutes / 15) / 4), unit_price: Number(estCurrent.org.labor_rate || 0), taxable: false });
       renderEstimateEditor();
     };
     const ar = document.getElementById('estAddRecs');

@@ -232,12 +232,12 @@ async function fetchMyProfile(userId){
   return data;
 }
 async function fetchOrgMechanics(){
-  const { data, error } = await sb.from('profiles').select('id, name, active').eq('role','mechanic').eq('org_id', session.orgId);
+  const { data, error } = await sb.from('profiles').select('id, name, active, availability, skills').eq('role','mechanic').eq('org_id', session.orgId);
   if(error){ console.error('fetchOrgMechanics', error); return []; }
   return data || [];
 }
 async function fetchOrgMembers(){
-  const { data: mechanics, error: mechErr } = await sb.from('profiles').select('id, name, active, role').eq('role','mechanic').eq('org_id', session.orgId);
+  const { data: mechanics, error: mechErr } = await sb.from('profiles').select('id, name, active, role, availability, skills').eq('role','mechanic').eq('org_id', session.orgId);
   if(mechErr) console.error('fetchOrgMembers (mechanics)', mechErr);
 
   // Fleet managers are linked via fleet_shop_links now, not just profiles.org_id,
@@ -1300,6 +1300,7 @@ function initMechanicView(){
 
   renderMechJobs();
   setInterval(renderMechJobs, 60000); // fallback only - Realtime handles instant updates
+  if(typeof initWorkUI === 'function') initWorkUI();
 }
 
 async function renderMechJobs(){
@@ -1328,12 +1329,9 @@ async function renderMechJobs(){
       const directionsBtn = isInshop ? '' : `<a class="directions-btn" href="https://www.google.com/maps/dir/?api=1&destination=${job.dest_lat},${job.dest_lng}" target="_blank" rel="noopener">${icon('compass')} Get directions</a>`;
       // In-shop jobs skip "heading there" entirely — there's no travel,
       // so the job goes straight from assigned to being worked on.
-      const actionButtons = isInshop
-        ? `<button data-s="on_site" class="${job.status==='on_site'?'active':''}">Start job</button>
-           <button data-s="complete" class="${job.status==='complete'?'active':''}">Mark complete</button>`
-        : `<button data-s="en_route" class="${job.status==='en_route'?'active':''}">Heading there</button>
-           <button data-s="on_site" class="${job.status==='on_site'?'active':''}">Mark arrived</button>
-           <button data-s="complete" class="${job.status==='complete'?'active':''}">Mark complete</button>`;
+      // One big button opens the Work screen, which runs the timers and
+      // moves the job through its statuses (Phase 4, tech.js).
+      const actionButtons = `<button type="button" class="j-work work-launch" data-job="${job.id}">▶ Work on this job</button>`;
       return `
         <div class="job-card" data-job="${job.id}">
           <div class="job-card-top">
@@ -1358,7 +1356,7 @@ async function renderMechJobs(){
     activeBox.querySelectorAll('.job-card').forEach(card=>{
       const jobId = Number(card.dataset.job);
       const job = active.find(j=>j.id===jobId);
-      card.querySelectorAll('.job-actions button').forEach(btn=>{
+      card.querySelectorAll('.job-actions button[data-s]').forEach(btn=>{
         btn.onclick = async ()=>{
           const { error } = await sb.from('jobs').update({ status: btn.dataset.s, updated_at: new Date().toISOString() }).eq('id', jobId);
           if(error){ alert(error.message); return; }
@@ -1378,7 +1376,7 @@ async function renderMechJobs(){
     ? '<div class="empty-note">No completed jobs yet.</div>'
     : history.map(job => `
         <div class="job-card">
-          <div class="job-card-top"><div><b>${esc(job.customer)}</b><div class="meta">${esc(job.vehicle)}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>
+          <div class="job-card-top"><div><b>${esc(job.customer)}</b><div class="meta">${esc(job.vehicle)}</div></div>${jobStatusBadge(job.status)}</div>
           ${commentsBlockHtml(job.id)}
           ${attachmentsBlockHtml(job.id)}
         </div>`).join('');
@@ -2035,7 +2033,7 @@ function historyCardHtml(job, mechNameFn){
   return `<div class="job-card">
     <div class="job-card-top">
       <div>${isInshop ? '<span class="doc-kind-tag">IN-SHOP</span>' : ''}<b>${esc(job.customer)} — ${esc(job.vehicle)}</b><div class="meta">Mechanic: ${esc(mechNameFn(job.mechanic_id))} · ${new Date(job.updated_at).toLocaleDateString()}</div></div>
-      <span class="badge arrived"><span class="bd"></span>complete</span>
+      ${jobStatusBadge(job.status)}
     </div>
     ${commentsBlockHtml(job.id)}
     ${attachmentsBlockHtml(job.id)}
@@ -2235,6 +2233,7 @@ function initShopView(){
   safeInit('initHistoryUI', initHistoryUI);
   if(typeof initRecordsUI === 'function') safeInit('initRecordsUI', initRecordsUI);
   if(typeof initInspectionsUI === 'function') safeInit('initInspectionsUI', initInspectionsUI);
+  if(typeof initTimeUI === 'function') safeInit('initTimeUI', initTimeUI);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
   safeInit('announcementDismissWiring', ()=>{ document.getElementById('announcementDismiss').onclick = dismissAnnouncement; });
@@ -2296,10 +2295,22 @@ function initShopView(){
   };
 }
 
+const AVAIL_ORDER = { available:0, busy:1, offline:2, off_duty:3 };
 async function populateMechanicSelect(){
-  const mechanics = (await fetchOrgMechanics()).filter(m=>m.active);
+  const [mechanics, openJobs] = await Promise.all([
+    fetchOrgMechanics().then(ms => ms.filter(m=>m.active)),
+    sb.from('jobs').select('mechanic_id').eq('org_id', session.orgId).not('status','in','(' + CLOSED_STATUSES.join(',') + ')').then(r => r.data || [])
+  ]);
+  const load = {}; openJobs.forEach(j => { load[j.mechanic_id] = (load[j.mechanic_id] || 0) + 1; });
+  mechanics.sort((a, b) => (AVAIL_ORDER[a.availability] ?? 2) - (AVAIL_ORDER[b.availability] ?? 2) || (load[a.id] || 0) - (load[b.id] || 0) || a.name.localeCompare(b.name));
+  const label = m => {
+    const bits = [{ available:'Available', busy:'Busy', off_duty:'Off duty', offline:'Offline' }[m.availability] || 'Offline'];
+    if(m.skills && m.skills.length) bits.push(m.skills.slice(0, 3).join(', ') + (m.skills.length > 3 ? '…' : ''));
+    bits.push((load[m.id] || 0) + ' open job' + ((load[m.id] || 0) === 1 ? '' : 's'));
+    return esc(m.name) + ' — ' + esc(bits.join(' · '));
+  };
   const sel = document.getElementById('njMechanic');
-  sel.innerHTML = mechanics.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('') || '<option value="">No active mechanics yet</option>';
+  sel.innerHTML = mechanics.map(m=>`<option value="${m.id}">${label(m)}</option>`).join('') || '<option value="">No active mechanics yet</option>';
 }
 
 async function populateCompanyList(){
@@ -2367,9 +2378,10 @@ async function renderTeamList(){
     const sub = m.role === 'fleet'
       ? `Fleet manager · ${esc(m.company || 'no company set')}`
       : 'Mechanic';
+    const mechExtra = m.role === 'mechanic' ? `<div class="team-skills">${typeof availChip === 'function' ? availChip(m.availability) : ''}${(m.skills || []).map(s => `<span class="rec-tag">${esc(s)}</span>`).join('')}<button type="button" class="text-btn team-skills-btn" data-id="${m.id}">${(m.skills || []).length ? 'Edit skills' : 'Add skills'}</button></div>` : '';
     return `
     <div class="team-row">
-      <div><div class="tname">${esc(m.name)}</div><div class="tstatus">${sub} — ${m.active ? 'Active' : 'Deactivated'}</div></div>
+      <div><div class="tname">${esc(m.name)}</div><div class="tstatus">${sub} — ${m.active ? 'Active' : 'Deactivated'}</div>${mechExtra}</div>
       <button class="toggle-btn ${m.active ? 'on' : 'off'}" data-id="${m.id}" data-active="${m.active}">${m.active ? 'Active' : 'Inactive'}</button>
     </div>`;
   }
@@ -2381,6 +2393,9 @@ async function renderTeamList(){
     ${fleets.length ? fleets.map(rowHtml).join('') : '<div class="empty-note">No fleet managers have signed up yet.</div>'}
   `;
 
+  box.querySelectorAll('.team-skills-btn').forEach(btn=>{
+    btn.onclick = ()=>{ const m = mechanics.find(x=>x.id===btn.dataset.id); if(m && typeof openSkillsEditor === 'function') openSkillsEditor(m); };
+  });
   box.querySelectorAll('.toggle-btn').forEach(btn=>{
     btn.onclick = async ()=>{
       const newActive = btn.dataset.active !== 'true';
@@ -2669,7 +2684,7 @@ async function refreshFleetData(){
   const _s2 = preserveOpenChatNodes(histBox);
   histBox.innerHTML = history.length === 0
     ? '<div class="card empty-note">No completed jobs yet.</div>'
-    : history.map(j => `<div class="job-card"><div class="job-card-top"><b>${esc(j.vehicle)}</b><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}${attachmentsBlockHtml(j.id)}</div>`).join('');
+    : history.map(j => `<div class="job-card"><div class="job-card-top"><b>${esc(j.vehicle)}</b>${jobStatusBadge(j.status)}</div>${commentsBlockHtml(j.id)}${attachmentsBlockHtml(j.id)}</div>`).join('');
   wireCommentToggles(histBox);
   wireAttachmentToggles(histBox);
   restoreOpenChatNodes(histBox, _s2);
@@ -2867,7 +2882,7 @@ async function refreshAdminData(){
   const _s2 = preserveOpenChatNodes(adminHistBox);
   adminHistBox.innerHTML = history.length === 0
     ? '<div class="empty-note">No completed jobs yet.</div>'
-    : history.map(j => `<div class="job-card"><div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))} · Company: ${esc(orgName(j.org_id))}</div></div><span class="badge arrived"><span class="bd"></span>complete</span></div>${commentsBlockHtml(j.id)}${attachmentsBlockHtml(j.id)}</div>`).join('');
+    : history.map(j => `<div class="job-card"><div class="job-card-top"><div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))} · Company: ${esc(orgName(j.org_id))}</div></div>${jobStatusBadge(j.status)}</div>${commentsBlockHtml(j.id)}${attachmentsBlockHtml(j.id)}</div>`).join('');
   wireCommentToggles(adminHistBox);
   wireAttachmentToggles(adminHistBox);
   restoreOpenChatNodes(adminHistBox, _s2);

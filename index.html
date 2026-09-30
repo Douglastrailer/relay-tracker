@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=28"/>
+<link rel="stylesheet" href="style.css?v=29"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -424,9 +424,8 @@
           </div>
           <select class="status-select" id="mechStatus">
             <option value="available">Available</option>
-            <option value="en_route">Heading to job</option>
-            <option value="on_site">On site</option>
-            <option value="returning">Returning to shop</option>
+            <option value="busy">Busy</option>
+            <option value="off_duty">Off duty</option>
           </select>
         </div>
         <div class="gps-readout" id="gpsReadout">Turn on "Go live" and allow location access to start sharing your position.</div>
@@ -483,6 +482,7 @@
       <button class="dash-tab" data-target="shop-customers" title="Customers"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg><span class="nav-label">Customers</span></button>
       <button class="dash-tab" data-target="shop-units" title="Units"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="7" width="13" height="10" rx="1"/><path d="M14 10h4l3 3v4h-7"/><circle cx="5.5" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/></svg><span class="nav-label">Units</span></button>
       <button class="dash-tab" data-target="shop-inspections" title="Inspections"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg><span class="nav-label">Inspections</span></button>
+      <button class="dash-tab" data-target="shop-time" title="Time"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg><span class="nav-label">Time</span></button>
       <button class="dash-tab" data-target="shop-history" title="History"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg><span class="nav-label">History</span></button>
       <div class="nav-group">Finance</div>
       <button class="dash-tab" data-target="shop-invoices" title="Invoices"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></svg><span class="nav-label">Invoices</span> <span class="new-badge" id="invoicesNewBadge">NEW</span></button>
@@ -627,6 +627,20 @@
       <div class="rec-list" id="templatesList"></div>
     </div>
 
+    <div class="dash-panel hidden" id="shop-time">
+      <div class="rec-toolbar">
+        <select id="timeRange" aria-label="Period"><option value="today">Today</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option><option value="custom">Custom…</option></select>
+        <span id="timeCustom" class="hidden"><input type="date" id="timeFrom" aria-label="From"> – <input type="date" id="timeTo" aria-label="To"></span>
+        <select id="timeMechanic" aria-label="Mechanic"><option value="">All mechanics</option></select>
+        <button type="button" class="ghost-btn" id="timeCsvBtn">Download CSV</button>
+        <button type="button" id="addTimeBtn">Add time</button>
+      </div>
+      <div class="time-summary" id="timeSummary"></div>
+      <div id="timeFormBox" class="hidden"></div>
+      <div class="section-head" style="margin-top:20px;"><h2>Entries</h2></div>
+      <div id="timeEntriesList"><div class="meta">Loading…</div></div>
+    </div>
+
     <div class="dash-panel hidden" id="shop-history">
       <div class="section">
         <div class="section-head"><h2>Job history</h2></div>
@@ -736,6 +750,7 @@
         <div class="card" style="margin-top:18px;">
           <h3 style="font-family:var(--font-display); font-size:0.92rem; margin-bottom:12px;">Team</h3>
           <div id="teamList"></div>
+          <div id="skillsEditor" class="hidden" style="margin-top:14px;"></div>
         </div>
       </div>
     </div>
@@ -880,10 +895,17 @@
     <div id="estBody"></div>
   </div>
 </div>
-<script src="script.js?v=41"></script>
-<script src="ro.js?v=3"></script>
-<script src="insp.js?v=2"></script>
-<script src="est.js?v=1"></script>
+<div id="workModal" class="modal-overlay ro-overlay work-overlay hidden" role="dialog" aria-modal="true" aria-label="Work screen">
+  <div class="modal-card ro-card work-card">
+    <button class="modal-close" id="workClose" aria-label="Close">×</button>
+    <div id="workBody"></div>
+  </div>
+</div>
+<script src="script.js?v=42"></script>
+<script src="ro.js?v=4"></script>
+<script src="insp.js?v=3"></script>
+<script src="est.js?v=2"></script>
+<script src="tech.js?v=1"></script>
 
 </body>
 </html>
