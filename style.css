@@ -1111,3 +1111,46 @@ button:disabled{ opacity:.55; cursor:default; }
 .insp-card{ padding-bottom:0; border-bottom-left-radius:0; border-bottom-right-radius:0; }
 .insp-footer{ bottom:0; box-shadow:0 -8px 16px -12px rgba(0,0,0,.25); }
 @media (max-width:640px){ .insp-footer{ bottom:0; } }
+
+/* ============================================================
+   Phase 3 — estimates and approval
+   ============================================================ */
+.est-overlay{ z-index:1200; }
+.est-card{ max-width:900px; }
+.auth-banner{ border-radius:10px; padding:10px 12px; margin:8px 0 12px; font-size:.92rem; display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
+.auth-banner.ok{ background:#E7F5EF; color:#135E3E; } .auth-banner.bad{ background:#FDE2DE; color:#8F1D14; }
+.auth-banner.wait{ background:#FFF4D6; color:#6B4700; } .auth-banner.warn{ background:#EEF0F3; color:#374151; }
+.auth-banner > div{ width:100%; }
+.est-sig{ display:block; max-width:240px; max-height:90px; background:#fff; border-radius:6px; border:1px solid var(--line); }
+.est-head-grid{ grid-template-columns:repeat(4, minmax(0,1fr)); }
+.est-lines{ margin-top:6px; }
+.est-line{ display:grid; grid-template-columns:110px minmax(0,1fr) 90px 110px 58px 100px 36px; gap:8px; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); }
+.est-line-head{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); }
+.est-line input, .est-line select{ min-height:40px; padding:8px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); width:100%; font:inherit; font-size:.9rem; }
+.est-line.ro span{ overflow-wrap:anywhere; }
+.est-line.is-declined{ opacity:.55; text-decoration:line-through; }
+.el-tax{ display:flex; align-items:center; gap:4px; font-size:.85rem; }
+.el-tax input{ width:18px; height:18px; min-height:0; }
+.el-amt{ font-weight:700; text-align:right; }
+.el-del{ background:none; border:1px solid var(--line); border-radius:8px; min-height:36px; color:var(--ink-soft); font-size:18px; cursor:pointer; }
+.est-add{ display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+.est-add select{ min-height:44px; padding:8px 10px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); }
+.est-totals{ margin:12px 0 12px auto; max-width:320px; }
+.est-totals > div{ display:flex; justify-content:space-between; padding:4px 0; }
+.est-grand{ border-top:2px solid var(--ink); margin-top:4px; padding-top:8px !important; font-size:1.1rem; }
+.est-actions button:not(.ghost-btn){ background:var(--accent); color:#fff; border:none; padding:11px 18px; border-radius:9px; font-weight:700; font-size:.85rem; min-height:44px; cursor:pointer; }
+#roEstimates .insp-row button, #roEstimates .insp-start button{ background:var(--accent); color:#fff; border:none; padding:11px 18px; border-radius:9px; font-weight:700; min-height:44px; cursor:pointer; }
+@media (max-width:760px){
+  .est-head-grid{ grid-template-columns:1fr 1fr; }
+  .est-line-head{ display:none; }
+  .est-line{ grid-template-columns:1fr 1fr 1fr; grid-template-areas:"type type del" "desc desc desc" "qty price amt" "tax tax tax"; }
+  .est-line .el-type{ grid-area:type; } .est-line .el-desc{ grid-area:desc; } .est-line .el-qty{ grid-area:qty; }
+  .est-line .el-price{ grid-area:price; } .est-line .el-tax{ grid-area:tax; } .est-line .el-amt{ grid-area:amt; } .est-line .el-del{ grid-area:del; justify-self:end; width:44px; }
+  .est-line.ro{ grid-template-columns:1fr auto; grid-template-areas:none; }
+  .est-line.ro span:nth-child(3), .est-line.ro span:nth-child(4), .est-line.ro span:nth-child(5), .est-line.ro span:nth-child(7){ display:none; }
+  .est-totals{ max-width:none; }
+}
+/* Estimate footer sits flush at the bottom of the screen (same as inspections) */
+.modal-overlay.est-overlay{ padding-bottom:0; }
+.est-card{ padding-bottom:0; border-bottom-left-radius:0; border-bottom-right-radius:0; }
+.est-actions{ bottom:0; box-shadow:0 -8px 16px -12px rgba(0,0,0,.25); }
