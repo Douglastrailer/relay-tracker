@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Estimate approval · RelayFleet</title>
+<style>
+  :root{ --ink:#1B2430; --soft:#566172; --line:#E1DDD3; --bg:#F4F1EA; --card:#FFFFFF; --accent:#0E6273; --ok:#177A50; --bad:#B42318; --warn:#8A5A00; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+        padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0); }
+  main{ max-width:640px; margin:0 auto; padding:16px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:14px; }
+  .shop{ display:flex; gap:14px; align-items:center; }
+  .shop img{ width:52px; height:52px; object-fit:contain; border-radius:10px; background:#fff; }
+  .shop h1{ font-size:19px; margin:0; }
+  .meta{ color:var(--soft); font-size:14px; }
+  h2{ font-size:22px; margin:0 0 4px; }
+  .line{ display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-top:1px solid var(--line); }
+  .line:first-child{ border-top:0; }
+  .line input{ width:24px; height:24px; margin-top:2px; accent-color:var(--accent); flex:none; }
+  .line .desc{ flex:1; min-width:0; overflow-wrap:anywhere; }
+  .line .amt{ font-weight:700; white-space:nowrap; }
+  .line.off .desc, .line.off .amt{ color:#9AA1AC; text-decoration:line-through; }
+  .tag{ display:inline-block; font-size:12px; font-weight:700; color:var(--soft); background:#EFEDE7; border-radius:999px; padding:1px 8px; margin-right:6px; }
+  .totals div{ display:flex; justify-content:space-between; padding:4px 0; }
+  .totals .grand{ font-size:20px; font-weight:800; border-top:2px solid var(--ink); margin-top:6px; padding-top:10px; }
+  label.f{ display:block; font-weight:600; font-size:14px; margin:12px 0 6px; }
+  input.t, textarea{ width:100%; font:inherit; padding:12px; border:1px solid var(--line); border-radius:10px; background:#FBFAF7; color:var(--ink); }
+  canvas{ width:100%; height:150px; border:1px dashed #B9B3A6; border-radius:10px; background:#FBFAF7; touch-action:none; display:block; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  button{ font:inherit; font-weight:700; border-radius:12px; min-height:52px; padding:12px 16px; cursor:pointer; border:1px solid var(--line); background:#fff; color:var(--ink); }
+  button.primary{ background:var(--ok); border-color:var(--ok); color:#fff; flex:1 1 100%; font-size:17px; }
+  button.danger{ color:var(--bad); flex:1; }
+  button.plain{ flex:1; }
+  button.link{ min-height:0; padding:4px 0; border:0; background:none; color:var(--accent); font-weight:600; }
+  button:disabled{ opacity:.55; cursor:default; }
+  .err{ color:var(--bad); font-weight:600; min-height:1.2em; }
+  .banner{ border-radius:12px; padding:14px 16px; font-weight:600; }
+  .banner.ok{ background:#E7F5EF; color:var(--ok); } .banner.bad{ background:#FDE2DE; color:var(--bad); } .banner.warn{ background:#FFF4D6; color:var(--warn); }
+  .contact a{ color:var(--accent); font-weight:600; text-decoration:none; margin-right:16px; display:inline-block; padding:6px 0; }
+  .hidden{ display:none !important; }
+  footer{ text-align:center; color:var(--soft); font-size:13px; padding:10px 0 30px; }
+</style>
+</head>
+<body>
+<main id="app"><div class="card">Loading your estimate…</div></main>
+<footer>Secure approval by RelayFleet</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  const SUPABASE_URL = 'https://okcogufppsubntrchfuf.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_Z8qgdFjVetqSOfmZKhxkpQ_XX2tYHDp';
+  const TYPES = { labor:'Labor', part:'Part', fee:'Fee', mileage:'Mileage', other:'' };
+  const TERMS = { due_on_receipt:'Due on receipt', net_15:'Net 15', net_30:'Net 30', net_45:'Net 45', net_60:'Net 60' };
+  const app = document.getElementById('app');
+  const token = new URLSearchParams(location.search).get('t') || '';
+  let sb = null, data = null, sigDirty = false;
+
+  // Build elements with textContent only, so nothing from the database can run as code.
+  function el(tag, attrs, ...kids){
+    const n = document.createElement(tag);
+    Object.entries(attrs || {}).forEach(([k, v]) => { if(k === 'class') n.className = v; else if(k === 'text') n.textContent = v; else n.setAttribute(k, v); });
+    kids.flat().forEach(k => { if(k != null) n.append(k.nodeType ? k : document.createTextNode(String(k))); });
+    return n;
+  }
+  const money = n => '$' + (Math.round(Number(n || 0) * 100) / 100).toFixed(2);
+  const fmt = d => d ? new Date(d).toLocaleString(undefined, { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' }) : '';
+  function totals(lines, rate, discount, declined){
+    const live = lines.filter(l => !declined.has(l.id));
+    const sub = live.reduce((s, l) => s + Number(l.quantity) * Number(l.unit_price), 0);
+    const txb = live.filter(l => l.taxable).reduce((s, l) => s + Number(l.quantity) * Number(l.unit_price), 0);
+    const disc = Math.min(Number(discount) || 0, sub);
+    const tax = Math.round(Math.max(txb - (sub > 0 ? disc * txb / sub : 0), 0) * Number(rate || 0)) / 100;
+    return { sub, disc, tax: Math.round(tax * 100) / 100, total: Math.round((sub - disc) * 100) / 100 + Math.round(tax * 100) / 100 };
+  }
+  function fail(msg){ app.replaceChildren(el('div', { class:'card' }, el('h2', { text:'This link can’t be opened' }), el('p', { class:'meta', text: msg }))); }
+
+  async function load(){
+    if(!/^[0-9a-f-]{36}$/i.test(token)) return fail('The approval link is incomplete. Please use the full link the shop sent you.');
+    try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ persistSession:false } }); }
+    catch(e){ return fail('Please check your internet connection and try again.'); }
+    const { data: d, error } = await sb.rpc('get_estimate_for_approval', { p_token: token });
+    if(error) return fail('Please check your internet connection and try again.');
+    if(!d) return fail('This estimate is no longer available. It may have been revised — please ask the shop for the latest link.');
+    data = d; render();
+  }
+
+  function shopCard(){
+    const s = data.shop || {};
+    const logo = s.logo_path ? el('img', { src: SUPABASE_URL + '/storage/v1/object/public/shop-logos/' + encodeURI(s.logo_path), alt:'' }) : null;
+    const contact = el('div', { class:'contact' },
+      s.phone ? el('a', { href:'tel:' + String(s.phone).replace(/[^\d+]/g, ''), text:'Call ' + s.phone }) : null,
+      s.email ? el('a', { href:'mailto:' + s.email, text:'Email the shop' }) : null);
+    return el('div', { class:'card' }, el('div', { class:'shop' }, logo, el('div', {}, el('h1', { text: s.name || 'Your service shop' }), s.address ? el('div', { class:'meta', text: s.address }) : null)), contact);
+  }
+
+  function render(){
+    const e = data.estimate, lines = data.lines || [], job = data.job || {};
+    const head = el('div', { class:'card' },
+      el('div', { class:'meta', text: 'Estimate #' + e.id + (job.ro_number ? ' · ' + job.ro_number : '') + ' · ' + new Date(e.created_at).toLocaleDateString() }),
+      el('h2', { text: e.customer_name + (e.unit_number ? ' — Unit ' + e.unit_number : '') }),
+      job.complaint ? el('div', { class:'meta', text: 'Reported problem: ' + job.complaint }) : null,
+      e.po_number ? el('div', { class:'meta', text: 'PO ' + e.po_number }) : null,
+      e.payment_terms ? el('div', { class:'meta', text: 'Terms: ' + (TERMS[e.payment_terms] || e.payment_terms) }) : null);
+    const answered = e.status !== 'sent';
+    const declined = new Set(lines.filter(l => l.customer_decision === 'declined').map(l => l.id));
+    const list = el('div', { class:'card' });
+    const totalsBox = el('div', { class:'card totals' });
+    function drawTotals(){
+      const t = totals(lines, e.tax_rate, e.discount_amount, declined);
+      // replaceChildren would print an empty entry as the word "null", so drop empties first.
+      totalsBox.replaceChildren(...[
+        el('div', {}, el('span', { text:'Subtotal' }), el('b', { text: money(t.sub) })),
+        t.disc ? el('div', {}, el('span', { text:'Discount' }), el('b', { text: '−' + money(t.disc) })) : null,
+        el('div', {}, el('span', { text: 'Tax (' + Number(e.tax_rate) + '%)' }), el('b', { text: money(t.tax) })),
+        el('div', { class:'grand' }, el('span', { text: answered ? 'Total' : 'Total you approve' }), el('b', { text: money(t.total) }))].filter(Boolean));
+      const btn = document.getElementById('approveBtn');
+      if(btn){ const n = lines.length - declined.size; btn.textContent = 'Approve ' + n + ' item' + (n === 1 ? '' : 's') + ' · ' + money(t.total); btn.disabled = n === 0; }
+    }
+    lines.forEach(l => {
+      const row = el('div', { class:'line' + (declined.has(l.id) ? ' off' : '') });
+      if(!answered){
+        const cb = el('input', { type:'checkbox', 'aria-label':'Approve ' + l.description });
+        cb.checked = true;
+        cb.onchange = () => { if(cb.checked) declined.delete(l.id); else declined.add(l.id); row.classList.toggle('off', !cb.checked); drawTotals(); };
+        row.append(cb);
+      }
+      row.append(el('div', { class:'desc' }, TYPES[l.item_type] ? el('span', { class:'tag', text: TYPES[l.item_type] }) : null, l.description,
+                    el('div', { class:'meta', text: Number(l.quantity) + ' × ' + money(l.unit_price) + (l.taxable ? ' · taxable' : '') })),
+                 el('div', { class:'amt', text: money(Number(l.quantity) * Number(l.unit_price)) }));
+      list.append(row);
+    });
+    if(!answered) list.prepend(el('p', { class:'meta', text:'Untick anything you don’t want done. The total updates.' }));
+    const parts = [shopCard(), head, list, totalsBox];
+    if(e.notes) parts.push(el('div', { class:'card' }, el('b', { text:'Note from the shop' }), el('p', { text: e.notes })));
+    if(answered) parts.push(statusCard(e)); else parts.push(decisionCard());
+    app.replaceChildren(...parts.filter(Boolean));
+    drawTotals();
+    if(!answered) wireDecision(declined);
+  }
+
+  function statusCard(e){
+    if(e.status === 'approved') return el('div', { class:'banner ok', text: 'Approved by ' + e.approved_by_name + ' on ' + fmt(e.responded_at) + ' · ' + money(e.approved_amount) + '. Thank you — the shop has been notified.' });
+    if(e.status === 'declined') return el('div', { class:'banner bad', text: 'Declined by ' + e.approved_by_name + ' on ' + fmt(e.responded_at) + '. Contact the shop if you change your mind.' });
+    return el('div', { class:'banner warn', text: 'Changes requested by ' + e.approved_by_name + ' on ' + fmt(e.responded_at) + '. The shop will send an updated estimate.' });
+  }
+
+  function decisionCard(){
+    return el('div', { class:'card' },
+      el('label', { class:'f', for:'nm', text:'Your full name' }), el('input', { class:'t', id:'nm', autocomplete:'name', maxlength:'120', placeholder:'First and last name' }),
+      el('label', { class:'f', text:'Sign here (optional)' }), el('canvas', { id:'sig', 'aria-label':'Signature pad' }),
+      el('button', { type:'button', class:'link', id:'sigClear', text:'Clear signature' }),
+      el('div', { id:'changesBox', class:'hidden' }, el('label', { class:'f', for:'note', text:'What should the shop change?' }), el('textarea', { id:'note', rows:'3', maxlength:'2000' })),
+      el('p', { class:'err', id:'err' }),
+      el('div', { class:'row' },
+        el('button', { type:'button', class:'primary', id:'approveBtn', text:'Approve' }),
+        el('button', { type:'button', class:'plain', id:'changesBtn', text:'Request changes' }),
+        el('button', { type:'button', class:'danger', id:'declineBtn', text:'Decline' })),
+      el('p', { class:'meta', text:'By approving, you authorize the shop to do the checked work at the prices shown. Your name, the time, and your device are recorded.' }));
+  }
+
+  function setupSignature(){
+    const c = document.getElementById('sig'), ctx = c.getContext && c.getContext('2d');
+    if(!ctx){   // browsers that can't draw: skip the signature, the typed name is enough
+      c.previousElementSibling.classList.add('hidden'); c.classList.add('hidden'); document.getElementById('sigClear').classList.add('hidden'); return;
+    }
+    function size(){ const r = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2); c.width = r.width * dpr; c.height = r.height * dpr; ctx.scale(dpr, dpr); ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.strokeStyle = '#1B2430'; sigDirty = false; }
+    size();
+    let drawing = false;
+    const pos = ev => { const r = c.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; };
+    c.addEventListener('pointerdown', ev => { drawing = true; c.setPointerCapture(ev.pointerId); ctx.beginPath(); ctx.moveTo(...pos(ev)); });
+    c.addEventListener('pointermove', ev => { if(!drawing) return; ctx.lineTo(...pos(ev)); ctx.stroke(); sigDirty = true; });
+    ['pointerup','pointercancel'].forEach(t => c.addEventListener(t, () => { drawing = false; }));
+    document.getElementById('sigClear').onclick = () => { ctx.clearRect(0, 0, c.width, c.height); sigDirty = false; };
+  }
+  function signatureData(){
+    if(!sigDirty) return null;
+    const src = document.getElementById('sig'), w = 600, h = Math.round(src.height * 600 / src.width);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(src, 0, 0, w, h);
+    return c.toDataURL('image/png');
+  }
+
+  function wireDecision(declined){
+    setupSignature();
+    const err = document.getElementById('err');
+    const busy = on => ['approveBtn','changesBtn','declineBtn'].forEach(id => document.getElementById(id).disabled = on);
+    async function send(action){
+      err.textContent = '';
+      const name = document.getElementById('nm').value.trim();
+      const note = document.getElementById('note').value.trim();
+      if(name.length < 2){ err.textContent = 'Please type your full name.'; document.getElementById('nm').focus(); return; }
+      if(action === 'changes' && note.length < 3){ err.textContent = 'Please describe the changes you need.'; document.getElementById('note').focus(); return; }
+      if(action === 'decline' && !confirm('Decline the whole estimate?')) return;
+      busy(true);
+      const { error } = await sb.rpc('respond_to_estimate', { p_token: token, p_action: action, p_name: name, p_note: note || null,
+        p_signature: action === 'approve' ? signatureData() : null, p_declined_items: [...declined] });
+      if(error){ busy(false); err.textContent = error.message || 'Something went wrong. Please try again.'; return; }
+      await load();
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+    document.getElementById('approveBtn').onclick = () => send('approve');
+    document.getElementById('declineBtn').onclick = () => send('decline');
+    document.getElementById('changesBtn').onclick = () => {
+      const box = document.getElementById('changesBox');
+      if(box.classList.contains('hidden')){ box.classList.remove('hidden'); document.getElementById('note').focus(); document.getElementById('changesBtn').textContent = 'Send change request'; }
+      else send('changes');
+    };
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>
