@@ -288,7 +288,7 @@ async function fetchCompanies(){
 // out of sync with the actual line items.
 async function fetchInvoices(){
   const { data, error } = await sb.from('invoices')
-    .select('id, job_id, kind, source_estimate_id, customer_name, customer_email, customer_address, unit_number, status, notes, created_at, sent_at, paid_at, invoice_items(id, description, quantity, unit_price)')
+    .select('id, job_id, kind, source_estimate_id, customer_name, customer_email, customer_address, unit_number, status, notes, created_at, sent_at, paid_at, total, tax_amount, tax_rate, discount_amount, po_number, payment_terms, due_date, approved_by_name, invoice_items(id, description, quantity, unit_price, customer_decision)')
     .eq('org_id', session.orgId)
     .order('created_at', { ascending:false });
   if(error){ console.error('fetchInvoices', error); return []; }
@@ -306,7 +306,7 @@ async function fetchJobsForInvoiceLink(){
 // ever had and slicing it down in the browser.
 // Column list excludes only "created_by" — the one job column never
 // actually read anywhere in the app after being set on creation.
-const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, job_type, dest_lat, dest_lng, status, created_at, updated_at, org_id, fleet_profile_id, ro_number, customer_id, unit_id, priority, safety_issue, drivable, complaint, diagnosis, fault_codes, completed_at';
+const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, job_type, dest_lat, dest_lng, status, created_at, updated_at, org_id, fleet_profile_id, ro_number, customer_id, unit_id, priority, safety_issue, drivable, complaint, diagnosis, fault_codes, completed_at, requires_authorization, authorized_at, authorized_by_name, authorization_override_at, authorization_override_reason';
 async function fetchActiveJobs(scope){
   let q = sb.from('jobs').select(JOB_COLUMNS).not('status','in','(' + CLOSED_STATUSES.join(',') + ')').order('created_at', { ascending:true });
   // Scoping here is a query-planning aid, not the security boundary — RLS
@@ -1361,6 +1361,7 @@ async function renderMechJobs(){
       card.querySelectorAll('.job-actions button').forEach(btn=>{
         btn.onclick = async ()=>{
           const { error } = await sb.from('jobs').update({ status: btn.dataset.s, updated_at: new Date().toISOString() }).eq('id', jobId);
+          if(error){ alert(error.message); return; }
           if(!error){
             if(btn.dataset.s === 'complete') showCompleteToast(job);
             renderMechJobs();
@@ -1546,27 +1547,11 @@ async function updateEstimateStatus(invoiceId, newStatus){
 // source_estimate_id, and marks the estimate itself as converted so it
 // can't be converted twice.
 async function convertEstimateToInvoice(estimateId){
-  if(!confirm('Convert this estimate into an invoice? A new invoice will be created with the same line items.')) return;
-  const { data: estimate, error: estErr } = await sb.from('invoices').select('*').eq('id', estimateId).single();
-  if(estErr || !estimate){ alert('Could not load the estimate: ' + (estErr ? estErr.message : 'not found')); return; }
-  const { data: items, error: itemsErr } = await sb.from('invoice_items').select('description, quantity, unit_price, sort_order').eq('invoice_id', estimateId);
-  if(itemsErr){ alert('Could not load line items: ' + itemsErr.message); return; }
-
-  const { data: newInvoice, error } = await sb.from('invoices').insert([{
-    org_id: session.orgId, job_id: estimate.job_id, kind: 'invoice', source_estimate_id: estimate.id,
-    customer_name: estimate.customer_name, customer_address: estimate.customer_address, unit_number: estimate.unit_number,
-    notes: estimate.notes, status: 'draft', created_by: session.id,
-  }]).select().single();
+  if(!confirm('Convert this estimate into an invoice? Lines the customer declined are left out.')) return;
+  const { data, error } = await sb.rpc('convert_estimate_to_invoice', { p_estimate: estimateId });
   if(error){ alert('Could not create the invoice: ' + error.message); return; }
-
-  const itemRows = (items || []).map(it => ({ invoice_id: newInvoice.id, description: it.description, quantity: it.quantity, unit_price: it.unit_price, sort_order: it.sort_order }));
-  if(itemRows.length){
-    const { error: insErr } = await sb.from('invoice_items').insert(itemRows);
-    if(insErr) alert('Invoice created, but copying line items failed: ' + insErr.message);
-  }
-
-  await sb.from('invoices').update({ status:'converted' }).eq('id', estimateId);
   refreshInvoices();
+  if(typeof openEstimateEditor === 'function') openEstimateEditor(Number(data));
 }
 
 async function sendReviewRequest(invoiceId, email){
@@ -1595,13 +1580,13 @@ function invoiceStatusBadge(status){
 function invoiceCardHtml(inv){
   const isEstimate = inv.kind === 'estimate';
   const items = inv.invoice_items || [];
-  const total = items.reduce((sum, it)=> sum + Number(it.quantity) * Number(it.unit_price), 0);
+  const total = inv.total != null ? Number(inv.total) : items.reduce((sum, it)=> sum + Number(it.quantity) * Number(it.unit_price), 0);
   const itemsHtml = items.map(it => `<div class="meta">${esc(it.description)} — ${it.quantity} × $${Number(it.unit_price).toFixed(2)}</div>`).join('');
   const jobTag = inv.job_id ? `<div class="meta">Linked to job #${inv.job_id}</div>` : '';
   const unitTag = inv.unit_number ? `<div class="meta">Unit #${esc(inv.unit_number)}</div>` : '';
   const kindTag = `<span class="doc-kind-tag">${isEstimate ? 'ESTIMATE' : 'INVOICE'}</span>`;
 
-  let actions = `<button class="text-btn inv-view-btn" data-id="${inv.id}">View PDF</button>`;
+  let actions = `<button class="text-btn inv-open-editor" data-doc="${inv.id}">Open</button><button class="text-btn inv-view-btn" data-id="${inv.id}">View PDF</button>`;
   if(inv.status === 'draft') actions += `<button class="text-btn inv-delete-btn" data-id="${inv.id}">Delete draft</button>`;
   else if(!isEstimate && inv.status === 'unpaid') actions += `<button class="text-btn inv-paid-btn" data-id="${inv.id}">Mark paid</button>`;
   else if(isEstimate && inv.status === 'sent'){
@@ -1614,7 +1599,8 @@ function invoiceCardHtml(inv){
     actions += `<button class="text-btn inv-review-btn" data-id="${inv.id}">Send review request</button>`;
   }
 
-  const canSend = inv.status === 'draft' || inv.status === 'unpaid' || inv.status === 'sent';
+  // Estimates are sent from the editor (Open), which creates the customer's approval link.
+  const canSend = !isEstimate && (inv.status === 'draft' || inv.status === 'unpaid');
   const sendRow = canSend ? `
     <div class="invoice-send-row">
       <input type="email" class="inv-send-email" placeholder="customer@email.com" value="${esc(inv.customer_email || '')}" data-id="${inv.id}">
@@ -1631,6 +1617,8 @@ function invoiceCardHtml(inv){
     ${jobTag}
     ${itemsHtml}
     ${inv.notes ? `<div class="meta">${esc(inv.notes)}</div>` : ''}
+    ${inv.approved_by_name && inv.status === 'approved' ? `<div class="meta">Approved by ${esc(inv.approved_by_name)}</div>` : ''}
+    ${inv.po_number ? `<div class="meta">PO ${esc(inv.po_number)}</div>` : ''}
     <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">${actions}</div>
     ${sendRow}
     ${reviewSendRow}
@@ -1708,7 +1696,7 @@ function initInvoicesUI(){
 // ================= billing profile UI =================
 async function fetchBillingProfile(){
   const { data, error } = await sb.from('organizations')
-    .select('name, billing_email, billing_phone, billing_address, payment_instructions, logo_path, review_link')
+    .select('name, billing_email, billing_phone, billing_address, payment_instructions, logo_path, review_link, default_tax_rate, labor_rate')
     .eq('id', session.orgId).single();
   if(error){ console.error('fetchBillingProfile', error); return null; }
   return data;
@@ -1728,6 +1716,8 @@ async function populateBillingForm(){
   document.getElementById('billingAddress').value = profile.billing_address || '';
   document.getElementById('billingPaymentInstructions').value = profile.payment_instructions || '';
   document.getElementById('billingReviewLink').value = profile.review_link || '';
+  const tr = document.getElementById('billingTaxRate'); if(tr) tr.value = profile.default_tax_rate != null ? Number(profile.default_tax_rate) : '';
+  const lr = document.getElementById('billingLaborRate'); if(lr) lr.value = profile.labor_rate != null ? Number(profile.labor_rate) : '';
   const preview = document.getElementById('billingLogoPreview');
   if(profile.logo_path){
     preview.src = billingLogoPublicUrl(profile.logo_path);
@@ -1737,6 +1727,14 @@ async function populateBillingForm(){
   }
 }
 
+// Default tax rate (%) and labor rate ($/hour) used when starting estimates.
+function billingRatesUpdate(){
+  const out = {};
+  const tr = document.getElementById('billingTaxRate'), lr = document.getElementById('billingLaborRate');
+  if(tr){ const v = parseFloat(tr.value); out.default_tax_rate = Number.isFinite(v) ? Math.min(30, Math.max(0, v)) : 0; }
+  if(lr){ const v = parseFloat(lr.value); out.labor_rate = Number.isFinite(v) && v >= 0 ? v : null; }
+  return out;
+}
 async function saveBillingProfile(){
   const btn = document.getElementById('saveBillingProfileBtn');
   btn.disabled = true; btn.textContent = 'Saving…';
@@ -1758,6 +1756,7 @@ async function saveBillingProfile(){
     billing_address: document.getElementById('billingAddress').value.trim() || null,
     payment_instructions: document.getElementById('billingPaymentInstructions').value.trim() || null,
     review_link: document.getElementById('billingReviewLink').value.trim() || null,
+    ...billingRatesUpdate(),
     ...logoPathUpdate,
   }).eq('id', session.orgId);
 
@@ -2886,7 +2885,7 @@ async function refreshAdminData(){
   } else {
     adminInvBox.innerHTML = allInvoices.map(inv => {
       const items = inv.invoice_items || [];
-      const total = items.reduce((sum, it)=> sum + Number(it.quantity) * Number(it.unit_price), 0);
+      const total = inv.total != null ? Number(inv.total) : items.reduce((sum, it)=> sum + Number(it.quantity) * Number(it.unit_price), 0);
       const unitTag = inv.unit_number ? `<div class="meta">Unit #${esc(inv.unit_number)}</div>` : '';
       return `<div class="job-card">
         <div class="job-card-top">
