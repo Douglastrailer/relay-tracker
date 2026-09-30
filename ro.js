@@ -275,7 +275,7 @@ async function openRepairOrder(jobId){
     job.customer_id ? sb.from('customers').select('company_name, contact_name, phone, email, payment_terms').eq('id', job.customer_id).maybeSingle() : Promise.resolve({ data:null }),
     job.unit_id ? sb.from('units').select('unit_number, unit_type, vin, year, make, model, trailer_type, plate, plate_state, odometer').eq('id', job.unit_id).maybeSingle() : Promise.resolve({ data:null }),
     sb.from('job_status_history').select('from_status, to_status, changed_by, changed_at').eq('job_id', jobId).order('changed_at', { ascending:true }).limit(200),
-    isShop ? sb.from('invoices').select('id, kind, status, created_at').eq('job_id', jobId).order('created_at') : Promise.resolve({ data:[] }),
+    Promise.resolve({ data:[] }),   // estimates and invoices are loaded by est.js
     isShop ? sb.from('audit_log').select('action, details, actor_id, created_at').eq('entity', 'job').eq('entity_id', String(jobId)).order('created_at', { ascending:true }).limit(200) : Promise.resolve({ data:[] })
   ]);
   const c = cust.data, u = unit.data;
@@ -352,7 +352,7 @@ async function openRepairOrder(jobId){
     <section class="ro-sec" id="roInspections"><h4>Inspections</h4><p class="meta">Loading…</p></section>
     <section class="ro-sec" id="roRecommended"></section>
 
-    ${isShop ? `<section class="ro-sec"><h4>Estimates &amp; invoices</h4>${(invs.data || []).length ? (invs.data || []).map(i => `<div class="ro-inv"><span>${i.kind === 'estimate' ? 'Estimate' : 'Invoice'} #${i.id}</span><span class="meta">${fmtDate(i.created_at)}</span><span class="rec-tag">${esc(String(i.status).replace(/_/g, ' '))}</span></div>`).join('') : '<p class="meta">None yet. Create one from the Invoices page.</p>'}</section>` : ''}
+    <section class="ro-sec${isShop ? '' : ' hidden'}" id="roEstimates">${isShop ? '<h4>Estimates &amp; invoices</h4><p class="meta">Loading…</p>' : ''}</section>
 
     <section class="ro-sec">
       <h4>Timeline</h4>
@@ -367,6 +367,7 @@ async function openRepairOrder(jobId){
   wireCommentToggles(body);
   wireAttachmentToggles(body);
   if(typeof loadRoInspections === 'function') loadRoInspections(job, { canWork: canEditDiagnosis, isShop });
+  if(typeof loadRoEstimates === 'function') loadRoEstimates(job, { isShop });
   const saveStatus = document.getElementById('roStatusSave');
   if(saveStatus) saveStatus.onclick = () => roUpdateStatus(job);
   const saveBtn = document.getElementById('roSave');
