@@ -95,12 +95,14 @@ async function openEstimateEditor(docId, suggestRecs){
     sb.from('invoice_items').select('id, description, quantity, unit_price, item_type, taxable, recommended_repair_id, customer_decision, sort_order').eq('invoice_id', docId).order('sort_order').order('id'),
     doc.job_id ? sb.from('jobs').select('id, ro_number, customer, vehicle, warranty_claim_status').eq('id', doc.job_id).maybeSingle() : Promise.resolve({ data:null }),
     sb.from('organizations').select('labor_rate, default_tax_rate').eq('id', doc.org_id).maybeSingle(),
-    sb.from('inventory_items').select('id, name, description, price').eq('org_id', doc.org_id).order('name')
+    sb.from('inventory_items').select('id, name, description, unit_price, part_number, track_stock').eq('org_id', doc.org_id).eq('active', true).order('name')
   ]);
+  const partsRes = doc.job_id ? await sb.from('job_parts').select('item_id, qty, returned_qty, unit_price, inventory_items(name, part_number)').eq('job_id', doc.job_id) : { data:[] };
   const timeRes = doc.job_id ? await sb.from('job_time_summary').select('labor_minutes').eq('job_id', doc.job_id).maybeSingle() : { data:null };
   const recsRes = doc.job_id ? await sb.from('recommended_repairs').select('id, description, severity, status').eq('job_id', doc.job_id).in('status', ['recommended','approved']) : { data: [] };
   estCurrent = { doc, lines: (linesRes.data || []).map(l => ({ ...l })), job: jobRes.data, org: orgRes.data || {}, recs: recsRes.data || [], priceList: priceRes.data || [],
-                 laborMinutes: timeRes.data ? Number(timeRes.data.labor_minutes) || 0 : 0 };
+                 laborMinutes: timeRes.data ? Number(timeRes.data.labor_minutes) || 0 : 0,
+                 jobParts: (partsRes.data || []).map(p => ({ ...p, net: Number(p.qty) - Number(p.returned_qty) })).filter(p => p.net > 0) };
   if(suggestRecs && estCurrent.recs.length && !estCurrent.lines.length) addRecommendedLines();
   renderEstimateEditor();
 }
@@ -134,8 +136,9 @@ function renderEstimateEditor(){
     ${editable ? `<div class="est-add">
       <button type="button" class="ghost-btn" data-add="labor">+ Labor</button><button type="button" class="ghost-btn" data-add="part">+ Part</button>
       <button type="button" class="ghost-btn" data-add="fee">+ Fee</button><button type="button" class="ghost-btn" data-add="mileage">+ Mileage</button>
-      ${estCurrent.priceList.length ? `<select id="estPriceList" aria-label="Add from price list"><option value="">+ From price list…</option>${estCurrent.priceList.map(p => `<option value="${p.id}">${esc(p.name)} — ${money2(p.price)}</option>`).join('')}</select>` : ''}
+      ${estCurrent.priceList.length ? `<select id="estPriceList" aria-label="Add from price list"><option value="">+ From price list…</option>${estCurrent.priceList.map(p => `<option value="${p.id}">${esc(p.name)}${p.part_number ? ' (' + esc(p.part_number) + ')' : ''} — ${money2(p.unit_price)}</option>`).join('')}</select>` : ''}
       ${unusedRecs.length ? `<button type="button" class="ghost-btn" id="estAddRecs">+ Recommended repairs (${unusedRecs.length})</button>` : ''}
+      ${estCurrent.jobParts && estCurrent.jobParts.length ? `<button type="button" class="ghost-btn" id="estAddParts">+ Parts used on this job (${estCurrent.jobParts.length})</button>` : ''}
       ${estCurrent.laborMinutes ? `<button type="button" class="ghost-btn" id="estAddTime">+ Labor from tracked time (${(Math.round(estCurrent.laborMinutes / 15) / 4).toFixed(2)} h)</button>` : ''}
     </div>` : ''}
     <div class="est-totals">
@@ -233,7 +236,14 @@ function wireEditor(editable){
       const p = estCurrent.priceList.find(x => x.id === Number(pl.value));
       if(!p) return;
       collectEditor();
-      estCurrent.lines.push({ item_type: 'part', description: p.name + (p.description ? ' — ' + p.description : ''), quantity: 1, unit_price: Number(p.price), taxable: true });
+      estCurrent.lines.push({ item_type: p.track_stock || p.part_number ? 'part' : 'other', description: p.name + (p.part_number ? ' (' + p.part_number + ')' : '') + (p.description ? ' — ' + p.description : ''), quantity: 1, unit_price: Number(p.unit_price), taxable: !!(p.track_stock || p.part_number) });
+      renderEstimateEditor();
+    };
+    const ap = document.getElementById('estAddParts');
+    if(ap) ap.onclick = () => {
+      collectEditor();
+      estCurrent.jobParts.forEach(p => { const n = p.inventory_items || {};
+        estCurrent.lines.push({ item_type: 'part', description: (n.name || 'Part') + (n.part_number ? ' (' + n.part_number + ')' : ''), quantity: p.net, unit_price: Number(p.unit_price || 0), taxable: true }); });
       renderEstimateEditor();
     };
     const at = document.getElementById('estAddTime');
