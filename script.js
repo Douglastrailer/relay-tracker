@@ -2586,6 +2586,7 @@ let fleetJobsByMechanic = {}; // mechanic_id -> [job.id, ...], used for realtime
 function initFleetView(){
   document.getElementById('fleetHint').textContent = `Showing units for ${session.company}, across every shop you've joined.`;
   loadFleetShops();
+  if(typeof initFleetPortal === 'function') initFleetPortal();
   refreshFleetData();
   setInterval(refreshFleetData, 60000); // fallback only - Realtime handles instant updates
 }
@@ -2626,6 +2627,7 @@ async function refreshFleetData(){
   const active = await fetchActiveJobs({ orgIds });
   const history = await fetchCompletedJobs(15, { orgIds });
   const locByMechanic = await fetchLocationsFor(active.map(j=>j.mechanic_id));
+  const mechNames = typeof fleetMechanicNames === 'function' ? await fleetMechanicNames(active.map(j=>j.mechanic_id)) : {};
 
   fleetJobsByMechanic = {};
   active.forEach(j => {
@@ -2672,7 +2674,7 @@ async function refreshFleetData(){
         const distEl = document.getElementById('fleetDist'+j.id);
         if(distEl) distEl.innerHTML = mi < 0.1
           ? `<b style="color:var(--done);">Technician has arrived at the location.</b>`
-          : `Technician is <b>${mi.toFixed(1)} miles</b> away · last updated <b>${new Date(loc.updatedAt).toLocaleTimeString()}</b>`;
+          : `${mechNames[j.mechanic_id] ? esc(mechNames[j.mechanic_id]) + ' is' : 'Technician is'} <b>${mi.toFixed(1)} miles</b> away${typeof fleetEtaText === 'function' ? ' · arriving <b>' + fleetEtaText(mi) + '</b>' : ''} · last updated <b>${new Date(loc.updatedAt).toLocaleTimeString()}</b>`;
       } else {
         const distEl = document.getElementById('fleetDist'+j.id);
         if(distEl) distEl.textContent = 'Waiting for technician to go live...';
@@ -2684,10 +2686,11 @@ async function refreshFleetData(){
   const _s2 = preserveOpenChatNodes(histBox);
   histBox.innerHTML = history.length === 0
     ? '<div class="card empty-note">No completed jobs yet.</div>'
-    : history.map(j => `<div class="job-card"><div class="job-card-top"><b>${esc(j.vehicle)}</b>${jobStatusBadge(j.status)}</div>${commentsBlockHtml(j.id)}${attachmentsBlockHtml(j.id)}</div>`).join('');
+    : history.map(j => `<div class="job-card">${roChipsHtml(j)}<div class="job-card-top"><div><b>${esc(j.vehicle)}</b><div class="meta">${esc(orgName(j.org_id))} · completed ${j.completed_at ? new Date(j.completed_at).toLocaleDateString() : '—'}</div></div>${jobStatusBadge(j.status)}</div><div class="job-actions"><button class="j-open-ro" data-job="${j.id}">Details</button></div>${commentsBlockHtml(j.id)}${attachmentsBlockHtml(j.id)}</div>`).join('');
   wireCommentToggles(histBox);
   wireAttachmentToggles(histBox);
   restoreOpenChatNodes(histBox, _s2);
+  if(typeof refreshFleetPortal === 'function') refreshFleetPortal();
 }
 
 // ================= ADMIN VIEW =================
