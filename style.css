@@ -1268,3 +1268,32 @@ button:disabled{ opacity:.55; cursor:default; }
 .modal-overlay.ro-overlay.work-overlay{ z-index:1150; }
 .modal-overlay.ro-overlay.insp-overlay,
 .modal-overlay.ro-overlay.est-overlay{ z-index:1200; }
+
+/* ============================================================
+   Phase 7 — parts and inventory
+   ============================================================ */
+.inv-row{ display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1.4fr) auto; gap:12px; align-items:center; background:var(--panel); border:1px solid var(--line); border-radius:var(--r-md, 12px); padding:12px 14px; }
+.inv-row.is-low{ box-shadow:inset 4px 0 0 #D92D20; }
+.inv-nums{ display:flex; flex-wrap:wrap; gap:14px; align-items:center; }
+.inv-nums span{ display:flex; flex-direction:column; font-variant-numeric:tabular-nums; }
+.inv-nums em{ font-style:normal; font-size:11px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; }
+.inv-actions{ display:flex; flex-wrap:wrap; gap:4px 10px; justify-content:flex-end; }
+.neg{ color:#B42318; } .pos{ color:#177A50; }
+.inv-low-count{ background:#FDE2DE; color:#B42318; border-radius:999px; padding:1px 7px; font-size:11px; margin-left:4px; }
+.nav-low{ margin-left:auto; background:#D92D20; color:#fff; border-radius:999px; font-size:11px; font-weight:700; padding:1px 7px; }
+.inv-hist > div{ display:grid; grid-template-columns:150px 1fr 140px 70px; gap:10px; padding:6px 0; border-bottom:1px solid var(--line); font-size:.9rem; }
+.inv-hist b{ text-align:right; font-variant-numeric:tabular-nums; }
+.po-lines{ display:flex; flex-direction:column; margin:10px 0; }
+.po-line{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); }
+.po-line > span:first-child{ flex:1 1 220px; font-weight:600; }
+.po-recv{ display:flex; gap:6px; align-items:center; }
+.po-recv input{ width:80px; min-height:40px; padding:6px 8px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); }
+.parts-add input#ppSearch{ flex:2 1 220px; }
+.inv-tabs{ margin-bottom:12px; }
+@media (max-width:760px){
+  .inv-row{ grid-template-columns:1fr; }
+  .inv-actions{ justify-content:flex-start; }
+  .inv-hist > div{ grid-template-columns:1fr auto; }
+}
+.inv-row .rec-main .meta b{ display:inline; }
+.inv-nums .badge{ flex-direction:row; align-self:center; }
