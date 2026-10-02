@@ -1204,3 +1204,33 @@ button:disabled{ opacity:.55; cursor:default; }
 /* Secondary buttons inside toolbars stay secondary */
 .rec-toolbar .ghost-btn{ background:none; color:var(--ink-soft); border:1px solid var(--line); margin-left:auto; }
 .rec-toolbar .ghost-btn + button{ margin-left:0; }
+
+/* ============================================================
+   Phase 5 — fleet customer portal
+   ============================================================ */
+.fleet-tabs{ display:flex; gap:6px; overflow-x:auto; padding:2px 0 12px; margin-bottom:6px; scrollbar-width:none; }
+.fleet-tabs::-webkit-scrollbar{ display:none; }
+.fleet-tab{ flex:none; min-height:44px; padding:10px 16px; border-radius:999px; border:1px solid var(--line); background:var(--panel); color:var(--ink-soft); font-weight:700; font-size:.9rem; cursor:pointer; }
+.fleet-tab.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.fleet-stats{ display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:12px; }
+.fleet-stat{ text-align:left; display:flex; flex-direction:column; gap:2px; background:var(--panel); border:1px solid var(--line); border-radius:var(--r-md, 12px); padding:16px; cursor:pointer; font:inherit; color:var(--ink); }
+.fleet-stat b{ font-size:1.9rem; line-height:1.1; font-variant-numeric:tabular-nums; }
+.fleet-stat span{ font-weight:600; color:var(--ink-soft); font-size:.9rem; }
+.fleet-stat em{ font-style:normal; font-size:.82rem; color:var(--ink-soft); }
+.fleet-stat.attn{ border-color:#E0A100; box-shadow:inset 4px 0 0 #E0A100; }
+.fleet-stat.warn{ border-color:#D92D20; box-shadow:inset 4px 0 0 #D92D20; }
+.attn-row, .fleet-doc{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:var(--panel); border:1px solid var(--line); border-radius:var(--r-md, 12px); padding:12px 14px; margin-bottom:8px; }
+.attn-approve{ box-shadow:inset 4px 0 0 #E0A100; } .attn-overdue{ box-shadow:inset 4px 0 0 #D92D20; }
+.attn-btn{ display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:10px 16px; border-radius:9px; background:var(--accent); color:#fff; font-weight:700; text-decoration:none; border:none; cursor:pointer; font-size:.88rem; }
+.attn-btn.ghost{ background:none; color:var(--ink-soft); border:1px solid var(--line); }
+.fleet-doc-side{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.fleet-doc-side > b{ font-variant-numeric:tabular-nums; }
+@media (max-width:640px){
+  .fleet-stats{ grid-template-columns:1fr 1fr; }
+  .fleet-stat b{ font-size:1.6rem; }
+  .attn-row .attn-btn, .fleet-doc-side{ width:100%; }
+  .attn-row .attn-btn{ width:100%; }
+}
+.fleet-doc .badge, .attn-row .badge, #fleetUnits .badge{ text-transform:none; white-space:nowrap; }
+.badge.overdue{ background:#FDE2DE; color:#B42318; } .badge.overdue .bd{ background:#D92D20; }
+.fleet-doc .rec-main b{ display:block; }
