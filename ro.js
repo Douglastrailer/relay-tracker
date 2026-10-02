@@ -151,7 +151,8 @@ function renderUnitsList(){
   const q = (document.getElementById('unitsSearch').value || '').trim().toLowerCase();
   const showInactive = document.getElementById('unitsShowInactive').checked;
   const rows = recordsUnits.filter(u => (showInactive || u.active) &&
-    (!q || [u.unit_number, u.vin, u.plate, u.make, u.model, customerName(u.customer_id)].some(v => v && String(v).toLowerCase().includes(q))));
+    (!q || [u.unit_number, u.vin, u.plate, u.make, u.model, u.trailer_type, customerName(u.customer_id)].some(v => v && String(v).toLowerCase().includes(q))
+        || (typeof unitSearchExtraIds !== 'undefined' && unitSearchExtraIds.includes(u.id))));
   document.getElementById('unitsCount').textContent = rows.length + (rows.length === 1 ? ' unit' : ' units');
   if(rows.length === 0){
     box.innerHTML = `<div class="empty-note">${recordsUnits.length ? 'No units match your search.' : 'No units yet. They are added automatically when you create a job, or add one here.'}</div>`;
@@ -162,7 +163,8 @@ function renderUnitsList(){
         <div class="meta">${[customerName(u.customer_id) || 'No customer', [u.year, u.make, u.model].filter(Boolean).join(' '), u.trailer_type].filter(Boolean).map(esc).join(' · ')}</div></div>
       <div class="rec-side">${u.vin ? `<span class="rec-tag mono">${esc(u.vin)}</span>` : '<span class="meta">No VIN</span>'}${u.active ? '' : '<span class="rec-tag">Inactive</span>'}</div>
     </button>`).join('');
-  box.querySelectorAll('[data-unit]').forEach(b => b.onclick = () => openUnitForm(Number(b.dataset.unit)));
+  // A unit opens its full history (Phase 6); Edit is on that page.
+  box.querySelectorAll('[data-unit]').forEach(b => b.onclick = () => (typeof openUnitHistory === 'function' ? openUnitHistory : openUnitForm)(Number(b.dataset.unit)));
 }
 
 function openUnitForm(id){
@@ -349,6 +351,7 @@ async function openRepairOrder(jobId){
     </section>
     ${(canEditRequest || canEditDiagnosis) ? `<p class="form-error" id="roError"></p><div class="job-actions"><button type="button" id="roSave">Save repair order</button></div>` : ''}
 
+    <section class="ro-sec hidden" id="roWarranty"></section>
     <section class="ro-sec hidden" id="roTime"></section>
     <section class="ro-sec" id="roInspections"><h4>Inspections</h4><p class="meta">Loading…</p></section>
     <section class="ro-sec" id="roRecommended"></section>
@@ -370,6 +373,7 @@ async function openRepairOrder(jobId){
   if(typeof loadRoInspections === 'function') loadRoInspections(job, { canWork: canEditDiagnosis, isShop });
   if(typeof loadRoEstimates === 'function') loadRoEstimates(job, { isShop });
   if(typeof loadRoTime === 'function') loadRoTime(job, { canWork: canEditDiagnosis });
+  if(typeof loadRoWarranty === 'function') loadRoWarranty(job, { isShop });
   const saveStatus = document.getElementById('roStatusSave');
   if(saveStatus) saveStatus.onclick = () => roUpdateStatus(job);
   const saveBtn = document.getElementById('roSave');
