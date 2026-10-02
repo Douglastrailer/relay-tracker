@@ -1234,3 +1234,37 @@ button:disabled{ opacity:.55; cursor:default; }
 .fleet-doc .badge, .attn-row .badge, #fleetUnits .badge{ text-transform:none; white-space:nowrap; }
 .badge.overdue{ background:#FDE2DE; color:#B42318; } .badge.overdue .bd{ background:#D92D20; }
 .fleet-doc .rec-main b{ display:block; }
+
+/* ============================================================
+   Phase 6 — unit history and warranty
+   ============================================================ */
+.unit-overlay{ z-index:1080; }   /* repair orders and reports open on top of it */
+.unit-card{ max-width:960px; }
+.uh-head-side{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+.uh-costs{ grid-template-columns:repeat(4, minmax(0, 1fr)); }
+.uh-costs b{ font-size:1.25rem; }
+.uh-interval{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; font-size:.9rem; }
+.uh-interval input{ width:92px; min-height:40px; padding:6px 8px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); }
+.svc-ok{ color:#135E3E; font-weight:600; } .svc-overdue{ color:#B42318; font-weight:700; }
+.uh-warranty{ padding:6px 0; border-bottom:1px dashed var(--line); }
+.uh-warranty:last-child{ border-bottom:0; }
+.uh-lines > div{ display:grid; grid-template-columns:64px 1fr auto auto; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); font-size:.9rem; }
+.uh-photos{ display:grid; grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:8px; }
+.uh-photo{ aspect-ratio:1; border-radius:10px; overflow:hidden; background:#111827; display:block; }
+.uh-photo img{ width:100%; height:100%; object-fit:cover; }
+.w-grid{ grid-template-columns:120px 140px 1fr; }
+.ro-inv b{ margin-left:auto; }
+@media (max-width:640px){
+  .uh-costs{ grid-template-columns:1fr 1fr; }
+  .w-grid{ grid-template-columns:1fr 1fr; }
+  .uh-lines > div{ grid-template-columns:1fr auto; }
+  .uh-lines > div .meta{ display:none; }
+}
+/* Window layering, stated explicitly (a more specific Phase 1 rule was
+   flattening them all to the same level, so page order decided).
+   Bottom to top: unit history < repair order < work screen < inspection / estimate. */
+.modal-overlay.ro-overlay.unit-overlay{ z-index:1080; }
+.modal-overlay.ro-overlay#roModal{ z-index:1100; }
+.modal-overlay.ro-overlay.work-overlay{ z-index:1150; }
+.modal-overlay.ro-overlay.insp-overlay,
+.modal-overlay.ro-overlay.est-overlay{ z-index:1200; }
