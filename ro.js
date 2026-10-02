@@ -353,6 +353,7 @@ async function openRepairOrder(jobId){
 
     <section class="ro-sec hidden" id="roWarranty"></section>
     <section class="ro-sec hidden" id="roTime"></section>
+    <section class="ro-sec hidden" id="roParts"></section>
     <section class="ro-sec" id="roInspections"><h4>Inspections</h4><p class="meta">Loading…</p></section>
     <section class="ro-sec" id="roRecommended"></section>
 
@@ -374,6 +375,7 @@ async function openRepairOrder(jobId){
   if(typeof loadRoEstimates === 'function') loadRoEstimates(job, { isShop });
   if(typeof loadRoTime === 'function') loadRoTime(job, { canWork: canEditDiagnosis });
   if(typeof loadRoWarranty === 'function') loadRoWarranty(job, { isShop });
+  if(typeof loadRoParts === 'function') loadRoParts(job, { canWork: canEditDiagnosis });
   const saveStatus = document.getElementById('roStatusSave');
   if(saveStatus) saveStatus.onclick = () => roUpdateStatus(job);
   const saveBtn = document.getElementById('roSave');
