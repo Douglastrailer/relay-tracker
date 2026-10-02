@@ -108,6 +108,8 @@ function roChipsHtml(j){
   if(j.priority && j.priority !== 'normal') out += `<span class="prio-chip prio-${esc(j.priority)}">${esc(PRIORITY_LABELS[j.priority] || j.priority)}</span>`;
   if(j.safety_issue) out += `<span class="prio-chip prio-safety">Safety</span>`;
   if(j.drivable === false) out += `<span class="prio-chip prio-nodrive">Not drivable</span>`;
+  if(j.warranty_claim_status === 'pending_review') out += `<span class="prio-chip prio-high" title="This unit had an earlier repair that may still be under warranty">Warranty?</span>`;
+  else if(j.warranty_claim_status === 'warranty') out += `<span class="prio-chip prio-low">Warranty</span>`;
   return out ? `<div class="ro-chips">${out}</div>` : '';
 }
 
@@ -306,7 +308,7 @@ async function fetchJobsForInvoiceLink(){
 // ever had and slicing it down in the browser.
 // Column list excludes only "created_by" — the one job column never
 // actually read anywhere in the app after being set on creation.
-const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, job_type, dest_lat, dest_lng, status, created_at, updated_at, org_id, fleet_profile_id, ro_number, customer_id, unit_id, priority, safety_issue, drivable, complaint, diagnosis, fault_codes, completed_at, requires_authorization, authorized_at, authorized_by_name, authorization_override_at, authorization_override_reason';
+const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, job_type, dest_lat, dest_lng, status, created_at, updated_at, org_id, fleet_profile_id, ro_number, customer_id, unit_id, priority, safety_issue, drivable, complaint, diagnosis, fault_codes, completed_at, requires_authorization, authorized_at, authorized_by_name, authorization_override_at, authorization_override_reason, odometer, warranty_months, warranty_miles, warranty_terms, warranty_claim_status, warranty_source_job_id, warranty_decided_at, warranty_decision_note';
 async function fetchActiveJobs(scope){
   let q = sb.from('jobs').select(JOB_COLUMNS).not('status','in','(' + CLOSED_STATUSES.join(',') + ')').order('created_at', { ascending:true });
   // Scoping here is a query-planning aid, not the security boundary — RLS
@@ -2234,6 +2236,7 @@ function initShopView(){
   if(typeof initRecordsUI === 'function') safeInit('initRecordsUI', initRecordsUI);
   if(typeof initInspectionsUI === 'function') safeInit('initInspectionsUI', initInspectionsUI);
   if(typeof initTimeUI === 'function') safeInit('initTimeUI', initTimeUI);
+  if(typeof initUnitHistoryUI === 'function') safeInit('initUnitHistoryUI', initUnitHistoryUI);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
   safeInit('announcementDismissWiring', ()=>{ document.getElementById('announcementDismiss').onclick = dismissAnnouncement; });
