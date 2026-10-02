@@ -1839,8 +1839,12 @@ async function populateInventoryPicker(){
 }
 
 function initInventoryUI(){
+  // The Inventory tab is now built by inv.js (Phase 7); the old price-list
+  // form only runs if its elements are on the page.
+  const btn = document.getElementById('addInventoryItemBtn');
+  if(!btn) return;
   refreshInventory();
-  document.getElementById('addInventoryItemBtn').onclick = addInventoryItem;
+  btn.onclick = addInventoryItem;
 }
 
 // ================= incoming work requests =================
@@ -2237,6 +2241,7 @@ function initShopView(){
   if(typeof initInspectionsUI === 'function') safeInit('initInspectionsUI', initInspectionsUI);
   if(typeof initTimeUI === 'function') safeInit('initTimeUI', initTimeUI);
   if(typeof initUnitHistoryUI === 'function') safeInit('initUnitHistoryUI', initUnitHistoryUI);
+  if(typeof initInventoryV2 === 'function') safeInit('initInventoryV2', initInventoryV2);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
   safeInit('announcementDismissWiring', ()=>{ document.getElementById('announcementDismiss').onclick = dismissAnnouncement; });
