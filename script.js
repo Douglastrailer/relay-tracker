@@ -2242,6 +2242,7 @@ function initShopView(){
   if(typeof initTimeUI === 'function') safeInit('initTimeUI', initTimeUI);
   if(typeof initUnitHistoryUI === 'function') safeInit('initUnitHistoryUI', initUnitHistoryUI);
   if(typeof initInventoryV2 === 'function') safeInit('initInventoryV2', initInventoryV2);
+  if(typeof initAnalyticsV2 === 'function') safeInit('initAnalyticsV2', initAnalyticsV2);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
   safeInit('announcementDismissWiring', ()=>{ document.getElementById('announcementDismiss').onclick = dismissAnnouncement; });
@@ -2428,6 +2429,8 @@ function jobEditRowHtml(job, mechanics, fleets){
 }
 
 function renderAnalytics(jobs, mechanics, mechName){
+  // Replaced by analytics.js (Phase 8); kept only for pages without the new tab.
+  if(!document.getElementById('analyticsBars')) return;
   const completed = jobs.filter(j => DONE_STATUSES.includes(j.status));
   const barsBox = document.getElementById('analyticsBars');
   const statsBox = document.getElementById('analyticsStats');
