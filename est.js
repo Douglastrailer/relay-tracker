@@ -93,7 +93,7 @@ async function openEstimateEditor(docId, suggestRecs){
   if(error || !doc){ body.innerHTML = '<div class="form-error" style="padding:24px;">Could not load this document.</div>'; return; }
   const [linesRes, jobRes, orgRes, priceRes] = await Promise.all([
     sb.from('invoice_items').select('id, description, quantity, unit_price, item_type, taxable, recommended_repair_id, customer_decision, sort_order').eq('invoice_id', docId).order('sort_order').order('id'),
-    doc.job_id ? sb.from('jobs').select('id, ro_number, customer, vehicle').eq('id', doc.job_id).maybeSingle() : Promise.resolve({ data:null }),
+    doc.job_id ? sb.from('jobs').select('id, ro_number, customer, vehicle, warranty_claim_status').eq('id', doc.job_id).maybeSingle() : Promise.resolve({ data:null }),
     sb.from('organizations').select('labor_rate, default_tax_rate').eq('id', doc.org_id).maybeSingle(),
     sb.from('inventory_items').select('id, name, description, price').eq('org_id', doc.org_id).order('name')
   ]);
@@ -118,6 +118,8 @@ function renderEstimateEditor(){
       <h2>${esc(doc.customer_name)}${doc.unit_number ? ' — ' + esc(doc.unit_number) : ''}</h2>
       <div class="meta">${esc(DOC_STATUS[doc.status] || doc.status)} · created ${fmtDate(doc.created_at)}</div></div></div>
     ${approvalInfoHtml(doc)}
+    ${job && job.warranty_claim_status === 'warranty' ? '<div class="auth-banner ok">This repair was accepted as a <b>warranty claim</b>. Price it accordingly (often $0 to the customer).</div>'
+      : job && job.warranty_claim_status === 'pending_review' ? '<div class="auth-banner wait"><b>Potential warranty repair.</b> Decide on the repair order before billing.</div>' : ''}
     <div class="rec-grid est-head-grid">
       <div class="field"><label>PO number</label><input id="estPo" maxlength="60" value="${esc(doc.po_number || '')}" ${editable ? '' : 'disabled'}></div>
       <div class="field"><label>Payment terms</label><select id="estTerms" ${editable ? '' : 'disabled'}>${Object.keys(TERMS).map(k => `<option value="${k}" ${(doc.payment_terms || 'due_on_receipt') === k ? 'selected' : ''}>${TERMS[k]}</option>`).join('')}</select></div>
