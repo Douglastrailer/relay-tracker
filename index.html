@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=31"/>
+<link rel="stylesheet" href="style.css?v=32"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -693,22 +693,7 @@
     </div>
 
     <div class="dash-panel hidden" id="shop-inventory">
-      <div class="grid-2 section">
-        <div>
-          <div class="section-head"><h2>Price list</h2></div>
-          <p class="meta" style="margin-bottom:12px;">Save your common services and parts once — pick them straight into any invoice or estimate instead of retyping.</p>
-          <div class="job-list" id="inventoryList"></div>
-        </div>
-        <div>
-          <div class="card new-job-form">
-            <h3>Add an item</h3>
-            <div class="field"><label>Name</label><input type="text" id="invItemName" placeholder="e.g. Oil change"></div>
-            <div class="field"><label>Description (optional)</label><textarea id="invItemDesc" rows="2" placeholder="e.g. Full synthetic, up to 5 quarts"></textarea></div>
-            <div class="field"><label>Price</label><input type="number" id="invItemPrice" min="0" step="0.01" placeholder="0.00"></div>
-            <button id="addInventoryItemBtn">Add to price list</button>
-          </div>
-        </div>
-      </div>
+      <div id="invRoot"><div class="meta">Loading…</div></div>
     </div>
 
     <div class="dash-panel hidden" id="shop-billing">
@@ -941,13 +926,14 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=44"></script>
-<script src="ro.js?v=5"></script>
+<script src="script.js?v=45"></script>
+<script src="ro.js?v=6"></script>
 <script src="insp.js?v=3"></script>
-<script src="est.js?v=3"></script>
+<script src="est.js?v=4"></script>
 <script src="tech.js?v=1"></script>
 <script src="fleet.js?v=2"></script>
 <script src="unit.js?v=1"></script>
+<script src="inv.js?v=1"></script>
 
 </body>
 </html>
