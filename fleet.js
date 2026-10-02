@@ -94,12 +94,19 @@ function openFleetUnit(id){
   box.innerHTML = `<div class="card rec-form">
     <div class="rec-form-head"><h3>${esc({ truck:'Truck', trailer:'Trailer', other:'Unit' }[u.unit_type] || 'Unit')} ${esc(u.unit_number)}</h3><button type="button" class="ghost" id="fuClose">Close</button></div>
     <p class="meta">${[fleetOrgName(u.org_id), [u.year, u.make, u.model].filter(Boolean).join(' '), u.trailer_type, u.vin ? 'VIN ' + u.vin : '', u.plate ? 'Plate ' + u.plate + (u.plate_state ? ' ' + u.plate_state : '') : '', u.odometer != null ? Number(u.odometer).toLocaleString() + ' mi' : ''].filter(Boolean).map(esc).join(' · ')}</p>
+    <div class="time-stats" id="fuCosts"></div>
+    ${(() => { const ws = uj.map(j => ({ j, w: typeof warrantyStatus === 'function' ? warrantyStatus(j, u.odometer) : null })).filter(x => x.w && x.w.active);
+      return ws.length ? '<h4 class="rec-subhead">Active warranty</h4>' + ws.map(({ j, w }) => `<p class="meta"><b>${esc(j.ro_number || '')}</b> ${esc(j.complaint || '')} — ${esc(warrantyTermsText(j))}${w.until ? ' · until ' + fmtDate(w.until) : ''}</p>`).join('') : ''; })()}
     <h4 class="rec-subhead">Repair history</h4>
     <div class="rec-orders">${uj.length ? uj.map(j => `<button type="button" class="rec-order j-open-ro" data-job="${j.id}"><span class="ro-num">${esc(j.ro_number || '#' + j.id)}</span>
       <span class="rec-order-main">${esc(j.complaint || j.customer)}</span><span class="meta">${fmtDate(j.created_at)}</span>${jobStatusBadge(j.status)}</button>`).join('') : '<span class="meta">No repairs recorded yet.</span>'}</div>
     <p class="meta" style="margin-top:8px;">Open a repair to see its inspection report, photos, estimate and timeline.</p></div>`;
   box.classList.remove('hidden'); box.scrollIntoView({ behavior:'smooth', block:'start' });
   document.getElementById('fuClose').onclick = () => { box.innerHTML = ''; box.classList.add('hidden'); };
+  sb.from('unit_cost_summary').select('month_cost, year_cost, lifetime_cost').eq('unit_id', id).maybeSingle().then(({ data }) => {
+    const c = document.getElementById('fuCosts');
+    if(c && data) c.innerHTML = `<div><span>This month</span><b>${fleetMoney(data.month_cost)}</b></div><div><span>This year</span><b>${fleetMoney(data.year_cost)}</b></div><div><span>Lifetime</span><b>${fleetMoney(data.lifetime_cost)}</b></div>`;
+  });
 }
 
 function renderFleetInvoices(){
