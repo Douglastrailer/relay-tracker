@@ -1297,3 +1297,37 @@ button:disabled{ opacity:.55; cursor:default; }
 }
 .inv-row .rec-main .meta b{ display:inline; }
 .inv-nums .badge{ flex-direction:row; align-self:center; }
+
+/* ============================================================
+   Phase 8 — analytics
+   ============================================================ */
+.an-toolbar{ align-items:center; }
+.an-ranges{ padding:0; margin:0; }
+#anCustom input{ min-height:44px; padding:8px 10px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); }
+.an-period{ margin:4px 0 12px; }
+.an-tiles{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:12px; margin-bottom:14px; }
+.an-tile{ background:var(--panel); border:1px solid var(--line); border-radius:var(--r-md, 12px); padding:14px 16px; display:flex; flex-direction:column; gap:2px; }
+.an-tile span{ font-size:12px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; }
+.an-tile b{ font-size:1.6rem; font-variant-numeric:tabular-nums; line-height:1.15; }
+.an-tile em{ font-style:normal; font-size:.82rem; color:var(--ink-soft); }
+.an-tile.warn{ box-shadow:inset 4px 0 0 #D92D20; }
+.an-chart{ width:100%; height:auto; display:block; }
+.an-bar{ fill:var(--accent); }
+.an-bar:hover{ opacity:.8; }
+.an-grid{ stroke:var(--line); stroke-width:1; }
+.an-axis{ fill:var(--ink-soft); font-size:12px; font-family:inherit; }
+.an-table-head{ display:flex; justify-content:space-between; align-items:center; }
+.an-scroll{ overflow-x:auto; }
+.an-table{ width:100%; border-collapse:collapse; font-size:.9rem; min-width:620px; }
+.an-table th{ text-align:left; font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; padding:8px 10px; border-bottom:2px solid var(--line); white-space:nowrap; }
+.an-table td{ padding:9px 10px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
+.an-table tr:hover td{ background:var(--panel-2, #F7F7F8); }
+@media (max-width:640px){ .an-tiles{ grid-template-columns:1fr 1fr; } .an-tile b{ font-size:1.3rem; } }
+/* Date-range buttons inside a toolbar stay tab-styled; only the selected one is filled */
+.rec-toolbar .fleet-tab{ background:var(--panel); color:var(--ink-soft); border:1px solid var(--line); margin-left:0; min-height:44px; padding:10px 16px; border-radius:999px; font-weight:700; }
+.rec-toolbar .fleet-tab.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.an-tile em b{ font-size:inherit; line-height:inherit; }
+@media (max-width:640px){
+  .rec-toolbar .an-ranges{ flex:1 1 100%; min-width:0; }
+  .rec-toolbar .fleet-tab{ width:auto; flex:none; }
+}
