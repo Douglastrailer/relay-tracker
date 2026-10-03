@@ -361,6 +361,7 @@ async function copyText(text){
 }
 
 async function afterChange(id){
+  if(typeof notifyKick === 'function') notifyKick();
   await reloadDoc(id);
   const ro = document.getElementById('roModal');
   if(estCurrent && estCurrent.doc.job_id && ro && !ro.classList.contains('hidden') && typeof openRepairOrder === 'function') openRepairOrder(estCurrent.doc.job_id);
