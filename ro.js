@@ -25,7 +25,7 @@ function recordsToast(msg){
 // ---------------- data ----------------
 async function fetchCustomers(){
   const { data, error } = await sb.from('customers')
-    .select('id, company_name, contact_name, phone, email, billing_email, billing_address, payment_terms, tax_exempt, fleet_profile_id, notes, active, created_at')
+    .select('id, company_name, contact_name, phone, email, billing_email, billing_address, payment_terms, tax_exempt, fleet_profile_id, notes, active, created_at, notify_email, notify_sms')
     .eq('org_id', session.orgId).order('company_name').limit(1000);
   if(error){ console.error('fetchCustomers', error); return []; }
   return data || [];
@@ -93,6 +93,8 @@ async function openCustomerForm(id){
           <p class="meta" style="margin-top:4px;">When linked, this fleet account can see all of this customer's repair orders and units. Only fleets that joined your shop are listed.</p></div>
         <div class="field rec-span"><label>Notes</label><textarea id="cfNotes" rows="2" maxlength="2000">${c ? esc(c.notes || '') : ''}</textarea></div>
         <label class="rec-check"><input type="checkbox" id="cfTaxExempt" ${c && c.tax_exempt ? 'checked' : ''}> Tax exempt</label>
+        <label class="rec-check"><input type="checkbox" id="cfNotifyEmail" ${!c || c.notify_email !== false ? 'checked' : ''}> Email updates on repairs</label>
+        <label class="rec-check"><input type="checkbox" id="cfNotifySms" ${c && c.notify_sms ? 'checked' : ''}> Text updates (to the phone above, once texting is set up)</label>
         ${c ? `<label class="rec-check"><input type="checkbox" id="cfActive" ${c.active ? 'checked' : ''}> Active</label>` : ''}
       </div>
       <p class="form-error" id="cfError"></p>
@@ -121,7 +123,9 @@ async function saveCustomer(existing){
     payment_terms: document.getElementById('cfTerms').value,
     tax_exempt: document.getElementById('cfTaxExempt').checked,
     fleet_profile_id: document.getElementById('cfFleet').value || null,
-    notes: nullIfBlank(document.getElementById('cfNotes').value)
+    notes: nullIfBlank(document.getElementById('cfNotes').value),
+    notify_email: document.getElementById('cfNotifyEmail').checked,
+    notify_sms: document.getElementById('cfNotifySms').checked
   };
   if(existing) row.active = document.getElementById('cfActive').checked;
   const btn = document.getElementById('cfSave'); btn.disabled = true;
@@ -354,6 +358,7 @@ async function openRepairOrder(jobId){
     <section class="ro-sec hidden" id="roWarranty"></section>
     <section class="ro-sec hidden" id="roTime"></section>
     <section class="ro-sec hidden" id="roParts"></section>
+    <section class="ro-sec hidden" id="roComms2"></section>
     <section class="ro-sec" id="roInspections"><h4>Inspections</h4><p class="meta">Loading…</p></section>
     <section class="ro-sec" id="roRecommended"></section>
 
@@ -376,6 +381,7 @@ async function openRepairOrder(jobId){
   if(typeof loadRoTime === 'function') loadRoTime(job, { canWork: canEditDiagnosis });
   if(typeof loadRoWarranty === 'function') loadRoWarranty(job, { isShop });
   if(typeof loadRoParts === 'function') loadRoParts(job, { canWork: canEditDiagnosis });
+  if(typeof loadRoComms === 'function') loadRoComms(job, { isShop });
   const saveStatus = document.getElementById('roStatusSave');
   if(saveStatus) saveStatus.onclick = () => roUpdateStatus(job);
   const saveBtn = document.getElementById('roSave');
@@ -411,6 +417,7 @@ async function roUpdateStatus(job){
   btn.disabled = false;
   if(error){ alert('Could not update the status: ' + error.message); return; }
   recordsToast('Status updated to ' + statusLabel(status));
+  if(typeof notifyKick === 'function') notifyKick();
   if(status === 'complete' && typeof showCompleteToast === 'function' && session.role === 'mechanic') showCompleteToast(job);
   await openRepairOrder(job.id);
   if(typeof refreshCurrentView === 'function') refreshCurrentView();
