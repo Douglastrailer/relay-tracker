@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=33"/>
+<link rel="stylesheet" href="style.css?v=34"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -718,10 +718,11 @@
             <div class="field"><label>Labor rate ($ per hour)</label><input type="number" id="billingLaborRate" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 135"></div>
           </div>
           <p class="meta" style="margin-top:-4px;">Used to pre-fill new estimates. Tax-exempt customers start at 0%.</p>
-          <p class="meta" style="margin:-6px 0 4px;">Add this to send a "leave us a review" email once an invoice is marked paid.</p>
+          <p class="meta" style="margin:-6px 0 4px;">Your review page link (e.g. Google). Review requests use it — see Customer updates below.</p>
           <button id="saveBillingProfileBtn">Save billing info</button>
         </div>
       </div>
+      <div id="notifySettings"></div>
     </div>
 
     <div class="dash-panel hidden" id="shop-team">
@@ -930,15 +931,16 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=46"></script>
-<script src="ro.js?v=6"></script>
+<script src="script.js?v=47"></script>
+<script src="ro.js?v=7"></script>
 <script src="insp.js?v=3"></script>
-<script src="est.js?v=4"></script>
-<script src="tech.js?v=1"></script>
+<script src="est.js?v=5"></script>
+<script src="tech.js?v=2"></script>
 <script src="fleet.js?v=2"></script>
 <script src="unit.js?v=1"></script>
 <script src="inv.js?v=1"></script>
 <script src="analytics.js?v=1"></script>
+<script src="comms.js?v=1"></script>
 
 </body>
 </html>
