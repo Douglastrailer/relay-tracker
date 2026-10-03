@@ -50,10 +50,10 @@ function renderFleetDashboard(){
     tile(units.length, 'Units', '', 'units') +
     tile(active.length, 'Active repairs', '', 'repairs') +
     tile(active.filter(j => j.job_type === 'mobile').length, 'Roadside calls', '', 'repairs') +
-    tile(toApprove.length, 'Waiting for your approval', '', 'invoices', toApprove.length ? 'attn' : '') +
+    (session.staffRole === 'fleet_user' ? '' : tile(toApprove.length, 'Waiting for your approval', '', 'invoices', toApprove.length ? 'attn' : '')) +
     tile(active.filter(j => j.status === 'waiting_parts').length, 'Waiting for parts', '', 'repairs') +
     tile(jobs.filter(j => DONE_STATUSES.includes(j.status) && j.completed_at && new Date(j.completed_at).getFullYear() === year).length, 'Completed this year', '', 'history') +
-    tile(unpaid.length, 'Unpaid invoices', unpaid.length ? fleetMoney(unpaid.reduce((s, d) => s + Number(d.total || 0), 0)) + (overdue.length ? ' · ' + overdue.length + ' overdue' : '') : '', 'invoices', overdue.length ? 'warn' : '');
+    (session.staffRole === 'fleet_user' ? '' : tile(unpaid.length, 'Unpaid invoices', unpaid.length ? fleetMoney(unpaid.reduce((s, d) => s + Number(d.total || 0), 0)) + (overdue.length ? ' · ' + overdue.length + ' overdue' : '') : '', 'invoices', overdue.length ? 'warn' : ''));
   document.querySelectorAll('#fleetStats [data-goto]').forEach(b => b.onclick = () => showFleetTab(b.dataset.goto));
   const jobFor = d => jobs.find(j => j.id === d.job_id) || {};
   const items = [];
@@ -149,5 +149,6 @@ function initFleetPortal(){
   const s = document.getElementById('fleetUnitSearch');
   if(s) s.oninput = renderFleetUnits;
   showFleetTab('dash');
+  if(typeof applyRoleUI === 'function') applyRoleUI();
   refreshFleetPortal();
 }

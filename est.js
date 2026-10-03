@@ -37,7 +37,7 @@ async function loadRoEstimates(job, opts){
     if(job.authorized_at) auth = `<div class="auth-banner ok">Approved by <b>${esc(job.authorized_by_name || 'customer')}</b> · ${fmtDateTime(job.authorized_at)}</div>`;
     else if(job.authorization_override_at) auth = `<div class="auth-banner warn">Approval overridden by the shop · ${fmtDateTime(job.authorization_override_at)}<br><span class="meta">${esc(job.authorization_override_reason || '')}</span></div>`;
     else auth = `<div class="auth-banner wait">Waiting for customer approval. Repair can't start until the estimate is approved${isShop ? ' or overridden' : ''}.
-      ${isShop ? '<button type="button" class="ghost-btn" id="authOverrideBtn">Override…</button>' : ''}</div>`;
+      ${isShop && (typeof can !== 'function' || can('override')) ? '<button type="button" class="ghost-btn" id="authOverrideBtn">Override…</button>' : ''}</div>`;
   }
   if(!isShop){
     // Mechanics and fleets see only whether approval is holding up the work.

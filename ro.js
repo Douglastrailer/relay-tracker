@@ -377,7 +377,7 @@ async function openRepairOrder(jobId){
   wireCommentToggles(body);
   wireAttachmentToggles(body);
   if(typeof loadRoInspections === 'function') loadRoInspections(job, { canWork: canEditDiagnosis, isShop });
-  if(typeof loadRoEstimates === 'function') loadRoEstimates(job, { isShop });
+  if(typeof loadRoEstimates === 'function') loadRoEstimates(job, { isShop: isShop && (typeof can !== 'function' || can('billing')) });
   if(typeof loadRoTime === 'function') loadRoTime(job, { canWork: canEditDiagnosis });
   if(typeof loadRoWarranty === 'function') loadRoWarranty(job, { isShop });
   if(typeof loadRoParts === 'function') loadRoParts(job, { canWork: canEditDiagnosis });

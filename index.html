@@ -7,8 +7,12 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2"/>
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"/>
+<link rel="manifest" href="/manifest.webmanifest"/>
+<meta name="theme-color" content="#0D5C6E"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=34"/>
+<link rel="stylesheet" href="style.css?v=35"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -491,6 +495,7 @@
       <button class="dash-tab" data-target="shop-team" title="Team"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="nav-label">Team</span></button>
       <button class="dash-tab" data-target="shop-analytics" title="Analytics"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16v-5M12 16V8M17 16v-3"/></svg><span class="nav-label">Analytics</span></button>
       <button class="dash-tab" data-target="shop-billing" title="Billing"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M8 7h4M8 11h4M8 15h4M2 21h20"/></svg><span class="nav-label">Billing</span> <span class="new-badge" id="billingNewBadge">NEW</span></button>
+      <button type="button" class="nav-foot nav-install hidden" title="Install the Relay app"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="nav-label">Install app</span></button>
       <button type="button" class="nav-foot nav-help" title="Help &amp; support"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span class="nav-label">Help &amp; support</span></button>
     </nav>
 
@@ -737,6 +742,7 @@
           <h3 style="font-family:var(--font-display); font-size:0.92rem; margin-bottom:12px;">Team</h3>
           <div id="teamList"></div>
           <div id="skillsEditor" class="hidden" style="margin-top:14px;"></div>
+          <div id="teamRoles"></div>
         </div>
       </div>
     </div>
@@ -826,6 +832,7 @@
       <button class="dash-tab" data-target="admin-invoices" title="Invoices"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></svg><span class="nav-label">Invoices</span></button>
       <div class="nav-group">System</div>
       <button class="dash-tab" data-target="admin-errors" title="Errors"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3.1l-8-14a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><span class="nav-label">Errors</span> <span id="errorsBadge" class="req-badge hidden">0</span></button>
+      <button type="button" class="nav-foot nav-install hidden" title="Install the Relay app"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="nav-label">Install app</span></button>
       <button type="button" class="nav-foot nav-help" title="Help &amp; support"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span class="nav-label">Help &amp; support</span></button>
     </nav>
 
@@ -931,16 +938,18 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=47"></script>
-<script src="ro.js?v=7"></script>
+<script src="script.js?v=48"></script>
+<script src="ro.js?v=8"></script>
 <script src="insp.js?v=3"></script>
-<script src="est.js?v=5"></script>
-<script src="tech.js?v=2"></script>
-<script src="fleet.js?v=2"></script>
-<script src="unit.js?v=1"></script>
+<script src="est.js?v=6"></script>
+<script src="tech.js?v=3"></script>
+<script src="fleet.js?v=3"></script>
+<script src="unit.js?v=2"></script>
 <script src="inv.js?v=1"></script>
 <script src="analytics.js?v=1"></script>
 <script src="comms.js?v=1"></script>
+<script src="roles.js?v=1"></script>
+<script src="pwa.js?v=1"></script>
 
 </body>
 </html>

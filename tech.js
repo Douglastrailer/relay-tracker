@@ -201,7 +201,7 @@ async function refreshTimePage(){
       <span>${new Date(e.started_at).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' })} → ${e.ended_at ? new Date(e.ended_at).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }) : '<b>running</b>'}</span>
       <b>${fmtMins(mins(e))}</b>
       <span>${e.edited_at || e.source === 'manual' ? '<em class="meta">edited</em>' : ''}</span>
-      <span class="time-actions"><button type="button" class="text-btn" data-edit-time="${e.id}">Edit</button><button type="button" class="text-btn danger" data-del-time="${e.id}">Delete</button></span>
+      <span class="time-actions">${typeof can !== 'function' || can('time_admin') ? `<button type="button" class="text-btn" data-edit-time="${e.id}">Edit</button><button type="button" class="text-btn danger" data-del-time="${e.id}">Delete</button>` : ''}</span>
     </div>`).join('')}</div>` : '<div class="empty-note">No time recorded in this period.</div>';
   box.querySelectorAll('[data-edit-time]').forEach(b => b.onclick = () => openTimeForm(Number(b.dataset.editTime)));
   box.querySelectorAll('[data-del-time]').forEach(b => b.onclick = async () => {
@@ -264,6 +264,7 @@ function initTimeUI(){
   if(!r) return;
   ['timeRange','timeMechanic','timeFrom','timeTo'].forEach(id => document.getElementById(id).onchange = refreshTimePage);
   document.getElementById('addTimeBtn').onclick = () => openTimeForm(null);
+  if(typeof can === 'function' && !can('time_admin')) document.getElementById('addTimeBtn').classList.add('hidden');
   document.getElementById('timeCsvBtn').onclick = downloadTimeCsv;
   document.querySelectorAll('.dash-tab[data-target="shop-time"]').forEach(t => t.addEventListener('click', refreshTimePage));
 }

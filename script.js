@@ -230,7 +230,11 @@ function showCompleteToast(job){
 
 // ================= data layer =================
 async function fetchMyProfile(userId){
-  const { data, error } = await sb.from('profiles').select('id, name, role, company, org_id, active').eq('id', userId).maybeSingle();
+  let { data, error } = await sb.from('profiles').select('id, name, role, company, org_id, active, staff_role').eq('id', userId).maybeSingle();
+  // Before migration 0013 the staff_role column does not exist yet: sign-in must still work.
+  if(error && /staff_role/.test(error.message || '')){
+    ({ data, error } = await sb.from('profiles').select('id, name, role, company, org_id, active').eq('id', userId).maybeSingle());
+  }
   if(error){ console.error('fetchMyProfile', error); return null; }
   return data;
 }
@@ -289,11 +293,13 @@ async function fetchCompanies(){
 // Totals are computed client-side from the embedded items rather than
 // stored as a column, so there's never a separate total that can drift
 // out of sync with the actual line items.
+let invoiceLimit = 100;
 async function fetchInvoices(){
   const { data, error } = await sb.from('invoices')
     .select('id, job_id, kind, source_estimate_id, customer_name, customer_email, customer_address, unit_number, status, notes, created_at, sent_at, paid_at, total, tax_amount, tax_rate, discount_amount, po_number, payment_terms, due_date, approved_by_name, invoice_items(id, description, quantity, unit_price, customer_decision)')
     .eq('org_id', session.orgId)
-    .order('created_at', { ascending:false });
+    .order('created_at', { ascending:false })
+    .limit(invoiceLimit);   // newest first; "Load more" asks for the next 100
   if(error){ console.error('fetchInvoices', error); return []; }
   return data || [];
 }
@@ -515,10 +521,13 @@ function openAttachmentThread(jobId, box){
     if(!file) return;
     if(file.size > 10*1024*1024){ alert('That file is too big — 10MB max.'); input.value=''; return; }
     const photoType = (typeSelect && typeSelect.value) || 'general';
-    const path = `${jobId}/${Date.now()}-${file.name}`;
-    const { error: upErr } = await sb.storage.from('job-attachments').upload(path, file);
+    // Phone photos are 3–10 MB; shrink them (1600 px, JPEG) before upload.
+    let upload = file;
+    if(/^image\//.test(file.type) && typeof compressImage === 'function'){ try { upload = await compressImage(file); } catch(e){ upload = file; } }
+    const path = `${jobId}/${Date.now()}-${upload.name || file.name}`;
+    const { error: upErr } = await sb.storage.from('job-attachments').upload(path, upload);
     if(upErr){ alert('Upload failed: ' + upErr.message); input.value=''; return; }
-    const { error: metaErr } = await sb.from('job_attachments').insert([{ job_id:jobId, uploader_id:session.id, file_path:path, file_name:file.name, file_type:file.type, photo_type:photoType }]);
+    const { error: metaErr } = await sb.from('job_attachments').insert([{ job_id:jobId, uploader_id:session.id, file_path:path, file_name:upload.name || file.name, file_type:upload.type || file.type, photo_type:photoType }]);
     if(metaErr) console.error('job_attachments insert failed', metaErr);
     input.value = '';
     renderAttachmentList(jobId);
@@ -541,7 +550,21 @@ function wireAttachmentToggles(container){
   });
 }
 
+
+// ---- Phase 10: data usage ----
+// Timers only run while the tab is visible; when someone comes back to a
+// hidden tab, one refresh catches it up. (Hidden tabs used to keep
+// reloading all day.)
+function everyWhileVisible(fn, ms){
+  let last = Date.now();
+  setInterval(() => { if(document.hidden) return; last = Date.now(); fn(); }, ms);
+  document.addEventListener('visibilitychange', () => {
+    if(!document.hidden && Date.now() - last > ms){ last = Date.now(); fn(); }
+  });
+}
+function panelVisible(id){ const p = document.getElementById(id); return !!p && !p.classList.contains('hidden'); }
 setInterval(()=>{
+  if(document.hidden) return;   // open chats refresh only while visible
   openCommentThreads.forEach(jobId => renderCommentList(jobId));
 }, 5000);
 
@@ -946,7 +969,7 @@ async function onAuthed(userId){
     orgName = orgData ? orgData.name : null;
     orgStatus = orgData ? orgData.status : 'approved';
   }
-  session = { id:profile.id, name:profile.name, role:profile.role, company:profile.company, orgId:profile.org_id, orgName, orgStatus };
+  session = { id:profile.id, name:profile.name, role:profile.role, staffRole:profile.staff_role || (profile.role === 'shop' ? 'owner' : profile.role === 'fleet' ? 'fleet_manager' : null), company:profile.company, orgId:profile.org_id, orgName, orgStatus };
 
   if(profile.active === false){
     showInactiveScreen();
@@ -980,8 +1003,8 @@ function showPendingScreen(status){
   document.getElementById('whoBox').classList.remove('hidden');
   document.getElementById('whoName').textContent = session.name;
   document.getElementById('whoRole').textContent =
-    session.role === 'shop' ? 'Shop owner' :
-    session.role === 'fleet' ? 'Fleet manager' : 'Mechanic';
+    session.role === 'shop' ? ({ owner:'Shop owner', manager:'Manager', dispatcher:'Dispatcher', advisor:'Service advisor' })[session.staffRole] || 'Shop owner' :
+    session.role === 'fleet' ? (session.staffRole === 'fleet_user' ? 'Fleet user' : 'Fleet manager') : 'Mechanic';
   document.getElementById('whoOrg').textContent = session.orgName || '';
   document.getElementById('editCompanyBtn').classList.add('hidden');
 
@@ -1145,7 +1168,17 @@ document.querySelectorAll('.dash-tabs').forEach(wireDashTabs);
 // Instead of every dashboard constantly asking "anything new?" every
 // few seconds, Supabase pushes changes the instant they happen.
 let realtimeChannel = null;
+// Live updates arrive in bursts (one change can fire several events). They
+// are merged into one refresh, and wait while the tab is hidden.
+let rcvTimer = null, rcvPending = false;
 function refreshCurrentView(){
+  if(!appEntered) return;
+  if(document.hidden){ rcvPending = true; return; }
+  clearTimeout(rcvTimer);
+  rcvTimer = setTimeout(refreshCurrentViewNow, 1500);
+}
+document.addEventListener('visibilitychange', () => { if(!document.hidden && rcvPending){ rcvPending = false; refreshCurrentView(); } });
+function refreshCurrentViewNow(){
   if(!appEntered) return;
   if(session.role === 'mechanic') renderMechJobs();
   else if(session.role === 'shop') refreshShopData();
@@ -1179,7 +1212,10 @@ function handleLocationPing(payload){
 function setupRealtimeSync(){
   if(realtimeChannel || !sb) return;
   realtimeChannel = sb.channel('relay-live-updates')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, refreshCurrentView)
+    .on('postgres_changes', Object.assign({ event: '*', schema: 'public', table: 'jobs' },
+        // Only this shop's jobs (or this fleet's) — not every change in the system.
+        session.role === 'fleet' ? { filter: 'fleet_profile_id=eq.' + session.id }
+        : session.orgId ? { filter: 'org_id=eq.' + session.orgId } : {}), refreshCurrentView)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, handleLocationPing)
     .subscribe();
 }
@@ -1195,8 +1231,8 @@ function enterApp(){
   document.getElementById('whoName').textContent = session.name;
   document.getElementById('whoRole').textContent =
     session.role === 'admin' ? 'Admin' :
-    session.role === 'shop' ? 'Shop owner' :
-    session.role === 'fleet' ? 'Fleet manager' : 'Mechanic';
+    session.role === 'shop' ? ({ owner:'Shop owner', manager:'Manager', dispatcher:'Dispatcher', advisor:'Service advisor' })[session.staffRole] || 'Shop owner' :
+    session.role === 'fleet' ? (session.staffRole === 'fleet_user' ? 'Fleet user' : 'Fleet manager') : 'Mechanic';
   document.getElementById('whoOrg').textContent = session.orgName || '';
   document.getElementById('editCompanyBtn').classList.toggle('hidden', session.role !== 'shop');
 
@@ -1216,7 +1252,7 @@ function enterApp(){
 
   // Watch for admin deactivating this account WHILE they're using the app —
   // kicks them out immediately instead of waiting for their next reload.
-  setInterval(async ()=>{
+  everyWhileVisible(async ()=>{
     const { data } = await sb.from('profiles').select('active').eq('id', session.id).maybeSingle();
     if(data && data.active === false){
       if(watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
@@ -1228,7 +1264,7 @@ function enterApp(){
       document.getElementById('navToggle').classList.add('hidden');
       showInactiveScreen();
     }
-  }, 15000);
+  }, 60000);
 }
 
 // ================= MECHANIC VIEW =================
@@ -1302,7 +1338,7 @@ function initMechanicView(){
   }
 
   renderMechJobs();
-  setInterval(renderMechJobs, 60000); // fallback only - Realtime handles instant updates
+  everyWhileVisible(renderMechJobs, 120000); // fallback only - Realtime handles instant updates
   if(typeof initWorkUI === 'function') initWorkUI();
 }
 
@@ -1662,7 +1698,10 @@ async function refreshInvoices(){
   const list = document.getElementById('invoiceList');
   if(!list) return;
   const invoices = await fetchInvoices();
-  list.innerHTML = invoices.length ? invoices.map(invoiceCardHtml).join('') : '<div class="empty-note">No invoices or estimates yet.</div>';
+  list.innerHTML = (invoices.length ? invoices.map(invoiceCardHtml).join('') : '<div class="empty-note">No invoices or estimates yet.</div>')
+    + (invoices.length >= invoiceLimit ? '<div class="load-more-row"><button type="button" class="ghost-btn" id="invLoadMore">Load older</button></div>' : '');
+  const more = document.getElementById('invLoadMore');
+  if(more) more.onclick = () => { invoiceLimit += 100; refreshInvoices(); };
 
   list.querySelectorAll('.inv-view-btn').forEach(btn=>{ btn.onclick = ()=> viewInvoicePdf(Number(btn.dataset.id)); });
   list.querySelectorAll('.inv-delete-btn').forEach(btn=>{ btn.onclick = ()=> deleteInvoiceDraft(Number(btn.dataset.id)); });
@@ -1691,7 +1730,7 @@ function initInvoicesUI(){
   addInvoiceItemRow();
   fetchBillingProfile().then(profile => { cachedReviewLink = profile && profile.review_link ? profile.review_link : null; refreshInvoices(); });
   refreshInvoices();
-  setInterval(refreshInvoices, 60000);
+  everyWhileVisible(() => { if(panelVisible('shop-invoices')) refreshInvoices(); }, 120000);   // only while the Invoices page is open
   document.getElementById('addInvItemBtn').onclick = ()=> addInvoiceItemRow();
   const invItemPicker = document.getElementById('invItemPicker');
   invItemPicker.onchange = ()=>{
@@ -1951,7 +1990,7 @@ async function refreshWorkRequests(){
 function initWorkRequestsUI(){
   setUpRequestLink();
   refreshWorkRequests();
-  setInterval(refreshWorkRequests, 60000);
+  everyWhileVisible(refreshWorkRequests, 120000);
 }
 
 function initBillingUI(){
@@ -2257,11 +2296,12 @@ function initShopView(){
   if(typeof initInventoryV2 === 'function') safeInit('initInventoryV2', initInventoryV2);
   if(typeof initAnalyticsV2 === 'function') safeInit('initAnalyticsV2', initAnalyticsV2);
   if(typeof initCommsUI === 'function') safeInit('initCommsUI', initCommsUI);
+  if(typeof initRolesUI === 'function') safeInit('initRolesUI', initRolesUI);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
   safeInit('announcementDismissWiring', ()=>{ document.getElementById('announcementDismiss').onclick = dismissAnnouncement; });
-  setInterval(refreshShopData, 60000); // fallback only - Realtime handles instant updates
-  setInterval(renderTeamList, 15000);
+  everyWhileVisible(refreshShopData, 120000); // fallback only - Realtime handles instant updates
+  everyWhileVisible(() => { if(panelVisible('shop-team')) renderTeamList(); }, 120000);   // was every 15 s, always
 
   document.getElementById('createJobBtn').onclick = async ()=>{
     const customer = document.getElementById('njCustomer').value.trim();
@@ -2615,7 +2655,7 @@ function initFleetView(){
   loadFleetShops();
   if(typeof initFleetPortal === 'function') initFleetPortal();
   refreshFleetData();
-  setInterval(refreshFleetData, 60000); // fallback only - Realtime handles instant updates
+  everyWhileVisible(refreshFleetData, 120000); // fallback only - Realtime handles instant updates
 }
 
 async function loadFleetShops(){
@@ -2730,7 +2770,7 @@ function initAdminView(){
   addBaseMapToggle(adminOpsMap);
 
   refreshAdminData();
-  setInterval(refreshAdminData, 60000); // fallback only - Realtime handles instant updates
+  everyWhileVisible(refreshAdminData, 120000); // fallback only - Realtime handles instant updates
 }
 
 async function refreshAdminData(){

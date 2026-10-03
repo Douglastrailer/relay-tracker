@@ -183,7 +183,7 @@ async function loadRoWarranty(job, opts){
     const src = job.warranty_source_job_id ? (await sb.from('jobs').select('id, ro_number, complaint, completed_at, odometer, warranty_months, warranty_miles, warranty_terms, status').eq('id', job.warranty_source_job_id).maybeSingle()).data : null;
     const srcText = src ? `${esc(src.ro_number || '')} — ${esc(src.complaint || '')}, completed ${fmtDate(src.completed_at)}. ${esc(warrantyTermsText(src))}` : 'An earlier repair on this unit';
     if(job.warranty_claim_status === 'pending_review') flag = `<div class="auth-banner wait"><div><b>Potential warranty repair.</b> This unit had an earlier repair that may still be under warranty:</div><div>${srcText}</div>
-        ${isShop ? '<button type="button" class="ghost-btn" id="wDecideYes">Warranty claim</button><button type="button" class="ghost-btn" id="wDecideNo">Not warranty</button>' : '<div class="meta">The shop will decide whether this is covered.</div>'}</div>`;
+        ${isShop && (typeof can !== 'function' || can('warranty')) ? '<button type="button" class="ghost-btn" id="wDecideYes">Warranty claim</button><button type="button" class="ghost-btn" id="wDecideNo">Not warranty</button>' : '<div class="meta">The shop owner or service advisor will decide whether this is covered.</div>'}</div>`;
     else flag = `<div class="auth-banner ${job.warranty_claim_status === 'warranty' ? 'ok' : 'warn'}"><div><b>${job.warranty_claim_status === 'warranty' ? 'Warranty claim' : 'Not a warranty repair'}</b>${job.warranty_decided_at ? ' · decided ' + fmtDateTime(job.warranty_decided_at) : ''}</div>
         <div class="meta">${srcText}</div>${job.warranty_decision_note ? `<div class="meta">“${esc(job.warranty_decision_note)}”</div>` : ''}</div>`;
   }

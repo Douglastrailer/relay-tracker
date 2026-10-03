@@ -1351,3 +1351,14 @@ button:disabled{ opacity:.55; cursor:default; }
 #commSend, #nsSave{ background:var(--accent); color:#fff; border:none; padding:11px 18px; border-radius:9px; font-weight:700; min-height:44px; cursor:pointer; }
 @media (max-width:640px){ .comm-row{ flex-direction:column; } .comm-side{ align-items:flex-start; text-align:left; max-width:none; } }
 .rec-check input{ flex:none; }
+
+/* ============================================================
+   Phase 10 — roles, load more, install
+   ============================================================ */
+.role-list{ display:flex; flex-direction:column; }
+.role-row{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+.role-row:last-child{ border-bottom:0; }
+.role-row.is-inactive{ opacity:.6; }
+.role-ctl{ display:flex; align-items:center; gap:10px; }
+.role-select{ min-height:40px; padding:6px 10px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); border-radius:8px; }
+.load-more-row{ display:flex; justify-content:center; padding:14px 0; }
