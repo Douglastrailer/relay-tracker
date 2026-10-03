@@ -143,6 +143,7 @@ function wireKanbanDragDrop(board){
       if(targetStatus === currentStatus) return;
       const { error } = await sb.from('jobs').update({ status: targetStatus, updated_at: new Date().toISOString() }).eq('id', draggedJobId);
       if(error){ alert('Could not move the job: ' + error.message); return; }
+      if(typeof notifyKick === 'function') notifyKick();
       refreshShopData();
     });
   });
@@ -1556,6 +1557,18 @@ async function convertEstimateToInvoice(estimateId){
 
 async function sendReviewRequest(invoiceId, email){
   if(!email || !email.includes('@')){ alert('Enter a valid email address first.'); return; }
+  // Phase 9: invoices on a repair order use the tracked review flow (one per job, opens recorded).
+  const { data: inv } = await sb.from('invoices').select('job_id').eq('id', invoiceId).maybeSingle();
+  if(inv && inv.job_id){
+    let { error } = await sb.rpc('request_review', { p_job: inv.job_id, p_email: email, p_resend: false });
+    if(error && /already/.test(error.message) && confirm('A review was already requested for this job. Send another?')){
+      ({ error } = await sb.rpc('request_review', { p_job: inv.job_id, p_email: email, p_resend: true }));
+    } else if(error && /already/.test(error.message)) return;
+    if(error){ alert('Could not send the review request: ' + error.message); return; }
+    if(typeof notifyKick === 'function') notifyKick();
+    alert('Review request sent.');
+    return;
+  }
   const { data, error } = await sb.functions.invoke('send-review-request', { body: { invoiceId, recipientEmail: email } });
   if(error){ alert('Could not send the review request: ' + error.message); return; }
   if(data && data.error){ alert('Could not send the review request: ' + data.error); return; }
@@ -2243,6 +2256,7 @@ function initShopView(){
   if(typeof initUnitHistoryUI === 'function') safeInit('initUnitHistoryUI', initUnitHistoryUI);
   if(typeof initInventoryV2 === 'function') safeInit('initInventoryV2', initInventoryV2);
   if(typeof initAnalyticsV2 === 'function') safeInit('initAnalyticsV2', initAnalyticsV2);
+  if(typeof initCommsUI === 'function') safeInit('initCommsUI', initCommsUI);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
   safeInit('announcementDismissWiring', ()=>{ document.getElementById('announcementDismiss').onclick = dismissAnnouncement; });
@@ -2283,6 +2297,7 @@ function initShopView(){
       else alert('Could not create job: ' + error.message);
       return;
     }
+    if(typeof notifyKick === 'function') notifyKick();
 
 
     if(pendingAcceptRequestId && data && data[0]){
@@ -2568,6 +2583,7 @@ async function refreshShopData(){
         if(rec.error){ alert(rec.error); return; }
         const { error } = await sb.from('jobs').update({ customer, vehicle, customer_id: rec.customerId, unit_id: rec.unitId, mechanic_id, fleet_profile_id, updated_at:new Date().toISOString() }).eq('id', jobId);
         if(error){ alert('Could not save the job: ' + error.message); return; }
+        if(typeof notifyKick === 'function') notifyKick();
         refreshShopData();
       };
     };
