@@ -52,7 +52,7 @@ function renderAnalyticsV2(){
     <div class="an-tiles">
       ${tile('Revenue billed', anMoney0(s.revenue), `${s.invoices} invoice${s.invoices === 1 ? '' : 's'}`)}
       ${tile('Collected', anMoney0(s.collected), 'payments received in this period')}
-      ${tile('Average repair order', anMoney(s.avg_ro), '')}
+      ${tile('Average work order', anMoney(s.avg_ro), '')}
       ${tile('Gross margin', anMoney0(s.gross_margin), marginPct == null ? 'after parts cost' : `${marginPct}% after ${anMoney0(s.parts_cost)} parts cost`)}
       ${tile('Jobs completed', s.jobs_completed, `${s.jobs_opened} opened`)}
       ${tile('Response time', anMinutes(s.avg_response_minutes), 'request to work started')}

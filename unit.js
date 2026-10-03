@@ -225,17 +225,17 @@ let unitSearchExtraIds = [];
 let unitSearchTimer = null;
 async function lookupUnitsByDocNumber(q){
   unitSearchExtraIds = [];
-  const roMatch = q.match(/^ro-?0*(\d+)$/i), numMatch = q.match(/^#?(\d+)$/);
+  const roMatch = q.match(/^(?:ro|wo)-?0*(\d+)$/i), numMatch = q.match(/^#?(\d+)$/);
   if(!roMatch && !numMatch) return;
   const ids = new Set();
   if(roMatch){
-    const { data } = await sb.from('jobs').select('unit_id').eq('org_id', session.orgId).eq('ro_number', 'RO-' + roMatch[1].padStart(6, '0'));
+    const { data } = await sb.from('jobs').select('unit_id').eq('org_id', session.orgId).in('ro_number', ['WO-' + roMatch[1].padStart(6, '0'), 'RO-' + roMatch[1].padStart(6, '0')]);
     (data || []).forEach(j => j.unit_id && ids.add(j.unit_id));
   }
   if(numMatch){
     const { data } = await sb.from('invoices').select('job_id, jobs(unit_id)').eq('org_id', session.orgId).eq('id', Number(numMatch[1]));
     (data || []).forEach(d => d.jobs && d.jobs.unit_id && ids.add(d.jobs.unit_id));
-    const { data: ro } = await sb.from('jobs').select('unit_id').eq('org_id', session.orgId).eq('ro_number', 'RO-' + numMatch[1].padStart(6, '0'));
+    const { data: ro } = await sb.from('jobs').select('unit_id').eq('org_id', session.orgId).in('ro_number', ['WO-' + numMatch[1].padStart(6, '0'), 'RO-' + numMatch[1].padStart(6, '0')]);
     (ro || []).forEach(j => j.unit_id && ids.add(j.unit_id));
   }
   unitSearchExtraIds = [...ids];

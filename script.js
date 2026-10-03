@@ -69,7 +69,7 @@ function milesBetween(lat1,lon1,lat2,lon2){
 // 'complete' keeps its original stored name so older screens and data keep
 // working; people see it as "Completed".
 const STATUS_LABELS = {
-  new:'New', assigned:'Assigned', en_route:'Heading there', on_site:'On site',
+  new:'New', assigned:'Assigned', en_route:'En route', on_site:'On site',
   diagnosing:'Diagnosing', waiting_approval:'Waiting for approval', waiting_parts:'Waiting for parts',
   repairing:'Repairing', quality_control:'Quality check', complete:'Completed',
   invoiced:'Invoiced', paid:'Paid', cancelled:'Cancelled'
@@ -82,24 +82,29 @@ const MECHANIC_STATUSES = ['en_route','on_site','diagnosing','waiting_parts','re
 function statusLabel(status){ return STATUS_LABELS[status] || String(status || '').replace(/_/g,' '); }
 function isClosedStatus(status){ return CLOSED_STATUSES.includes(status); }
 // Board columns show *why* a job is where it is.
+// Redesign R1: the shop board follows the work order from request to invoice.
 const BOARD_COLUMNS = {
-  todo: ['new','assigned'],
-  onroad: ['en_route'],
-  working: WORKING_STATUSES,
+  new: ['new'],
+  estimate: ['diagnosing'],
   approval: ['waiting_approval'],
-  parts: ['waiting_parts']
+  assigned: ['assigned'],
+  progress: ['en_route','on_site','repairing','quality_control'],
+  waiting: ['waiting_parts'],
+  completed: ['complete'],
+  invoiced: ['invoiced']
 };
 function boardColumnFor(status){
   for(const col in BOARD_COLUMNS){ if(BOARD_COLUMNS[col].includes(status)) return col; }
-  return 'todo';
+  return 'new';
 }
 // Status a job gets when dropped into a column; null = not allowed.
 // Dropping inside a column keeps the more specific status it already has.
 function kanbanDropStatus(jobType, currentStatus, column){
   if(!BOARD_COLUMNS[column]) return null;
-  if(column === 'onroad' && jobType === 'inshop') return null;   // in-shop jobs never travel
+  if(column === 'invoiced') return null;                          // invoices are created, not dragged
   if(BOARD_COLUMNS[column].includes(currentStatus)) return currentStatus;
-  return { todo:'assigned', onroad:'en_route', working:'on_site', approval:'waiting_approval', parts:'waiting_parts' }[column];
+  if(column === 'progress') return jobType === 'mobile' && ['new','assigned'].includes(currentStatus) ? 'en_route' : 'repairing';
+  return { new:'new', estimate:'diagnosing', approval:'waiting_approval', assigned:'assigned', waiting:'waiting_parts', completed:'complete' }[column];
 }
 const PRIORITY_LABELS = { low:'Low', normal:'Normal', high:'High', urgent:'Urgent' };
 function roChipsHtml(j){
@@ -139,7 +144,7 @@ function wireKanbanDragDrop(board){
       const jobType = card ? card.dataset.jobtype : 'mobile';
       const currentStatus = card ? card.dataset.status : '';
       const targetStatus = kanbanDropStatus(jobType, currentStatus, column);
-      if(!targetStatus){ if(column === 'onroad') alert('In-shop jobs don\'t travel, so they can\'t be "Heading there".'); return; }
+      if(!targetStatus){ if(column === 'invoiced') alert('Open the work order and create the invoice from it.'); return; }
       if(targetStatus === currentStatus) return;
       const { error } = await sb.from('jobs').update({ status: targetStatus, updated_at: new Date().toISOString() }).eq('id', draggedJobId);
       if(error){ alert('Could not move the job: ' + error.message); return; }
@@ -1383,7 +1388,7 @@ async function renderMechJobs(){
           ${directionsBtn}
           <div class="job-actions">
             ${actionButtons}
-            <button class="j-open-ro" data-job="${job.id}">Open repair order</button>
+            <button class="j-open-ro" data-job="${job.id}">Open work order</button>
           </div>
           ${commentsBlockHtml(job.id)}
           ${attachmentsBlockHtml(job.id)}
@@ -2015,7 +2020,7 @@ function initBillingUI(){
 // Still genuinely a client-side, low-stakes "have they seen this" flag,
 // not real app state — worst case on a new device, they see it again.
 const ANNOUNCEMENTS = [
-  { id: 'invoicing-2026-09', text: 'New: create and send professional PDF invoices right from Relay — find Invoices and Billing in the sidebar.' },
+  { id: 'redesign-2026-10', text: 'New look: work orders are now the center of Relay. Estimates & invoices, Reports and Settings are under More. Press Ctrl+K to search everything.' },
 ];
 
 function announcementsStorageKey(){ return 'dismissedAnnouncements_' + session.id; }
@@ -2297,6 +2302,7 @@ function initShopView(){
   if(typeof initAnalyticsV2 === 'function') safeInit('initAnalyticsV2', initAnalyticsV2);
   if(typeof initCommsUI === 'function') safeInit('initCommsUI', initCommsUI);
   if(typeof initRolesUI === 'function') safeInit('initRolesUI', initRolesUI);
+  if(typeof initShopRedesign === 'function') safeInit('initShopRedesign', initShopRedesign);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
   safeInit('announcementDismissWiring', ()=>{ document.getElementById('announcementDismiss').onclick = dismissAnnouncement; });
@@ -2541,95 +2547,31 @@ async function refreshShopData(){
 
   const mechName = id => (mechanics.find(m=>m.id===id) || {}).name || 'Unassigned';
 
-  const history = await fetchCompletedJobs(20, { orgId: session.orgId });
+  const history = await fetchCompletedJobs(60, { orgId: session.orgId });
+  if(typeof renderTodayTiles === 'function') renderTodayTiles(active, mechanics, liveCount);
 
-  const today = new Date(); today.setHours(0,0,0,0);
-  // Note: "completed today" is computed from the most recent 20 completed jobs,
-  // not the full history — on an extremely busy day (20+ completions) this
-  // could slightly undercount. Acceptable tradeoff for not downloading a
-  // company's entire job history just to show one stat number.
-  const completedToday = history.filter(j => j.updated_at && new Date(j.updated_at) >= today).length;
-  document.getElementById('shopStats').innerHTML = `
-    <div class="stat-box"><b>${active.length}</b><span>Active jobs</span></div>
-    <div class="stat-box"><b>${liveCount}</b><span>Mechanics live now</span></div>
-    <div class="stat-box"><b>${mechanics.filter(m=>m.active).length}</b><span>Active mechanics</span></div>
-    <div class="stat-box"><b>${completedToday}</b><span>Completed today</span></div>`;
-
-  // Analytics currently run against active + the most recent 20 completed
-  // jobs, not a company's full history — a proper fix is a dedicated
-  // database aggregation query (flagged in the production audit as a
-  // follow-up, not done in this pass).
-  renderAnalytics(active.concat(history), mechanics, mechName);
-
-  // Kanban board: same job cards as before, just grouped into columns by
-  // status instead of one flat list — "complete" jobs don't appear here
-  // at all now that there's a dedicated History tab for them.
+  // Shop board: open work orders plus the last 7 days of completed and invoiced ones.
   const board = document.getElementById('shopKanbanBoard');
-  const _s1 = preserveOpenChatNodes(board);
-  const columns = { todo: [], onroad: [], working: [], approval: [], parts: [] };
-  active.forEach(j => { columns[boardColumnFor(j.status)].push(j); });
-
-  function jobCardHtml(j){
-    return `<div class="job-card${j.safety_issue ? ' is-safety' : ''}" data-job="${j.id}" data-jobtype="${j.job_type}" data-status="${esc(j.status)}" draggable="true">
-        ${roChipsHtml(j)}
-        <div class="job-card-top">
-          <div><b>${esc(j.customer)} — ${esc(j.vehicle)}</b><div class="meta">Mechanic: ${esc(mechName(j.mechanic_id))}</div></div>
-          ${jobStatusBadge(j.status)}
-        </div>
-        ${j.complaint ? `<div class="ro-complaint">${esc(j.complaint)}</div>` : ''}
-        <div class="job-actions">
-          <button class="j-open-ro" data-job="${j.id}">Open</button>
-          <button class="j-edit">Edit</button>
-          <button class="j-delete danger">Delete</button>
-        </div>
-        <div class="j-editbox"></div>
-        ${commentsBlockHtml(j.id)}
-        ${attachmentsBlockHtml(j.id)}
-      </div>`;
-  }
-
+  const weekAgo = Date.now() - 7 * 864e5;
+  const recentDone = history.filter(j => ['complete','invoiced'].includes(j.status) && new Date(j.completed_at || j.updated_at).getTime() >= weekAgo);
+  const boardJobs = active.concat(recentDone);
+  const columns = {}; Object.keys(BOARD_COLUMNS).forEach(c => columns[c] = []);
+  boardJobs.forEach(j => { columns[boardColumnFor(j.status)].push(j); });
+  const metrics = typeof fetchBoardMetrics === 'function' ? await fetchBoardMetrics(boardJobs.map(j => j.id)) : {};
+  const cardHtml = typeof woCardHtml === 'function' ? woCardHtml : (j => `<div class="job-card" data-job="${j.id}">${esc(j.customer)}</div>`);
   Object.keys(columns).forEach(col=>{
     const colList = document.getElementById('kanban-' + col);
     const countEl = document.getElementById('kanbanCount-' + col);
     if(!colList) return;
-    const jobsInCol = columns[col].slice().reverse();
-    colList.innerHTML = jobsInCol.map(jobCardHtml).join('');
+    const jobsInCol = columns[col].slice().sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
+    colList.innerHTML = jobsInCol.map(j => cardHtml(j, mechName(j.mechanic_id), metrics[j.id] || {})).join('') || '<div class="kanban-empty">—</div>';
     if(countEl) countEl.textContent = String(jobsInCol.length);
   });
+  if(board) wireKanbanDragDrop(board);
+  if(typeof renderWorkOrdersList === 'function') renderWorkOrdersList(active, history, mechanics, metrics);
 
-  wireKanbanDragDrop(board);
-  wireCommentToggles(board);
-  wireAttachmentToggles(board);
-  board.querySelectorAll('.job-card').forEach(card=>{
-    const jobId = Number(card.dataset.job);
-    const job = active.find(j=>j.id===jobId);
-    card.querySelector('.j-delete').onclick = async ()=>{
-      if(!confirm('Delete this job? This cannot be undone.')) return;
-      const { error } = await sb.from('jobs').delete().eq('id', jobId);
-      if(!error) refreshShopData();
-    };
-    card.querySelector('.j-edit').onclick = async ()=>{
-      const box = card.querySelector('.j-editbox');
-      box.innerHTML = jobEditRowHtml(job, mechanics, await fetchLinkedFleets());
-      box.querySelector('.ej-cancel').onclick = ()=>{ box.innerHTML = ''; };
-      box.querySelector('.ej-save').onclick = async ()=>{
-        const customer = box.querySelector('.ej-customer').value.trim();
-        const vehicle = box.querySelector('.ej-vehicle').value.trim();
-        const mechanic_id = box.querySelector('.ej-mechanic').value;
-        const fleetSel = box.querySelector('.ej-fleet');
-        const fleet_profile_id = fleetSel && fleetSel.value ? fleetSel.value : null;
-        if(!customer || !vehicle || !mechanic_id) return;
-        const rec = await resolveCustomerAndUnit(customer, vehicle, null);
-        if(rec.error){ alert(rec.error); return; }
-        const { error } = await sb.from('jobs').update({ customer, vehicle, customer_id: rec.customerId, unit_id: rec.unitId, mechanic_id, fleet_profile_id, updated_at:new Date().toISOString() }).eq('id', jobId);
-        if(error){ alert('Could not save the job: ' + error.message); return; }
-        if(typeof notifyKick === 'function') notifyKick();
-        refreshShopData();
-      };
-    };
-  });
-  restoreOpenChatNodes(board, _s1);
-
+  // Redesign R1: shop.js draws "Recently completed" as compact rows.
+  if(typeof renderWorkOrdersList !== 'function'){
   const histBox = document.getElementById('shopHistoryList');
   const _s2 = preserveOpenChatNodes(histBox);
   histBox.innerHTML = history.length === 0
@@ -2645,6 +2587,7 @@ async function refreshShopData(){
   wireCommentToggles(histBox);
   wireAttachmentToggles(histBox);
   restoreOpenChatNodes(histBox, _s2);
+  }
 }
 
 // ================= FLEET MANAGER VIEW =================

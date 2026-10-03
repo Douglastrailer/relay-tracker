@@ -121,7 +121,7 @@ function renderEstimateEditor(){
       <div class="meta">${esc(DOC_STATUS[doc.status] || doc.status)} · created ${fmtDate(doc.created_at)}</div></div></div>
     ${approvalInfoHtml(doc)}
     ${job && job.warranty_claim_status === 'warranty' ? '<div class="auth-banner ok">This repair was accepted as a <b>warranty claim</b>. Price it accordingly (often $0 to the customer).</div>'
-      : job && job.warranty_claim_status === 'pending_review' ? '<div class="auth-banner wait"><b>Potential warranty repair.</b> Decide on the repair order before billing.</div>' : ''}
+      : job && job.warranty_claim_status === 'pending_review' ? '<div class="auth-banner wait"><b>Potential warranty repair.</b> Decide on the work order before billing.</div>' : ''}
     <div class="rec-grid est-head-grid">
       <div class="field"><label>PO number</label><input id="estPo" maxlength="60" value="${esc(doc.po_number || '')}" ${editable ? '' : 'disabled'}></div>
       <div class="field"><label>Payment terms</label><select id="estTerms" ${editable ? '' : 'disabled'}>${Object.keys(TERMS).map(k => `<option value="${k}" ${(doc.payment_terms || 'due_on_receipt') === k ? 'selected' : ''}>${TERMS[k]}</option>`).join('')}</select></div>

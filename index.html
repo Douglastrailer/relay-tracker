@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=35"/>
+<link rel="stylesheet" href="style.css?v=36"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -31,6 +31,12 @@
       <button class="nav-link" id="navSignin">Sign in</button>
       <button class="nav-link" id="navContact">Contact</button>
     </nav>
+    <div class="gsearch hidden" id="gSearchWrap" role="search">
+      <svg class="gsearch-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="gSearch" type="search" autocomplete="off" placeholder="Search work orders, units, VIN, customers, invoices, parts…" aria-label="Search everything">
+      <kbd class="gsearch-kbd">Ctrl K</kbd>
+      <div id="gSearchResults" class="gsearch-results hidden" role="listbox"></div>
+    </div>
     <div class="topbar-right-group">
       <button class="theme-toggle" id="themeToggle" title="Toggle dark mode" aria-label="Toggle dark mode"><span class="knob"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span></button>
       <div id="whoBox" class="who hidden">
@@ -479,28 +485,75 @@
       <button id="announcementDismiss" class="announcement-dismiss" aria-label="Dismiss">×</button>
     </div>
     <nav class="dash-tabs" aria-label="Main">
-      <div class="nav-group">Operations</div>
-      <button class="dash-tab active" data-target="shop-overview" title="Overview" aria-current="page"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span class="nav-label">Overview</span></button>
-      <button class="dash-tab" data-target="shop-requests" title="Requests"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><span class="nav-label">Requests</span> <span id="workRequestsBadge" class="req-badge hidden">0</span></button>
-      <button class="dash-tab" data-target="shop-jobs" title="Jobs"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="nav-label">Jobs</span></button>
+      <div class="nav-group">Main</div>
+      <button class="dash-tab active" data-target="shop-overview" title="Dashboard" aria-current="page"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span class="nav-label">Dashboard</span></button>
+      <button class="dash-tab" data-target="shop-jobs" title="Work orders"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="nav-label">Work orders</span></button>
       <button class="dash-tab" data-target="shop-customers" title="Customers"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg><span class="nav-label">Customers</span></button>
       <button class="dash-tab" data-target="shop-units" title="Units"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="7" width="13" height="10" rx="1"/><path d="M14 10h4l3 3v4h-7"/><circle cx="5.5" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/></svg><span class="nav-label">Units</span></button>
-      <button class="dash-tab" data-target="shop-inspections" title="Inspections"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg><span class="nav-label">Inspections</span></button>
-      <button class="dash-tab" data-target="shop-time" title="Time"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg><span class="nav-label">Time</span></button>
-      <button class="dash-tab" data-target="shop-history" title="History"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg><span class="nav-label">History</span></button>
-      <div class="nav-group">Finance</div>
-      <button class="dash-tab" data-target="shop-invoices" title="Invoices"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></svg><span class="nav-label">Invoices</span> <span class="new-badge" id="invoicesNewBadge">NEW</span></button>
       <button class="dash-tab" data-target="shop-inventory" title="Inventory"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg><span class="nav-label">Inventory</span></button>
-      <div class="nav-group">Company</div>
-      <button class="dash-tab" data-target="shop-team" title="Team"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="nav-label">Team</span></button>
-      <button class="dash-tab" data-target="shop-analytics" title="Analytics"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16v-5M12 16V8M17 16v-3"/></svg><span class="nav-label">Analytics</span></button>
-      <button class="dash-tab" data-target="shop-billing" title="Billing"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M8 7h4M8 11h4M8 15h4M2 21h20"/></svg><span class="nav-label">Billing</span> <span class="new-badge" id="billingNewBadge">NEW</span></button>
+      <button type="button" class="nav-more-toggle" id="navMoreToggle" aria-expanded="false" aria-controls="navMore"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg><span class="nav-label">More</span><svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      <div class="nav-more" id="navMore">
+        <button class="dash-tab" data-target="shop-inspections" title="Inspections"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg><span class="nav-label">Inspections</span></button>
+        <button class="dash-tab" data-target="shop-team" title="Technicians & team"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="nav-label">Technicians & team</span></button>
+        <button class="dash-tab" data-target="shop-time" title="Time"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg><span class="nav-label">Time</span></button>
+        <button class="dash-tab" data-target="shop-history" title="Completed work"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg><span class="nav-label">Completed work</span></button>
+        <button class="dash-tab" data-target="shop-invoices" title="Estimates & invoices"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></svg><span class="nav-label">Estimates & invoices</span></button>
+        <button class="dash-tab" data-target="shop-analytics" title="Reports"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16v-5M12 16V8M17 16v-3"/></svg><span class="nav-label">Reports</span></button>
+        <button class="dash-tab" data-target="shop-billing" title="Settings"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M8 7h4M8 11h4M8 15h4M2 21h20"/></svg><span class="nav-label">Settings</span></button>
+      </div>
+      <button class="dash-tab nav-hidden" data-target="shop-requests" title="Requests"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><span class="nav-label">Requests</span> <span id="workRequestsBadge" class="req-badge hidden">0</span></button>
       <button type="button" class="nav-foot nav-install hidden" title="Install the Relay app"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="nav-label">Install app</span></button>
       <button type="button" class="nav-foot nav-help" title="Help &amp; support"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span class="nav-label">Help &amp; support</span></button>
     </nav>
 
     <div class="dash-panel" id="shop-overview">
-      <div class="card" style="margin-bottom:20px;">
+      <div class="today-head"><h2>Today</h2><span class="meta" id="todayDate"></span></div>
+      <div class="today-tiles" id="todayTiles"></div>
+      <div class="stat-strip hidden" id="shopStats"></div>
+      <div class="section">
+        <div class="section-head"><h2>Shop board</h2><span class="meta">Drag a card to move it. Click to open the work order.</span></div>
+        <div class="kanban-board kanban-8" id="shopKanbanBoard">
+          <div class="kanban-column kcol-new" data-col="new">
+            <div class="kanban-col-header" title="New work orders, not yet assigned"><span>New</span><span class="kanban-count" id="kanbanCount-new">0</span></div>
+            <div class="kanban-col-list" id="kanban-new"></div>
+          </div>
+          <div class="kanban-column kcol-estimate" data-col="estimate">
+            <div class="kanban-col-header" title="Diagnosing and writing the estimate"><span>Estimate</span><span class="kanban-count" id="kanbanCount-estimate">0</span></div>
+            <div class="kanban-col-list" id="kanban-estimate"></div>
+          </div>
+          <div class="kanban-column kcol-approval" data-col="approval">
+            <div class="kanban-col-header" title="Waiting for the customer to approve"><span>Approval</span><span class="kanban-count" id="kanbanCount-approval">0</span></div>
+            <div class="kanban-col-list" id="kanban-approval"></div>
+          </div>
+          <div class="kanban-column kcol-assigned" data-col="assigned">
+            <div class="kanban-col-header" title="Assigned, not started"><span>Assigned</span><span class="kanban-count" id="kanbanCount-assigned">0</span></div>
+            <div class="kanban-col-list" id="kanban-assigned"></div>
+          </div>
+          <div class="kanban-column kcol-progress" data-col="progress">
+            <div class="kanban-col-header" title="On the road, on site, repairing, quality check"><span>In progress</span><span class="kanban-count" id="kanbanCount-progress">0</span></div>
+            <div class="kanban-col-list" id="kanban-progress"></div>
+          </div>
+          <div class="kanban-column kcol-waiting" data-col="waiting">
+            <div class="kanban-col-header" title="Waiting for parts"><span>Waiting</span><span class="kanban-count" id="kanbanCount-waiting">0</span></div>
+            <div class="kanban-col-list" id="kanban-waiting"></div>
+          </div>
+          <div class="kanban-column kcol-completed" data-col="completed">
+            <div class="kanban-col-header" title="Completed in the last 7 days, not yet invoiced"><span>Completed</span><span class="kanban-count" id="kanbanCount-completed">0</span></div>
+            <div class="kanban-col-list" id="kanban-completed"></div>
+          </div>
+          <div class="kanban-column kcol-invoiced" data-col="invoiced">
+            <div class="kanban-col-header" title="Invoiced in the last 7 days"><span>Invoiced</span><span class="kanban-count" id="kanbanCount-invoiced">0</span></div>
+            <div class="kanban-col-list" id="kanban-invoiced"></div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2 section dash-lower">
+        <div>
+          <div class="section-head"><h2>On the road</h2><span id="shopMechCount" class="badge live" style="display:none;"></span></div>
+          <div class="ops-map" id="shopOpsMap"></div>
+        </div>
+        <div>
+          <div class="card" >
         <h3 style="margin-bottom:6px;">Your request link</h3>
         <p class="meta" style="margin-bottom:12px;">Share this with customers — they can request service without needing an account. No pricing shown, just their info and what's wrong.</p>
         <div class="address-search">
@@ -508,54 +561,27 @@
           <button type="button" id="copyRequestLinkBtn">Copy link</button>
         </div>
       </div>
-      <div class="stat-strip" id="shopStats"></div>
-      <div class="section">
-        <div class="section-head"><h2>Live ops map</h2><span id="shopMechCount" class="badge live" style="display:none;"></span></div>
-        <div class="ops-map" id="shopOpsMap"></div>
+        </div>
       </div>
     </div>
 
     <div class="dash-panel hidden" id="shop-requests">
       <div class="section">
-        <div class="section-head"><h2>Incoming requests</h2></div>
+        <div class="section-head"><h2>Incoming requests</h2><button type="button" class="ghost-btn" id="reqBackBtn">← Work orders</button></div>
         <p class="meta" style="margin-bottom:16px;">Submitted through your request link — accept one to start a real job, or decline it.</p>
         <div class="job-list" id="workRequestsList"></div>
       </div>
     </div>
 
     <div class="dash-panel hidden" id="shop-jobs">
-      <div class="section">
-        <div class="section-head"><h2>Active jobs</h2></div>
-        <div class="kanban-board kanban-5" id="shopKanbanBoard">
-          <div class="kanban-column kcol-todo">
-            <div class="kanban-col-header" title="New and assigned"><span>To do</span><span class="kanban-count" id="kanbanCount-todo">0</span></div>
-            <div class="kanban-col-list" id="kanban-todo"></div>
-          </div>
-          <div class="kanban-column kcol-onroad">
-            <div class="kanban-col-header" title="Mechanic driving to the unit"><span>Heading there</span><span class="kanban-count" id="kanbanCount-onroad">0</span></div>
-            <div class="kanban-col-list" id="kanban-onroad"></div>
-          </div>
-          <div class="kanban-column kcol-working">
-            <div class="kanban-col-header" title="On site, diagnosing, repairing, quality check"><span>In progress</span><span class="kanban-count" id="kanbanCount-working">0</span></div>
-            <div class="kanban-col-list" id="kanban-working"></div>
-          </div>
-          <div class="kanban-column kcol-approval">
-            <div class="kanban-col-header" title="Customer needs to approve"><span>Waiting for approval</span><span class="kanban-count" id="kanbanCount-approval">0</span></div>
-            <div class="kanban-col-list" id="kanban-approval"></div>
-          </div>
-          <div class="kanban-column kcol-parts">
-            <div class="kanban-col-header" title="Parts ordered"><span>Waiting for parts</span><span class="kanban-count" id="kanbanCount-parts">0</span></div>
-            <div class="kanban-col-list" id="kanban-parts"></div>
-          </div>
-        </div>
+      <div class="rec-toolbar wo-toolbar">
+        <input type="search" id="woFilterText" placeholder="Filter by WO #, customer, unit, complaint" aria-label="Filter work orders">
+        <select id="woFilterGroup" aria-label="Show"><option value="open">Open</option><option value="waiting">Waiting (approval or parts)</option><option value="roadside">Roadside</option><option value="inshop">In shop</option><option value="done">Completed</option><option value="all">All</option></select>
+        <select id="woFilterTech" aria-label="Technician"><option value="">All technicians</option></select>
+        <button type="button" class="ghost-btn" id="woRequestsBtn">Requests <span class="wo-req-count" id="woReqCount"></span></button>
+        <button type="button" id="woNewBtn">+ New work order</button>
       </div>
-      <div class="grid-2 section">
-        <div>
-          <div class="section-head"><h2>Completed history</h2></div>
-          <div class="job-list" id="shopHistoryList"></div>
-        </div>
-        <div>
-          <div class="card new-job-form">
+      <div id="woCreateBox" class="hidden wo-create"><div class="card new-job-form">
             <h3>Create a job</h3>
             <div class="field">
               <label>Service type</label>
@@ -592,8 +618,11 @@
             </div>
             <p class="meta hidden" id="njInshopNote">No location needed — this job stays at the shop, so there's nothing to track on the map.</p>
             <button id="createJobBtn">Create job</button>
-          </div>
-        </div>
+          </div></div>
+      <div id="woList" class="wo-list"><div class="meta">Loading…</div></div>
+      <div class="section">
+        <div class="section-head"><h2>Recently completed</h2></div>
+          <div class="job-list" id="shopHistoryList"></div>
       </div>
     </div>
 
@@ -908,7 +937,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <div id="fatalError" style="display:none; position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:999; background:#FFEAE4; color:#C23A1E; border:1px solid #F3B7A8; padding:12px 18px; border-radius:10px; font-family:var(--font-mono); font-size:0.8rem; max-width:90vw; box-shadow:0 8px 24px rgba(0,0,0,0.12);"></div>
-<div id="roModal" class="modal-overlay ro-overlay hidden" role="dialog" aria-modal="true" aria-label="Repair order">
+<div id="roModal" class="modal-overlay ro-overlay hidden" role="dialog" aria-modal="true" aria-label="Work order">
   <div class="modal-card ro-card">
     <button class="modal-close" id="roClose" aria-label="Close">×</button>
     <div id="roBody"></div>
@@ -938,17 +967,18 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=48"></script>
-<script src="ro.js?v=8"></script>
-<script src="insp.js?v=3"></script>
-<script src="est.js?v=6"></script>
-<script src="tech.js?v=3"></script>
+<script src="script.js?v=49"></script>
+<script src="ro.js?v=9"></script>
+<script src="insp.js?v=4"></script>
+<script src="est.js?v=7"></script>
+<script src="tech.js?v=4"></script>
 <script src="fleet.js?v=3"></script>
-<script src="unit.js?v=2"></script>
+<script src="unit.js?v=3"></script>
 <script src="inv.js?v=1"></script>
-<script src="analytics.js?v=1"></script>
-<script src="comms.js?v=1"></script>
+<script src="analytics.js?v=2"></script>
+<script src="comms.js?v=2"></script>
 <script src="roles.js?v=1"></script>
+<script src="shop.js?v=1"></script>
 <script src="pwa.js?v=1"></script>
 
 </body>

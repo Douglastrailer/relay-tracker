@@ -69,7 +69,7 @@ async function renderWorkScreen(){
     <p class="form-error" id="workError"></p>
     <div class="work-buttons">${buttons.map(b => `<button type="button" class="work-btn ${b.cls}" data-action="${b.action}">${esc(b.label)}</button>`).join('') || (isClosedStatus(job.status) ? '<p class="meta">This job is closed.</p>' : '')}</div>
     <div class="work-links">
-      <button type="button" class="ghost-btn j-open-ro" data-job="${job.id}">Repair order, inspection &amp; photos</button>
+      <button type="button" class="ghost-btn j-open-ro" data-job="${job.id}">Work order, inspection &amp; photos</button>
       ${job.job_type === 'mobile' && job.dest_lat ? `<a class="ghost-btn" href="https://www.google.com/maps/dir/?api=1&destination=${job.dest_lat},${job.dest_lng}" target="_blank" rel="noopener">Directions</a>` : ''}
     </div>`;
   body.querySelectorAll('.work-btn').forEach(b => b.onclick = () => doWorkAction(job, b.dataset.action, b));
@@ -250,7 +250,7 @@ async function openTimeForm(id){
 function downloadTimeCsv(){
   const name = id => (timeMechanics.find(m => m.id === id) || {}).name || '';
   const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-  const lines = [['Date','Mechanic','RO','Customer','Type','Start','End','Minutes','Edited'].map(q).join(',')];
+  const lines = [['Date','Mechanic','Work order','Customer','Type','Start','End','Minutes','Edited'].map(q).join(',')];
   timeEntries.forEach(e => lines.push([new Date(e.started_at).toLocaleDateString(), name(e.mechanic_id), (e.jobs || {}).ro_number, (e.jobs || {}).customer, KIND_LABELS[e.kind],
     new Date(e.started_at).toLocaleString(), e.ended_at ? new Date(e.ended_at).toLocaleString() : 'running',
     Math.round(((e.ended_at ? new Date(e.ended_at) : new Date()) - new Date(e.started_at)) / 60000), e.edited_at || e.source === 'manual' ? 'yes' : ''].map(q).join(',')));

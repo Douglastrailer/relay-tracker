@@ -399,7 +399,7 @@ function renderInspectionsList(){
       <div class="rec-main"><b>${esc(j.customer || '')} — ${esc(j.vehicle || '')}</b>
         <div class="meta">${esc(j.ro_number || '')} · ${esc(i.template_name)} · ${fmtDate(i.completed_at || i.started_at)}</div></div>
       <div class="rec-side">${countsChipsHtml(c)}${i.status === 'completed' ? '' : '<span class="rec-tag">In progress</span>'}</div></button>`;
-  }).join('') : `<div class="empty-note">${inspHistory.length ? 'No inspections match.' : 'No inspections yet. Start one from any repair order.'}</div>`;
+  }).join('') : `<div class="empty-note">${inspHistory.length ? 'No inspections match.' : 'No inspections yet. Start one from any work order.'}</div>`;
   box.querySelectorAll('[data-insp]').forEach(b => b.onclick = () => openInspection(Number(b.dataset.insp)));
 }
 

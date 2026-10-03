@@ -90,7 +90,7 @@ async function openCustomerForm(id){
         <div class="field rec-span"><label>Billing address</label><textarea id="cfAddress" rows="2" maxlength="400">${c ? esc(c.billing_address || '') : ''}</textarea></div>
         <div class="field rec-span"><label>Fleet portal account</label>
           <select id="cfFleet">${fleetOptionsHtml(fleets, c ? c.fleet_profile_id : null)}</select>
-          <p class="meta" style="margin-top:4px;">When linked, this fleet account can see all of this customer's repair orders and units. Only fleets that joined your shop are listed.</p></div>
+          <p class="meta" style="margin-top:4px;">When linked, this fleet account can see all of this customer's work orders and units. Only fleets that joined your shop are listed.</p></div>
         <div class="field rec-span"><label>Notes</label><textarea id="cfNotes" rows="2" maxlength="2000">${c ? esc(c.notes || '') : ''}</textarea></div>
         <label class="rec-check"><input type="checkbox" id="cfTaxExempt" ${c && c.tax_exempt ? 'checked' : ''}> Tax exempt</label>
         <label class="rec-check"><input type="checkbox" id="cfNotifyEmail" ${!c || c.notify_email !== false ? 'checked' : ''}> Email updates on repairs</label>
@@ -100,7 +100,7 @@ async function openCustomerForm(id){
       <p class="form-error" id="cfError"></p>
       <div class="job-actions"><button type="button" id="cfSave">${c ? 'Save changes' : 'Add customer'}</button></div>
       ${c ? `<h4 class="rec-subhead">Units</h4><div class="rec-mini">${recordsUnits.filter(u => u.customer_id === c.id).map(u => `<span class="rec-tag">${esc(UNIT_TYPE_LABELS[u.unit_type] || '')} ${esc(u.unit_number)}</span>`).join('') || '<span class="meta">No units yet.</span>'}</div>
-      <h4 class="rec-subhead">Repair orders</h4><div id="cfOrders" class="rec-orders"><span class="meta">Loading…</span></div>` : ''}
+      <h4 class="rec-subhead">Work orders</h4><div id="cfOrders" class="rec-orders"><span class="meta">Loading…</span></div>` : ''}
     </div>`;
   panel.classList.remove('hidden');
   panel.scrollIntoView({ behavior:'smooth', block:'start' });
@@ -196,7 +196,7 @@ function openUnitForm(id){
       </div>
       <p class="form-error" id="ufError"></p>
       <div class="job-actions"><button type="button" id="ufSave">${u ? 'Save changes' : 'Add unit'}</button></div>
-      ${u ? `<h4 class="rec-subhead">Repair orders for this unit</h4><div id="ufOrders" class="rec-orders"><span class="meta">Loading…</span></div>` : ''}
+      ${u ? `<h4 class="rec-subhead">Work orders for this unit</h4><div id="ufOrders" class="rec-orders"><span class="meta">Loading…</span></div>` : ''}
     </div>`;
   panel.classList.remove('hidden');
   panel.scrollIntoView({ behavior:'smooth', block:'start' });
@@ -252,8 +252,8 @@ async function loadOrdersInto(boxId, column, id){
   const { data, error } = await sb.from('jobs').select('id, ro_number, status, vehicle, customer, created_at, completed_at, complaint')
     .eq(column, id).order('created_at', { ascending:false }).limit(100);
   if(!box) return;
-  if(error){ box.innerHTML = '<span class="meta">Could not load repair orders.</span>'; return; }
-  box.innerHTML = (data || []).length === 0 ? '<span class="meta">No repair orders yet.</span>'
+  if(error){ box.innerHTML = '<span class="meta">Could not load work orders.</span>'; return; }
+  box.innerHTML = (data || []).length === 0 ? '<span class="meta">No work orders yet.</span>'
     : data.map(j => `<button type="button" class="rec-order j-open-ro" data-job="${j.id}">
         <span class="ro-num">${esc(j.ro_number || '#' + j.id)}</span>
         <span class="rec-order-main">${esc(column === 'unit_id' ? j.customer : j.vehicle)}${j.complaint ? ' — ' + esc(j.complaint.slice(0, 80)) : ''}</span>
@@ -263,16 +263,17 @@ async function loadOrdersInto(boxId, column, id){
 // ---------------- Repair Order window ----------------
 let roCurrentJob = null;
 
+let roLastJobId = null;
 async function openRepairOrder(jobId){
   const overlay = document.getElementById('roModal');
   const body = document.getElementById('roBody');
   if(!overlay || !body) return;
-  body.innerHTML = '<div class="meta" style="padding:24px;">Loading repair order…</div>';
+  body.innerHTML = '<div class="meta" style="padding:24px;">Loading work order…</div>';
   overlay.classList.remove('hidden');
   document.body.classList.add('modal-open');
 
   const { data: job, error } = await sb.from('jobs').select(JOB_COLUMNS).eq('id', jobId).maybeSingle();
-  if(error || !job){ body.innerHTML = '<div class="form-error" style="padding:24px;">This repair order could not be loaded. It may have been deleted, or you may not have access to it.</div>'; return; }
+  if(error || !job){ body.innerHTML = '<div class="form-error" style="padding:24px;">This work order could not be loaded. It may have been deleted, or you may not have access to it.</div>'; return; }
   roCurrentJob = job;
   const isShop = session.role === 'shop' || session.role === 'admin';
   const isAssignedMech = session.role === 'mechanic' && job.mechanic_id === session.id;
@@ -286,7 +287,7 @@ async function openRepairOrder(jobId){
   ]);
   const c = cust.data, u = unit.data;
   // Names for the timeline ("who did it"), in one small lookup.
-  const actorIds = [...new Set([...(hist.data || []).map(h => h.changed_by), ...(audit.data || []).flatMap(a => [a.actor_id, a.details && a.details.to])].filter(Boolean))];
+  const actorIds = [...new Set([job.mechanic_id, ...(hist.data || []).map(h => h.changed_by), ...(audit.data || []).flatMap(a => [a.actor_id, a.details && a.details.to])].filter(Boolean))];
   const names = {};
   if(actorIds.length){
     const { data: ppl } = await sb.from('profiles').select('id, name').in('id', actorIds);
@@ -299,80 +300,108 @@ async function openRepairOrder(jobId){
   const unitLine = u ? [UNIT_TYPE_LABELS[u.unit_type], u.unit_number].filter(Boolean).join(' ') : job.vehicle;
   const unitDetail = u ? [[u.year, u.make, u.model].filter(Boolean).join(' '), u.trailer_type, u.vin ? 'VIN ' + u.vin : '', u.plate ? 'Plate ' + u.plate + (u.plate_state ? ' ' + u.plate_state : '') : '', u.odometer != null ? u.odometer.toLocaleString() + ' mi' : ''].filter(Boolean).join(' · ') : '';
 
+  const billing = isShop && (typeof can !== 'function' || can('billing'));
+  const closed = isClosedStatus(job.status);
+  const techName = job.mechanic_id ? (names[job.mechanic_id] || 'Assigned') : 'Unassigned';
+  const service = job.complaint ? (job.complaint.length > 90 ? job.complaint.slice(0, 88) + '…' : job.complaint) : 'No complaint recorded';
+  const tabs = [['overview','Overview'], ['diagnosis','Diagnosis'], ['billing', billing ? 'Estimate & invoice' : 'Approval'], ['labor','Labor'], ['parts','Parts'],
+                ['inspection','Inspection'], ['photos','Photos'], ['messages','Messages'], ['history','History']];
   body.innerHTML = `
-    <div class="ro-head">
-      <div>
-        <div class="ro-head-num">${esc(job.ro_number || 'Job #' + job.id)}</div>
-        <h2>${esc(job.customer)} — ${esc(unitLine)}</h2>
-        <div class="meta">${job.job_type === 'inshop' ? 'In-shop repair' : 'Roadside / mobile'} · opened ${fmtDateTime(job.created_at)}${job.completed_at ? ' · completed ' + fmtDateTime(job.completed_at) : ''}</div>
+    <div class="wo-head">
+      <div class="wo-head-main">
+        <div class="wo-head-line"><span class="wo-num">${esc(job.ro_number || 'Work order #' + job.id)}</span>${jobStatusBadge(job.status)}${roChipsHtml(Object.assign({}, job, { ro_number: null }))}</div>
+        <h2>${esc(c ? c.company_name : job.customer)}</h2>
+        <div class="wo-head-unit"><b>${esc(unitLine)}</b>${u && u.vin ? ` <span class="meta">VIN ${esc(u.vin)}</span>` : ''}</div>
+        <div class="wo-head-facts"><span>${esc(service)}</span><span>Technician: <b>${esc(techName)}</b></span><span>${job.job_type === 'inshop' ? 'In shop' : 'Roadside'}</span><span class="meta">Opened ${fmtDateTime(job.created_at)}${job.completed_at ? ' · completed ' + fmtDateTime(job.completed_at) : ''}</span></div>
       </div>
-      ${jobStatusBadge(job.status)}
+      <div class="wo-actions">
+        ${isAssignedMech && !closed ? `<button type="button" class="work-open wo-act-primary" data-job="${job.id}">Open work screen</button>` : ''}
+        ${isShop ? `<button type="button" class="ghost-btn" id="woActUpdate">Send update</button>` : ''}
+        ${(isShop || isAssignedMech) && !closed && job.status !== 'complete' ? `<button type="button" class="ghost-btn" id="woActComplete">Complete job</button>` : ''}
+        ${billing && !closed && !['complete'].includes(job.status) ? `<button type="button" class="ghost-btn" id="woActEstimate">Create estimate</button>` : ''}
+        ${billing && ['complete','invoiced','paid'].includes(job.status) ? `<button type="button" class="wo-act-primary" id="woActInvoice">${job.status === 'complete' ? 'Create invoice' : 'Open invoice'}</button>` : ''}
+        ${isShop ? `<button type="button" class="text-btn danger" id="woActDelete">Delete</button>` : ''}
+      </div>
     </div>
-    ${roChipsHtml(Object.assign({}, job, { ro_number: null }))}
+    <div class="wo-summary" id="woSummary"></div>
+    <nav class="wo-tabs" role="tablist" aria-label="Work order sections">${tabs.map(([k, l]) => `<button type="button" class="wo-tab" role="tab" data-tab="${k}">${l}<span class="wo-tab-n"></span></button>`).join('')}</nav>
 
-    <div class="ro-grid">
+    <div class="wo-pane" data-pane="overview">
+      <div class="ro-grid">
+        <section class="ro-sec">
+          <h4>Customer</h4>
+          <p><b>${esc(c ? c.company_name : job.customer)}</b></p>
+          ${c ? `<p class="meta">${[c.contact_name, c.phone, c.email].filter(Boolean).map(esc).join(' · ') || 'No contact details on file'}</p>` : '<p class="meta">No customer record linked.</p>'}
+          ${c && c.phone ? `<a class="ro-call" href="tel:${esc(c.phone)}">Call ${esc(c.contact_name || 'customer')}</a>` : ''}
+        </section>
+        <section class="ro-sec">
+          <h4>Unit</h4>
+          <p><b>${esc(unitLine)}</b>${job.unit_id && typeof openUnitHistory === 'function' ? ` <button type="button" class="text-btn" id="woUnitHist">Unit history</button>` : ''}</p>
+          <p class="meta">${esc(unitDetail) || (u ? 'No details on file yet' : 'No unit record linked.')}</p>
+        </section>
+      </div>
       <section class="ro-sec">
-        <h4>Customer</h4>
-        <p><b>${esc(c ? c.company_name : job.customer)}</b></p>
-        ${c ? `<p class="meta">${[c.contact_name, c.phone, c.email].filter(Boolean).map(esc).join(' · ') || 'No contact details on file'}</p>` : '<p class="meta">No customer record linked.</p>'}
-        ${c && c.phone ? `<a class="ro-call" href="tel:${esc(c.phone)}">Call ${esc(c.contact_name || 'customer')}</a>` : ''}
+        <h4>Status</h4>
+        <div class="ro-status-row">
+          ${statusOptions.length > 1 ? `<select id="roStatus">${statusOptions.map(s => `<option value="${s}" ${s === job.status ? 'selected' : ''}>${esc(statusLabel(s))}</option>`).join('')}</select>
+          <button type="button" id="roStatusSave">Update status</button>` : `<span>${esc(statusLabel(job.status))}</span>`}
+        </div>
       </section>
       <section class="ro-sec">
-        <h4>Unit</h4>
-        <p><b>${esc(unitLine)}</b></p>
-        <p class="meta">${esc(unitDetail) || (u ? 'No details on file yet' : 'No unit record linked.')}</p>
+        <h4>Service request</h4>
+        ${canEditRequest ? `
+          <div class="field"><label>Customer complaint</label><textarea id="roComplaint" rows="2" maxlength="4000">${esc(job.complaint || '')}</textarea></div>
+          <div class="rec-grid">
+            <div class="field"><label>Priority</label><select id="roPriority">${Object.keys(PRIORITY_LABELS).map(k => `<option value="${k}" ${job.priority === k ? 'selected' : ''}>${PRIORITY_LABELS[k]}</option>`).join('')}</select></div>
+            <div class="field"><label>Drivable?</label><select id="roDrivable"><option value="" ${job.drivable == null ? 'selected' : ''}>Unknown</option><option value="yes" ${job.drivable === true ? 'selected' : ''}>Yes</option><option value="no" ${job.drivable === false ? 'selected' : ''}>No</option></select></div>
+            <label class="rec-check"><input type="checkbox" id="roSafety" ${job.safety_issue ? 'checked' : ''}> Safety issue</label>
+          </div>` : `
+          <p>${job.complaint ? esc(job.complaint) : '<span class="meta">No complaint recorded.</span>'}</p>
+          <p class="meta">Priority: ${esc(PRIORITY_LABELS[job.priority] || 'Normal')} · Drivable: ${job.drivable == null ? 'Unknown' : job.drivable ? 'Yes' : 'No'}${job.safety_issue ? ' · Safety issue' : ''}</p>`}
       </section>
+      ${isShop ? `<section class="ro-sec"><h4>Customer, unit and technician</h4><div id="woEditBox"><button type="button" class="ghost-btn" id="woEditBtn">Change customer, unit or technician</button></div></section>` : ''}
+      <section class="ro-sec hidden" id="roWarranty"></section>
     </div>
 
-    <section class="ro-sec">
-      <h4>Status</h4>
-      <div class="ro-status-row">
-        ${statusOptions.length > 1 ? `<select id="roStatus">${statusOptions.map(s => `<option value="${s}" ${s === job.status ? 'selected' : ''}>${esc(statusLabel(s))}</option>`).join('')}</select>
-        <button type="button" id="roStatusSave">Update status</button>` : `<span>${esc(statusLabel(job.status))}</span>`}
-      </div>
-    </section>
+    <div class="wo-pane" data-pane="diagnosis">
+      <section class="ro-sec">
+        <h4>Diagnosis</h4>
+        ${canEditDiagnosis ? `
+          <div class="field"><label>Technician findings</label><textarea id="roDiagnosis" rows="4" maxlength="4000" placeholder="Symptoms, cause, what you found">${esc(job.diagnosis || '')}</textarea></div>
+          <div class="field"><label>Fault codes</label><input id="roFaultCodes" maxlength="1000" value="${esc(job.fault_codes || '')}" placeholder="e.g. SPN 521 FMI 2"></div>` : `
+          <p>${job.diagnosis ? esc(job.diagnosis) : '<span class="meta">No diagnosis yet.</span>'}</p>
+          ${job.fault_codes ? `<p class="meta">Fault codes: ${esc(job.fault_codes)}</p>` : ''}`}
+      </section>
+      <section class="ro-sec" id="roRecommended"></section>
+    </div>
 
-    <section class="ro-sec">
-      <h4>Service request</h4>
-      ${canEditRequest ? `
-        <div class="field"><label>Customer complaint</label><textarea id="roComplaint" rows="2" maxlength="4000">${esc(job.complaint || '')}</textarea></div>
-        <div class="rec-grid">
-          <div class="field"><label>Priority</label><select id="roPriority">${Object.keys(PRIORITY_LABELS).map(k => `<option value="${k}" ${job.priority === k ? 'selected' : ''}>${PRIORITY_LABELS[k]}</option>`).join('')}</select></div>
-          <div class="field"><label>Drivable?</label><select id="roDrivable"><option value="" ${job.drivable == null ? 'selected' : ''}>Unknown</option><option value="yes" ${job.drivable === true ? 'selected' : ''}>Yes</option><option value="no" ${job.drivable === false ? 'selected' : ''}>No</option></select></div>
-          <label class="rec-check"><input type="checkbox" id="roSafety" ${job.safety_issue ? 'checked' : ''}> Safety issue</label>
-        </div>` : `
-        <p>${job.complaint ? esc(job.complaint) : '<span class="meta">No complaint recorded.</span>'}</p>
-        <p class="meta">Priority: ${esc(PRIORITY_LABELS[job.priority] || 'Normal')} · Drivable: ${job.drivable == null ? 'Unknown' : job.drivable ? 'Yes' : 'No'}${job.safety_issue ? ' · Safety issue' : ''}</p>`}
-    </section>
+    <div class="wo-pane" data-pane="overview diagnosis">
+      ${(canEditRequest || canEditDiagnosis) ? `<p class="form-error" id="roError"></p><div class="job-actions"><button type="button" id="roSave">Save work order</button></div>` : ''}
+    </div>
 
-    <section class="ro-sec">
-      <h4>Diagnosis</h4>
-      ${canEditDiagnosis ? `
-        <div class="field"><label>Technician findings</label><textarea id="roDiagnosis" rows="3" maxlength="4000" placeholder="What did you find?">${esc(job.diagnosis || '')}</textarea></div>
-        <div class="field"><label>Fault codes</label><input id="roFaultCodes" maxlength="1000" value="${esc(job.fault_codes || '')}" placeholder="e.g. SPN 521 FMI 2"></div>` : `
-        <p>${job.diagnosis ? esc(job.diagnosis) : '<span class="meta">No diagnosis yet.</span>'}</p>
-        ${job.fault_codes ? `<p class="meta">Fault codes: ${esc(job.fault_codes)}</p>` : ''}`}
-    </section>
-    ${(canEditRequest || canEditDiagnosis) ? `<p class="form-error" id="roError"></p><div class="job-actions"><button type="button" id="roSave">Save repair order</button></div>` : ''}
+    <div class="wo-pane" data-pane="billing">
+      <section class="ro-sec${isShop ? '' : ' hidden'}" id="roEstimates">${isShop ? '<h4>Estimates &amp; invoices</h4><p class="meta">Loading…</p>' : ''}</section>
+    </div>
+    <div class="wo-pane" data-pane="labor"><section class="ro-sec hidden" id="roTime"></section></div>
+    <div class="wo-pane" data-pane="parts"><section class="ro-sec hidden" id="roParts"></section></div>
+    <div class="wo-pane" data-pane="inspection"><section class="ro-sec" id="roInspections"><h4>Inspections</h4><p class="meta">Loading…</p></section></div>
+    <div class="wo-pane" data-pane="photos"><section class="ro-sec ro-comms">${attachmentsBlockHtml(job.id)}</section></div>
+    <div class="wo-pane" data-pane="messages">
+      <section class="ro-sec hidden" id="roComms2"></section>
+      <section class="ro-sec ro-comms"><h4>Shop chat</h4>${commentsBlockHtml(job.id)}</section>
+    </div>
+    <div class="wo-pane" data-pane="history">
+      <section class="ro-sec">
+        <h4>History</h4>
+        <ol class="ro-timeline">${roTimelineHtml(hist.data || [], audit.data || [], names)}</ol>
+      </section>
+    </div>`;
 
-    <section class="ro-sec hidden" id="roWarranty"></section>
-    <section class="ro-sec hidden" id="roTime"></section>
-    <section class="ro-sec hidden" id="roParts"></section>
-    <section class="ro-sec hidden" id="roComms2"></section>
-    <section class="ro-sec" id="roInspections"><h4>Inspections</h4><p class="meta">Loading…</p></section>
-    <section class="ro-sec" id="roRecommended"></section>
-
-    <section class="ro-sec${isShop ? '' : ' hidden'}" id="roEstimates">${isShop ? '<h4>Estimates &amp; invoices</h4><p class="meta">Loading…</p>' : ''}</section>
-
-    <section class="ro-sec">
-      <h4>Timeline</h4>
-      <ol class="ro-timeline">${roTimelineHtml(hist.data || [], audit.data || [], names)}</ol>
-    </section>
-
-    <section class="ro-sec ro-comms">
-      ${commentsBlockHtml(job.id)}
-      ${attachmentsBlockHtml(job.id)}
-    </section>`;
+  document.querySelectorAll('#roBody .wo-tab').forEach(t => t.onclick = () => showWoTab(t.dataset.tab));
+  if(typeof showWoTab === 'function') showWoTab(roLastJobId === job.id ? woLastTab : 'overview');
+  roLastJobId = job.id;
+  if(typeof loadWoSummary === 'function') loadWoSummary(job, { billing });
+  wireWoActions(job, { isShop, billing });
 
   wireCommentToggles(body);
   wireAttachmentToggles(body);
@@ -411,7 +440,7 @@ async function roUpdateStatus(job){
   const status = sel.value;
   if(status === job.status) return;
   if(status === 'en_route' && job.job_type === 'inshop'){ alert('In-shop jobs don\'t travel, so they can\'t be "Heading there".'); return; }
-  if(status === 'cancelled' && !confirm('Cancel this repair order? It will leave the board.')) return;
+  if(status === 'cancelled' && !confirm('Cancel this work order? It will leave the board.')) return;
   const btn = document.getElementById('roStatusSave'); btn.disabled = true;
   const { error } = await sb.from('jobs').update({ status, updated_at: new Date().toISOString() }).eq('id', job.id);
   btn.disabled = false;
@@ -441,7 +470,7 @@ async function roSave(job, canEditRequest, canEditDiagnosis){
   const { error } = await sb.from('jobs').update(upd).eq('id', job.id);
   btn.disabled = false;
   if(error){ err.textContent = 'Could not save: ' + error.message; return; }
-  recordsToast('Repair order saved');
+  recordsToast('Work order saved');
   if(typeof refreshCurrentView === 'function') refreshCurrentView();
 }
 
@@ -482,3 +511,46 @@ document.addEventListener('click', (e) => {
   if(e.target.id === 'roModal' || e.target.closest('#roClose')) closeRepairOrder();
 });
 document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && document.getElementById('roModal') && !document.getElementById('roModal').classList.contains('hidden')) closeRepairOrder(); });
+
+
+// ---------------- Work order actions (Redesign R1) ----------------
+function wireWoActions(job, opts){
+  const on = (id, fn) => { const el = document.getElementById(id); if(el) el.onclick = fn; };
+  on('woUnitHist', () => openUnitHistory(job.unit_id));
+  on('woActUpdate', () => { showWoTab('messages'); const d = document.querySelector('#roComms2 details.comm-compose'); if(d){ d.open = true; const sub = document.getElementById('commSubject'); if(sub) sub.focus(); } });
+  on('woActComplete', async () => {
+    if(!confirm('Mark this work order complete?')) return;
+    const { error } = await sb.from('jobs').update({ status: 'complete', updated_at: new Date().toISOString() }).eq('id', job.id);
+    if(error){ alert(error.message); return; }
+    if(typeof notifyKick === 'function') notifyKick();
+    recordsToast('Work order completed');
+    openRepairOrder(job.id); if(typeof refreshCurrentView === 'function') refreshCurrentView();
+  });
+  on('woActEstimate', () => { showWoTab('billing'); if(typeof newEstimateForJob === 'function') newEstimateForJob(job); });
+  on('woActInvoice', () => { if(typeof generateInvoiceFromWork === 'function') generateInvoiceFromWork(job); });
+  on('woActDelete', async () => {
+    if(!confirm(`Delete ${job.ro_number || 'this work order'}? This cannot be undone.`)) return;
+    const { error } = await sb.from('jobs').delete().eq('id', job.id);
+    if(error){ alert('Could not delete: ' + error.message); return; }
+    closeRepairOrder(); if(typeof refreshCurrentView === 'function') refreshCurrentView();
+  });
+  on('woEditBtn', async () => {
+    const box = document.getElementById('woEditBox');
+    const [mechanics, fleets] = await Promise.all([fetchOrgMechanics(), fetchLinkedFleets()]);
+    box.innerHTML = jobEditRowHtml(job, mechanics, fleets);
+    box.querySelector('.ej-cancel').onclick = () => openRepairOrder(job.id);
+    box.querySelector('.ej-save').onclick = async () => {
+      const customer = box.querySelector('.ej-customer').value.trim(), vehicle = box.querySelector('.ej-vehicle').value.trim();
+      const mechanic_id = box.querySelector('.ej-mechanic').value;
+      const fleetSel = box.querySelector('.ej-fleet'); const fleet_profile_id = fleetSel && fleetSel.value ? fleetSel.value : null;
+      if(!customer || !vehicle || !mechanic_id){ alert('Customer, unit and technician are required.'); return; }
+      const rec = await resolveCustomerAndUnit(customer, vehicle, null);
+      if(rec.error){ alert(rec.error); return; }
+      const { error } = await sb.from('jobs').update({ customer, vehicle, customer_id: rec.customerId, unit_id: rec.unitId, mechanic_id, fleet_profile_id, updated_at: new Date().toISOString() }).eq('id', job.id);
+      if(error){ alert('Could not save: ' + error.message); return; }
+      if(typeof notifyKick === 'function') notifyKick();
+      recordsToast('Work order updated');
+      openRepairOrder(job.id); if(typeof refreshCurrentView === 'function') refreshCurrentView();
+    };
+  });
+}

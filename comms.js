@@ -77,10 +77,10 @@ async function loadNotifySettings(){
   const on = new Set((data && data.notify_events) || []);
   box.innerHTML = `<div class="section-head" style="margin-top:22px;"><h2>Customer updates</h2></div>
     <div class="card new-job-form" style="max-width:640px;">
-      <p class="meta" style="margin-top:0;">Emails sent automatically to the customer on each repair order. Customers can be opted out on their customer page. Estimates and invoices are emailed when you send them, as before.</p>
+      <p class="meta" style="margin-top:0;">Emails sent automatically to the customer on each work order. Customers can be opted out on their customer page. Estimates and invoices are emailed when you send them, as before.</p>
       <div class="skill-grid">${NOTIFY_EVENTS.map(([k, l]) => `<label class="rec-check"><input type="checkbox" value="${k}" ${on.has(k) ? 'checked' : ''}> ${esc(l)}</label>`).join('')}</div>
       <div class="field" style="margin-top:10px;"><label>Ask for a review automatically</label>
-        <select id="nsAutoReview"><option value="off">Off — I'll ask from the repair order</option><option value="on_complete" ${data && data.auto_review === 'on_complete' ? 'selected' : ''}>When a job is completed</option><option value="on_paid" ${data && data.auto_review === 'on_paid' ? 'selected' : ''}>When the invoice is paid</option></select>
+        <select id="nsAutoReview"><option value="off">Off — I'll ask from the work order</option><option value="on_complete" ${data && data.auto_review === 'on_complete' ? 'selected' : ''}>When a job is completed</option><option value="on_paid" ${data && data.auto_review === 'on_paid' ? 'selected' : ''}>When the invoice is paid</option></select>
         ${data && !data.review_link ? '<p class="meta">Add your review link above for review requests to work.</p>' : ''}</div>
       <p class="meta">Text messages: ready to switch on once a texting provider is connected. Until then, texts are recorded as "not set up".</p>
       <p class="form-error" id="nsErr"></p><button type="button" id="nsSave">Save customer updates</button>
