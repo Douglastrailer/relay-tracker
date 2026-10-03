@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Leave a review</title>
+<style>
+  body{ margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:#F4F1EA; color:#1B2430; font:17px/1.5 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; padding:20px; box-sizing:border-box; }
+  .card{ background:#fff; border:1px solid #E1DDD3; border-radius:14px; padding:24px; max-width:420px; text-align:center; }
+  a{ color:#0E6273; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="card" id="msg">Taking you to the review page…</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(async function(){
+  const msg = document.getElementById('msg');
+  const token = new URLSearchParams(location.search).get('t') || '';
+  const show = (text) => { msg.textContent = text; };
+  if(!/^[0-9a-f-]{36}$/i.test(token)){ show('This review link is incomplete. Please use the full link from your email.'); return; }
+  try {
+    const sb = window.supabase.createClient('https://okcogufppsubntrchfuf.supabase.co', 'sb_publishable_Z8qgdFjVetqSOfmZKhxkpQ_XX2tYHDp', { auth:{ persistSession:false } });
+    const { data, error } = await sb.rpc('open_review', { p_token: token });
+    // Only follow web links (never javascript: or other schemes).
+    if(error || !data || !/^https?:\/\//i.test(data)){ show('This review link is no longer available. Thank you anyway!'); return; }
+    msg.textContent = '';
+    msg.append('Taking you to the review page… ', Object.assign(document.createElement('a'), { href: data, textContent: 'Continue' }));
+    location.replace(data);
+  } catch(e){ show('Please check your connection and try again.'); }
+})();
+</script>
+</body>
+</html>
