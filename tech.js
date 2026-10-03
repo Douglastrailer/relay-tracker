@@ -95,6 +95,7 @@ async function doWorkAction(job, action, btn){
   }
   if(action === 'complete' && typeof showCompleteToast === 'function') showCompleteToast(job);
   syncAvailabilitySelect();
+  if(typeof notifyKick === 'function') notifyKick();
   await renderWorkScreen();
   if(typeof renderMechJobs === 'function') renderMechJobs();
 }
