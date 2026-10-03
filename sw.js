@@ -2,9 +2,9 @@
 // open without a signal. Always asks the network first, so an upload to
 // GitHub reaches everyone right away; the saved copy is used only when
 // there is no connection. Never stores Supabase data or other sites.
-const CACHE = 'relay-shell-v2';
+const CACHE = 'relay-shell-v3';
 const SHELL = ['/', '/index.html', '/style.css', '/script.js', '/ro.js', '/insp.js', '/est.js', '/tech.js', '/fleet.js', '/unit.js',
-               '/inv.js', '/analytics.js', '/comms.js', '/roles.js', '/shop.js', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
+               '/inv.js', '/analytics.js', '/comms.js', '/roles.js', '/shop.js', '/ops.js', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => Promise.allSettled(SHELL.map((u) => c.add(u)))).then(() => self.skipWaiting()));

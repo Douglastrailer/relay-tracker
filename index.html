@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=36"/>
+<link rel="stylesheet" href="style.css?v=37"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -493,6 +493,7 @@
       <button class="dash-tab" data-target="shop-inventory" title="Inventory"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg><span class="nav-label">Inventory</span></button>
       <button type="button" class="nav-more-toggle" id="navMoreToggle" aria-expanded="false" aria-controls="navMore"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg><span class="nav-label">More</span><svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
       <div class="nav-more" id="navMore">
+        <button class="dash-tab" data-target="shop-floor" title="Shop floor"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="13" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg><span class="nav-label">Shop floor</span></button>
         <button class="dash-tab" data-target="shop-inspections" title="Inspections"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg><span class="nav-label">Inspections</span></button>
         <button class="dash-tab" data-target="shop-team" title="Technicians & team"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="nav-label">Technicians & team</span></button>
         <button class="dash-tab" data-target="shop-time" title="Time"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg><span class="nav-label">Time</span></button>
@@ -563,6 +564,11 @@
       </div>
         </div>
       </div>
+    </div>
+
+    <div class="dash-panel hidden" id="shop-floor">
+      <div class="rec-toolbar floor-toolbar"><span class="meta" id="floorUpdated"></span><button type="button" class="ghost-btn" id="floorTvBtn">TV mode</button></div>
+      <div id="floorBoard"><div class="meta">Loading…</div></div>
     </div>
 
     <div class="dash-panel hidden" id="shop-requests">
@@ -670,6 +676,7 @@
         <button type="button" id="addTimeBtn">Add time</button>
       </div>
       <div class="time-summary" id="timeSummary"></div>
+      <div id="attendanceBox" class="section"></div>
       <div id="timeFormBox" class="hidden"></div>
       <div class="section-head" style="margin-top:20px;"><h2>Entries</h2></div>
       <div id="timeEntriesList"><div class="meta">Loading…</div></div>
@@ -757,6 +764,7 @@
         </div>
       </div>
       <div id="notifySettings"></div>
+      <div id="baySettings"></div>
     </div>
 
     <div class="dash-panel hidden" id="shop-team">
@@ -967,18 +975,25 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=49"></script>
-<script src="ro.js?v=9"></script>
+<script src="script.js?v=50"></script>
+<script src="ro.js?v=10"></script>
 <script src="insp.js?v=4"></script>
-<script src="est.js?v=7"></script>
-<script src="tech.js?v=4"></script>
+<script src="est.js?v=8"></script>
+<script src="tech.js?v=5"></script>
 <script src="fleet.js?v=3"></script>
 <script src="unit.js?v=3"></script>
-<script src="inv.js?v=1"></script>
+<script src="inv.js?v=2"></script>
 <script src="analytics.js?v=2"></script>
 <script src="comms.js?v=2"></script>
 <script src="roles.js?v=1"></script>
-<script src="shop.js?v=1"></script>
+<div id="custModal" class="modal-overlay ro-overlay unit-overlay hidden" role="dialog" aria-modal="true" aria-label="Customer">
+  <div class="modal-card ro-card unit-card">
+    <button class="modal-close" id="custClose" aria-label="Close">×</button>
+    <div id="custBody"></div>
+  </div>
+</div>
+<script src="shop.js?v=2"></script>
+<script src="ops.js?v=1"></script>
 <script src="pwa.js?v=1"></script>
 
 </body>

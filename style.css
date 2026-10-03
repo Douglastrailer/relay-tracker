@@ -1506,3 +1506,64 @@ button:disabled{ opacity:.55; cursor:default; }
   .gsearch:focus-within input::placeholder{ color:var(--ink-faint); }
   .gsearch-results{ position:fixed; top:60px; left:8px; right:8px; }
 }
+
+/* ============================================================
+   Redesign R2 — customers, payments, clock, shop floor
+   ============================================================ */
+.cp-tiles{ grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); }
+.cp-tiles > div{ background:var(--panel); padding:10px 12px; display:flex; flex-direction:column; gap:2px; }
+.cp-tiles > div > span:first-child{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); }
+.cp-tiles > div b{ font-size:1.15rem; font-variant-numeric:tabular-nums; }
+.cp-contact{ display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+.cp-contact-act{ display:flex; gap:10px; align-items:center; }
+.cp-cform{ margin-top:10px; }
+#cpAddContact{ margin-top:10px; }
+
+.pay-sum{ display:flex; flex-wrap:wrap; gap:8px 22px; padding:8px 0 10px; font-size:.95rem; }
+.pay-sum b{ font-variant-numeric:tabular-nums; }
+.pay-form{ display:grid; grid-template-columns:120px 170px 1fr 150px auto; gap:10px; align-items:end; margin-top:8px; }
+.pay-form .field{ margin:0; }
+.pay-form button{ min-height:44px; background:var(--accent); color:#fff; border:none; border-radius:var(--r-md); font-weight:700; padding:0 16px; cursor:pointer; }
+@media (max-width:760px){ .pay-form{ grid-template-columns:1fr 1fr; } .pay-form button{ grid-column:1 / -1; } }
+
+.clock-card{ margin-bottom:14px; }
+.clock-on, .clock-off{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+.clock-on b{ color:var(--ok); }
+.clock-in-btn{ min-height:52px; padding:0 26px; background:var(--ok); color:#fff; border:none; border-radius:var(--r-md); font-size:1.05rem; font-weight:800; cursor:pointer; }
+.att-on{ background:var(--ok-soft); color:var(--ok); }
+.att-shifts{ margin-top:10px; }
+.att-shifts summary{ cursor:pointer; font-weight:700; color:var(--accent); min-height:36px; display:flex; align-items:center; }
+
+/* Shop floor: high contrast, readable from across the shop */
+#shop-floor{ background:#0B1220; color:#E7ECF5; border-radius:var(--r-lg); padding:16px; }
+.floor-toolbar{ justify-content:space-between; }
+.floor-toolbar .meta{ color:#9AA7BD; }
+.floor-toolbar .ghost-btn{ background:#18233A; color:#E7ECF5; border-color:#2A3A5C; }
+.floor-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+.floor-h{ margin:20px 0 10px; font-size:1rem; letter-spacing:.06em; text-transform:uppercase; color:#9AA7BD; }
+.floor-tile{ background:#131D31; border:1px solid #24324F; border-radius:10px; padding:14px; min-height:150px; display:flex; flex-direction:column; gap:4px; cursor:pointer; }
+.floor-tile.free{ border-style:dashed; cursor:default; opacity:.8; }
+.floor-tile.st-waiting_parts, .floor-tile.st-waiting_approval{ border-color:#B54708; box-shadow:inset 4px 0 0 #F79009; }
+.floor-tile.st-repairing, .floor-tile.st-diagnosing, .floor-tile.st-quality_control, .floor-tile.st-on_site, .floor-tile.st-en_route{ box-shadow:inset 4px 0 0 #3B82F6; }
+.floor-tile-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; font-weight:800; font-size:1.05rem; letter-spacing:.03em; text-transform:uppercase; }
+.floor-tile-head .badge{ text-transform:none; }
+.floor-free{ color:#47CD89; font-weight:700; text-transform:none; }
+.floor-tech{ font-size:1.35rem; font-weight:800; margin-top:4px; }
+.floor-unit{ font-size:1.05rem; font-weight:600; }
+.floor-ro{ font:600 .8rem var(--font-mono); color:#8FB3FF; margin-left:6px; }
+.floor-svc{ color:#B6C1D4; }
+.floor-foot{ margin-top:auto; display:flex; gap:12px; flex-wrap:wrap; font-variant-numeric:tabular-nums; }
+.floor-timer{ font-weight:800; color:#47CD89; }
+.floor-dist{ font-weight:700; color:#F5B547; }
+.floor-empty{ color:#9AA7BD; padding:18px; border:1px dashed #24324F; border-radius:10px; }
+body.tv-mode .topbar, body.tv-mode .side-nav, body.tv-mode nav.dash-tabs, body.tv-mode .announcement-banner, body.tv-mode #announcementBanner, body.tv-mode .nav-toggle{ display:none !important; }
+body.tv-mode{ background:#0B1220; }
+body.tv-mode #shop-floor{ position:fixed; inset:0; z-index:2000; border-radius:0; overflow:auto; padding:24px 28px; }
+body.tv-mode .floor-grid{ grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); }
+body.tv-mode .floor-tech{ font-size:1.7rem; }
+
+/* Customer profile and unit history get the same room as a work order */
+#custModal .modal-card.ro-card, #unitModal .modal-card.ro-card{ max-width:1100px; width:calc(100% - 48px); }
+.cp-tiles{ grid-template-columns:repeat(6, minmax(0, 1fr)); }
+@media (max-width:900px){ .cp-tiles{ grid-template-columns:repeat(3, minmax(0, 1fr)); } }
+@media (max-width:640px){ #custModal .modal-card.ro-card, #unitModal .modal-card.ro-card{ width:100%; } .cp-tiles{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }

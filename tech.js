@@ -210,6 +210,7 @@ async function refreshTimePage(){
     if(error){ alert(error.message); return; }
     refreshTimePage();
   });
+  if(typeof renderAttendance === 'function') renderAttendance(from, to, timeEntries, timeMechanics);
 }
 function toLocalInput(d){ const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 16); }
 async function openTimeForm(id){

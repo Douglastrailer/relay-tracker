@@ -1345,6 +1345,7 @@ function initMechanicView(){
   renderMechJobs();
   everyWhileVisible(renderMechJobs, 120000); // fallback only - Realtime handles instant updates
   if(typeof initWorkUI === 'function') initWorkUI();
+  if(typeof initClockUI === 'function') initClockUI();
 }
 
 async function renderMechJobs(){
@@ -2303,6 +2304,7 @@ function initShopView(){
   if(typeof initCommsUI === 'function') safeInit('initCommsUI', initCommsUI);
   if(typeof initRolesUI === 'function') safeInit('initRolesUI', initRolesUI);
   if(typeof initShopRedesign === 'function') safeInit('initShopRedesign', initShopRedesign);
+  if(typeof initOpsUI === 'function') safeInit('initOpsUI', initOpsUI);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
   safeInit('announcementDismissWiring', ()=>{ document.getElementById('announcementDismiss').onclick = dismissAnnouncement; });

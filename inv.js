@@ -12,7 +12,7 @@ const PO_STATUS = { draft:'Draft', ordered:'Ordered', partial:'Partly received',
 
 async function loadInventoryData(){
   const [items, oh, lv, locs, vendors, pos] = await Promise.all([
-    sb.from('inventory_items').select('id, name, description, unit_price, part_number, vendor_id, cost, min_qty, track_stock, category, active').eq('org_id', session.orgId).eq('active', true).order('name').limit(2000),
+    sb.from('inventory_items').select('id, name, description, unit_price, part_number, vendor_id, cost, min_qty, track_stock, category, active, brand, core_charge, cross_ref').eq('org_id', session.orgId).eq('active', true).order('name').limit(2000),
     sb.from('stock_on_hand').select('item_id, on_hand, low').eq('org_id', session.orgId).limit(2000),
     sb.from('stock_levels').select('item_id, location_id, qty, bin').eq('org_id', session.orgId).limit(5000),
     sb.from('stock_locations').select('id, name, kind, mechanic_id, active').eq('org_id', session.orgId).order('kind').order('name'),
@@ -59,7 +59,7 @@ function invErr(msg){ const e = document.getElementById('invErr'); if(e) e.textC
 function renderParts(){
   const panel = document.getElementById('invPanel');
   panel.innerHTML = `<div class="rec-toolbar">
-      <input type="search" id="invSearch" placeholder="Search name, part number, category, vendor" aria-label="Search parts">
+      <input type="search" id="invSearch" placeholder="Search name, part #, brand, cross-reference, vendor" aria-label="Search parts">
       <label class="rec-check"><input type="checkbox" id="invLowOnly"> Low stock only</label>
       <button type="button" class="ghost-btn" id="invReorder">Reorder low stock</button>
       <button type="button" id="invAdd">Add part or service</button>
@@ -68,13 +68,13 @@ function renderParts(){
     const q = (document.getElementById('invSearch').value || '').trim().toLowerCase();
     const lowOnly = document.getElementById('invLowOnly').checked;
     const rows = invState.items.filter(i => (!lowOnly || (invState.onhand[i.id] || {}).low) &&
-      (!q || [i.name, i.part_number, i.category, vendorName(i.vendor_id), i.description].some(v => v && v.toLowerCase().includes(q))));
+      (!q || [i.name, i.part_number, i.category, vendorName(i.vendor_id), i.description, i.brand, i.cross_ref].some(v => v && v.toLowerCase().includes(q))));
     document.getElementById('invList').innerHTML = rows.length ? rows.map(i => {
       const oh = invState.onhand[i.id] || { on_hand:0, low:false };
       const lv = invState.levels.filter(l => l.item_id === i.id && Number(l.qty) !== 0);
       return `<div class="inv-row${oh.low ? ' is-low' : ''}">
         <div class="rec-main"><b>${esc(i.name)}</b>
-          <div class="meta">${[i.part_number ? '#' + i.part_number : '', i.category, vendorName(i.vendor_id)].filter(Boolean).map(esc).join(' · ') || (i.track_stock ? '' : 'Service / price only')}</div>
+          <div class="meta">${[i.part_number ? '#' + i.part_number : '', i.brand, i.category, vendorName(i.vendor_id), Number(i.core_charge) > 0 ? 'Core ' + invMoney(i.core_charge) : ''].filter(Boolean).map(esc).join(' · ') || (i.track_stock ? '' : 'Service / price only')}</div>
           ${i.track_stock && lv.length ? `<div class="meta">${lv.map(l => `${esc(locName(l.location_id))}: <b class="${Number(l.qty) < 0 ? 'neg' : ''}">${qtyFmt(l.qty)}</b>${l.bin ? ' (bin ' + esc(l.bin) + ')' : ''}`).join(' · ')}</div>` : ''}</div>
         <div class="inv-nums"><span><em>Price</em>${invMoney(i.unit_price)}</span>${i.cost != null ? `<span><em>Cost</em>${invMoney(i.cost)}</span>` : ''}
           ${i.track_stock ? `<span><em>On hand</em><b class="${Number(oh.on_hand) < 0 ? 'neg' : ''}">${qtyFmt(oh.on_hand)}</b></span><span><em>Min</em>${qtyFmt(i.min_qty)}</span>${oh.low ? '<span class="badge overdue"><span class="bd"></span>Low</span>' : ''}` : ''}</div>
@@ -112,6 +112,9 @@ function openItemForm(id){
       <div class="field"><label>Vendor</label><select id="ifVendor"><option value="">—</option>${invState.vendors.filter(x => x.active || (i && x.id === i.vendor_id)).map(x => `<option value="${x.id}" ${i && i.vendor_id === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>
       <div class="field"><label>Your cost ($)</label><input id="ifCost" type="number" min="0" step="0.01" value="${v('cost')}"></div>
       <div class="field"><label>Selling price ($) *</label><input id="ifPrice" type="number" min="0" step="0.01" value="${v('unit_price')}"></div>
+      <div class="field"><label>Brand</label><input id="ifBrand" maxlength="60" value="${v('brand')}" placeholder="e.g. Haldex"></div>
+      <div class="field"><label>Core charge ($)</label><input id="ifCore" type="number" min="0" step="0.01" value="${v('core_charge')}" placeholder="0.00"></div>
+      <div class="field rec-span"><label>Cross-reference numbers</label><input id="ifXref" maxlength="300" value="${v('cross_ref')}" placeholder="Other part numbers for the same part, separated by commas"></div>
       <div class="field rec-span"><label>Description</label><input id="ifDesc" maxlength="300" value="${v('description')}"></div>
       <label class="rec-check rec-span"><input type="checkbox" id="ifTrack" ${!i || i.track_stock ? 'checked' : ''}> Track stock for this part (leave unticked for services like "Shop supplies")</label>
       <div class="field"><label>Minimum on hand (low-stock alert)</label><input id="ifMin" type="number" min="0" step="1" value="${i ? Number(i.min_qty) : 0}"></div>
@@ -124,7 +127,10 @@ function openItemForm(id){
     if(cost != null && !(cost >= 0)){ invErr('Cost cannot be negative.'); return; }
     const row = { name, unit_price: price, cost, min_qty: Math.max(0, min), part_number: document.getElementById('ifPn').value.trim() || null,
       category: document.getElementById('ifCat').value.trim() || null, vendor_id: Number(document.getElementById('ifVendor').value) || null,
-      description: document.getElementById('ifDesc').value.trim() || null, track_stock: document.getElementById('ifTrack').checked };
+      description: document.getElementById('ifDesc').value.trim() || null, track_stock: document.getElementById('ifTrack').checked,
+      brand: document.getElementById('ifBrand').value.trim() || null, cross_ref: document.getElementById('ifXref').value.trim() || null,
+      core_charge: document.getElementById('ifCore').value === '' ? null : parseFloat(document.getElementById('ifCore').value) };
+    if(row.core_charge != null && !(row.core_charge >= 0)){ invErr('Core charge cannot be negative.'); return; }
     const res = i ? await sb.from('inventory_items').update(row).eq('id', i.id) : await sb.from('inventory_items').insert([{ ...row, org_id: session.orgId, created_by: session.id }]);
     if(res.error){ invErr(res.error.code === '23505' ? 'That part number is already in your list.' : res.error.message); return; }
     recordsToast(i ? 'Saved' : 'Added'); refreshInventoryV2(); if(typeof populateInventoryPicker === 'function') populateInventoryPicker();

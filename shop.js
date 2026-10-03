@@ -173,7 +173,7 @@ async function runGlobalSearch(qRaw){
       .order('created_at', { ascending:false }).limit(8),
     sb.from('customers').select('id, company_name, contact_name, phone').eq('org_id', org).or(`company_name.ilike.${like},contact_name.ilike.${like},phone.ilike.${like},email.ilike.${like}`).limit(5),
     billing && num ? sb.from('invoices').select('id, kind, status, total, customer_name').eq('org_id', org).eq('id', Number(num)).limit(2) : Promise.resolve({ data:[] }),
-    sb.from('inventory_items').select('id, name, part_number').eq('org_id', org).eq('active', true).or(`part_number.ilike.${like},name.ilike.${like}`).limit(5)
+    sb.from('inventory_items').select('id, name, part_number, brand').eq('org_id', org).eq('active', true).or(`part_number.ilike.${like},name.ilike.${like},brand.ilike.${like},cross_ref.ilike.${like}`).limit(5)
   ]);
   if(seq !== gsSeq) return;   // a newer search finished first
   const sec = (title, items) => items.length ? `<div class="gs-sec"><div class="gs-title">${title}</div>${items.join('')}</div>` : '';
@@ -183,7 +183,7 @@ async function runGlobalSearch(qRaw){
     sec('Work orders', (jobs.data || []).map(j => item(`data-gs="job" data-id="${j.id}"`, esc(j.ro_number || '#' + j.id) + ' · ' + esc(j.vehicle || ''), esc(j.customer || '') + ' · ' + esc(statusLabel(j.status)) + (j.complaint ? ' · ' + esc(j.complaint.slice(0, 50)) : '')))) +
     sec('Customers', (custs.data || []).map(c => item(`data-gs="customer" data-id="${c.id}"`, esc(c.company_name), [c.contact_name, c.phone].filter(Boolean).map(esc).join(' · ')))) +
     sec('Estimates & invoices', (docs.data || []).map(d => item(`data-gs="doc" data-id="${d.id}"`, (d.kind === 'estimate' ? 'Estimate' : 'Invoice') + ' #' + d.id, esc(d.customer_name || '') + ' · ' + shopMoney(d.total) + ' · ' + esc(String(d.status).replace(/_/g, ' '))))) +
-    sec('Parts', (parts.data || []).map(p => item(`data-gs="part" data-id="${p.id}"`, esc(p.name), esc(p.part_number || ''))));
+    sec('Parts', (parts.data || []).map(p => item(`data-gs="part" data-id="${p.id}"`, esc(p.name), [p.part_number, p.brand].filter(Boolean).map(esc).join(' · '))));
   out.innerHTML = html || `<div class="gs-empty">Nothing found for “${esc(q)}”.</div>`;
   out.classList.remove('hidden');
 }
@@ -292,7 +292,7 @@ async function generateInvoiceFromWork(job){
   const [custRes, orgRes, partsRes, timeRes] = await Promise.all([
     job.customer_id ? sb.from('customers').select('company_name, email, billing_email, billing_address, payment_terms, tax_exempt').eq('id', job.customer_id).maybeSingle() : Promise.resolve({ data:null }),
     sb.from('organizations').select('default_tax_rate, labor_rate').eq('id', session.orgId).maybeSingle(),
-    sb.from('job_parts').select('qty, returned_qty, unit_price, inventory_items(name, part_number)').eq('job_id', job.id),
+    sb.from('job_parts').select('qty, returned_qty, unit_price, inventory_items(name, part_number, core_charge)').eq('job_id', job.id),
     sb.from('job_time_summary').select('labor_minutes').eq('job_id', job.id).maybeSingle()
   ]);
   const c = custRes.data || {}, o = orgRes.data || {};
@@ -309,7 +309,8 @@ async function generateInvoiceFromWork(job){
   if(laborH > 0) lines.push({ invoice_id: inv.id, item_type: 'labor', description: 'Labor' + (job.complaint ? ' — ' + job.complaint.slice(0, 80) : ''), quantity: laborH, unit_price: Number(o.labor_rate || 0), taxable: false });
   (partsRes.data || []).forEach(p => {
     const net = Number(p.qty) - Number(p.returned_qty);
-    if(net > 0){ const n = p.inventory_items || {}; lines.push({ invoice_id: inv.id, item_type: 'part', description: (n.name || 'Part') + (n.part_number ? ' (' + n.part_number + ')' : ''), quantity: net, unit_price: Number(p.unit_price || 0), taxable: true }); }
+    if(net > 0){ const n = p.inventory_items || {}; lines.push({ invoice_id: inv.id, item_type: 'part', description: (n.name || 'Part') + (n.part_number ? ' (' + n.part_number + ')' : ''), quantity: net, unit_price: Number(p.unit_price || 0), taxable: true });
+      if(Number(n.core_charge) > 0) lines.push({ invoice_id: inv.id, item_type: 'fee', description: 'Core charge — ' + (n.name || 'Part'), quantity: net, unit_price: Number(n.core_charge), taxable: false }); }
   });
   if(lines.length){
     const { error: e2 } = await sb.from('invoice_items').insert(lines);

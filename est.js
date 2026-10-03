@@ -95,9 +95,9 @@ async function openEstimateEditor(docId, suggestRecs){
     sb.from('invoice_items').select('id, description, quantity, unit_price, item_type, taxable, recommended_repair_id, customer_decision, sort_order').eq('invoice_id', docId).order('sort_order').order('id'),
     doc.job_id ? sb.from('jobs').select('id, ro_number, customer, vehicle, warranty_claim_status').eq('id', doc.job_id).maybeSingle() : Promise.resolve({ data:null }),
     sb.from('organizations').select('labor_rate, default_tax_rate').eq('id', doc.org_id).maybeSingle(),
-    sb.from('inventory_items').select('id, name, description, unit_price, part_number, track_stock').eq('org_id', doc.org_id).eq('active', true).order('name')
+    sb.from('inventory_items').select('id, name, description, unit_price, part_number, track_stock, brand, core_charge').eq('org_id', doc.org_id).eq('active', true).order('name')
   ]);
-  const partsRes = doc.job_id ? await sb.from('job_parts').select('item_id, qty, returned_qty, unit_price, inventory_items(name, part_number)').eq('job_id', doc.job_id) : { data:[] };
+  const partsRes = doc.job_id ? await sb.from('job_parts').select('item_id, qty, returned_qty, unit_price, inventory_items(name, part_number, core_charge)').eq('job_id', doc.job_id) : { data:[] };
   const timeRes = doc.job_id ? await sb.from('job_time_summary').select('labor_minutes').eq('job_id', doc.job_id).maybeSingle() : { data:null };
   const recsRes = doc.job_id ? await sb.from('recommended_repairs').select('id, description, severity, status').eq('job_id', doc.job_id).in('status', ['recommended','approved']) : { data: [] };
   estCurrent = { doc, lines: (linesRes.data || []).map(l => ({ ...l })), job: jobRes.data, org: orgRes.data || {}, recs: recsRes.data || [], priceList: priceRes.data || [],
@@ -107,6 +107,8 @@ async function openEstimateEditor(docId, suggestRecs){
   renderEstimateEditor();
 }
 
+// Parts with a core charge get it as its own line (Redesign R2).
+function estCoreLine(name, qty, core){ return Number(core) > 0 ? [{ item_type: 'fee', description: 'Core charge — ' + name, quantity: qty, unit_price: Number(core), taxable: false }] : []; }
 function renderEstimateEditor(){
   const body = document.getElementById('estBody');
   const { doc, lines, job } = estCurrent;
@@ -120,6 +122,7 @@ function renderEstimateEditor(){
       <h2>${esc(doc.customer_name)}${doc.unit_number ? ' — ' + esc(doc.unit_number) : ''}</h2>
       <div class="meta">${esc(DOC_STATUS[doc.status] || doc.status)} · created ${fmtDate(doc.created_at)}</div></div></div>
     ${approvalInfoHtml(doc)}
+    <div id="estPayments"></div>
     ${job && job.warranty_claim_status === 'warranty' ? '<div class="auth-banner ok">This repair was accepted as a <b>warranty claim</b>. Price it accordingly (often $0 to the customer).</div>'
       : job && job.warranty_claim_status === 'pending_review' ? '<div class="auth-banner wait"><b>Potential warranty repair.</b> Decide on the work order before billing.</div>' : ''}
     <div class="rec-grid est-head-grid">
@@ -151,6 +154,7 @@ function renderEstimateEditor(){
     <p class="form-error" id="estError"></p>
     <div class="insp-footer est-actions">${actionsHtml(doc, editable)}</div>`;
   wireEditor(editable);
+  if(typeof loadInvoicePayments === 'function') loadInvoicePayments(estCurrent.doc);
 }
 
 function lineRowHtml(l, i, editable){
@@ -190,7 +194,7 @@ function actionsHtml(doc, editable){
     if(doc.status === 'approved') b.push('<button type="button" id="estConvert">Turn into invoice</button>');
   } else {
     if(doc.status === 'draft') b.push('<button type="button" id="estEmailInv">Email invoice</button>');
-    if(doc.status === 'unpaid') b.push('<button type="button" id="estPaid">Mark paid</button>');
+    if(doc.status === 'unpaid') b.push('<button type="button" id="estPaid">Mark paid in full</button>');
   }
   b.push('<button type="button" class="ghost-btn" id="estPdf">PDF</button>');
   return b.join('');
@@ -237,13 +241,15 @@ function wireEditor(editable){
       if(!p) return;
       collectEditor();
       estCurrent.lines.push({ item_type: p.track_stock || p.part_number ? 'part' : 'other', description: p.name + (p.part_number ? ' (' + p.part_number + ')' : '') + (p.description ? ' — ' + p.description : ''), quantity: 1, unit_price: Number(p.unit_price), taxable: !!(p.track_stock || p.part_number) });
+      estCoreLine(p.name, 1, p.core_charge).forEach(l => estCurrent.lines.push(l));
       renderEstimateEditor();
     };
     const ap = document.getElementById('estAddParts');
     if(ap) ap.onclick = () => {
       collectEditor();
       estCurrent.jobParts.forEach(p => { const n = p.inventory_items || {};
-        estCurrent.lines.push({ item_type: 'part', description: (n.name || 'Part') + (n.part_number ? ' (' + n.part_number + ')' : ''), quantity: p.net, unit_price: Number(p.unit_price || 0), taxable: true }); });
+        estCurrent.lines.push({ item_type: 'part', description: (n.name || 'Part') + (n.part_number ? ' (' + n.part_number + ')' : ''), quantity: p.net, unit_price: Number(p.unit_price || 0), taxable: true });
+        estCoreLine(n.name || 'Part', p.net, n.core_charge).forEach(l => estCurrent.lines.push(l)); });
       renderEstimateEditor();
     };
     const at = document.getElementById('estAddTime');
