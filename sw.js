@@ -2,7 +2,7 @@
 // open without a signal. Always asks the network first, so an upload to
 // GitHub reaches everyone right away; the saved copy is used only when
 // there is no connection. Never stores Supabase data or other sites.
-const CACHE = 'relay-shell-v6';
+const CACHE = 'relay-shell-v7';
 const SHELL = ['/', '/index.html', '/style.css', '/script.js', '/ro.js', '/insp.js', '/est.js', '/tech.js', '/fleet.js', '/unit.js',
                '/inv.js', '/analytics.js', '/comms.js', '/roles.js', '/shop.js', '/ops.js', '/dispatch.js', '/r4.js', '/assist.js', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
@@ -24,3 +24,19 @@ self.addEventListener('fetch', (e) => {
     }).catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || (req.mode === 'navigate' ? caches.match('/index.html') : Response.error())))
   );
 });
+
+// ---- Web push (Redesign R4c): show alerts even when Relay is closed ----
+self.addEventListener('push', (e) => {
+  let d = {}; try { d = e.data ? e.data.json() : {}; } catch (_) { d = { title: 'Relay', body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Relay', {
+    body: d.body || '', tag: d.tag, icon: '/icon-192.png', badge: '/icon-192.png', data: { url: d.url || '/' } }));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.url) || '/', self.location.origin).href;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    for (const c of list) { if (c.url.startsWith(self.location.origin) && 'focus' in c) { c.navigate(url).catch(() => {}); return c.focus(); } }
+    return self.clients.openWindow(url);
+  }));
+});
+

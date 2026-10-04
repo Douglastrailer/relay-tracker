@@ -154,14 +154,13 @@ function renderNotifBadge(){
 }
 function renderNotifPanel(){
   const p = document.getElementById('notifPanel');
-  const canPop = 'Notification' in window && Notification.permission === 'default';
   p.innerHTML = `<div class="notif-head"><b>Notifications</b>${unreadCount() ? '<button type="button" class="text-btn" id="notifReadAll">Mark all read</button>' : ''}</div>
-    ${canPop ? '<button type="button" class="notif-pop" id="notifPopOn">Show alerts on this device while Relay is open</button>' : ''}
+    <div id="pushRow" class="push-row"></div>
     <div class="notif-list">${notifItems.length ? notifItems.map(n => `<button type="button" class="notif-item${notifRead.has(n.id) ? '' : ' unread'}" data-n="${n.id}">
       <span class="notif-dot tone-${NOTIF_TONE[n.kind] || 'info'}" aria-hidden="true"></span>
       <span class="notif-text"><b>${esc(n.title)}</b>${n.body ? `<span>${esc(n.body)}</span>` : ''}<em>${dAgo(n.created_at)} ago${notifAction(n).label ? ' · ' + esc(notifAction(n).label) : ''}</em></span></button>`).join('') : '<div class="notif-empty">No notifications yet.</div>'}</div>`;
   const ra = document.getElementById('notifReadAll'); if(ra) ra.onclick = markAllRead;
-  const po = document.getElementById('notifPopOn'); if(po) po.onclick = async () => { try { await Notification.requestPermission(); } catch(_){} renderNotifPanel(); };
+  renderPushRow();
   p.querySelectorAll('[data-n]').forEach(b => b.onclick = async () => {
     const n = notifItems.find(x => x.id === Number(b.dataset.n));
     closeNotifPanel();
@@ -204,6 +203,7 @@ async function initNotifications(){
     document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeNotifPanel(); });
   }
   await loadNotifications();
+  handleOpenFromAlert();
   // New alerts arrive live; a slow refresh covers any gap.
   if(!notifChannel && sb.channel) notifChannel = sb.channel('relay-notifications')
     .on('postgres_changes', { event:'INSERT', schema:'public', table:'shop_notifications', filter:'org_id=eq.' + session.orgId }, () => loadNotifications()).subscribe();
@@ -214,4 +214,56 @@ function initDispatchUI(){
   document.querySelectorAll('.dash-tab[data-target="shop-dispatch"]').forEach(t => t.addEventListener('click', () => { refreshDispatch(); }));
   if(typeof everyWhileVisible === 'function') everyWhileVisible(() => { if(typeof panelVisible === 'function' && panelVisible('shop-dispatch')) refreshDispatch(); }, 30000);
   initNotifications();
+}
+
+// ================= Web push: alerts on this device, even when Relay is closed =================
+const VAPID_PUBLIC_KEY = 'BEHv_uJvAxGti_eTN7rWYxuz_AJMoLuJekiy5Cj86pfb_B1Or4Cn0MhhbvVZsLMqjfYTfUDt8Hy_RkNTcECMP8Y';
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = () => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+function b64ToBytes(b){ const p = '='.repeat((4 - b.length % 4) % 4); const s = atob((b + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(s, c => c.charCodeAt(0)); }
+async function currentPushSub(){
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+  const reg = await navigator.serviceWorker.getRegistration(); return reg ? reg.pushManager.getSubscription() : null;
+}
+async function renderPushRow(){
+  const row = document.getElementById('pushRow');
+  if(!row) return;
+  if(isIOS() && !isStandalone()){ row.innerHTML = '<div class="push-hint">To get alerts on this iPhone when Relay is closed: tap <b>Share</b> → <b>Add to Home Screen</b>, open Relay from the Home Screen, then turn alerts on here.</div>'; return; }
+  if(!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)){ row.innerHTML = '<div class="push-hint">This browser can\'t show alerts when Relay is closed.</div>'; return; }
+  if(Notification.permission === 'denied'){ row.innerHTML = '<div class="push-hint">Alerts are blocked for Relay in this browser\'s settings. Allow notifications for relayfleet.us, then come back here.</div>'; return; }
+  const sub = await currentPushSub();
+  row.innerHTML = sub ? '<div class="push-on"><span>Alerts are on for this device</span><button type="button" class="text-btn" id="pushOff">Turn off</button></div>'
+                      : '<button type="button" class="notif-pop" id="pushOn">Turn on alerts on this device</button>';
+  const on = document.getElementById('pushOn'), off = document.getElementById('pushOff');
+  if(on) on.onclick = enablePush;
+  if(off) off.onclick = disablePush;
+}
+async function enablePush(){
+  const row = document.getElementById('pushRow');
+  try {
+    if(await Notification.requestPermission() !== 'granted'){ renderPushRow(); return; }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID_PUBLIC_KEY) });
+    const j = sub.toJSON();
+    await sb.from('push_subscriptions').delete().eq('endpoint', j.endpoint);   // re-subscribing this device: replace its old entry
+    const { error } = await sb.from('push_subscriptions').insert([{ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, user_agent: navigator.userAgent.slice(0, 300) }]);
+    if(error){ await sub.unsubscribe(); throw new Error(error.code === '23505' ? 'This device is already set up for another Relay account. Sign in as that person and turn alerts off first.' : error.message); }
+    recordsToast('Alerts are on for this device');
+  } catch(e){ if(row) row.insertAdjacentHTML('beforeend', `<div class="push-hint">${esc(e.message || String(e))}</div>`); return; }
+  renderPushRow();
+}
+async function disablePush(){
+  const sub = await currentPushSub();
+  if(sub){ await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint); await sub.unsubscribe(); }
+  recordsToast('Alerts turned off for this device'); renderPushRow();
+}
+// Opening Relay from an alert: go straight to that work order (or the bell).
+function handleOpenFromAlert(){
+  const q = new URLSearchParams(location.search), what = q.get('open');
+  if(!what) return;
+  history.replaceState(null, '', location.pathname);
+  if(what === 'wo' && Number(q.get('id'))){
+    const id = Number(q.get('id'));
+    if(session.role === 'mechanic' && typeof openWorkScreen === 'function') openWorkScreen(id); else if(typeof openRepairOrder === 'function') openRepairOrder(id);
+  } else if(what === 'bell'){ const b = document.getElementById('notifBell'); if(b) b.click(); }
 }

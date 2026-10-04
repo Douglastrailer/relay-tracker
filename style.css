@@ -1679,3 +1679,8 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
   .assist-fab span{ display:none; } .assist-fab{ padding:14px; }
   .assist-panel{ right:0; bottom:0; width:100%; height:100%; border-radius:0; }
 }
+
+/* R4c web push */
+.push-row{ padding:0 8px; }
+.push-on{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin:6px 0; padding:8px 10px; border-radius:var(--r-md); background:var(--ok-soft); color:var(--ok); font-weight:600; font-size:.85rem; }
+.push-hint{ margin:6px 0; padding:8px 10px; border-radius:var(--r-md); background:var(--panel-2); color:var(--ink-soft); font-size:.83rem; line-height:1.4; }
