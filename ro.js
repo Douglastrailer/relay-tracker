@@ -312,7 +312,7 @@ async function openRepairOrder(jobId){
         <div class="wo-head-line"><span class="wo-num">${esc(job.ro_number || 'Work order #' + job.id)}</span>${jobStatusBadge(job.status)}${roChipsHtml(Object.assign({}, job, { ro_number: null }))}</div>
         <h2>${esc(c ? c.company_name : job.customer)}</h2>
         <div class="wo-head-unit"><b>${esc(unitLine)}</b>${u && u.vin ? ` <span class="meta">VIN ${esc(u.vin)}</span>` : ''}</div>
-        <div class="wo-head-facts"><span>${esc(service)}</span><span>Technician: <b>${esc(techName)}</b></span><span>${job.job_type === 'inshop' ? 'In shop' : 'Roadside'}</span><span class="meta">Opened ${fmtDateTime(job.created_at)}${job.completed_at ? ' · completed ' + fmtDateTime(job.completed_at) : ''}</span></div>
+        <div class="wo-head-facts"><span>${esc(service)}</span><span>Technician: <b>${esc(techName)}</b>${typeof acceptChip === 'function' && job.job_type ? ' ' + acceptChip(job) : ''}</span><span>${job.job_type === 'inshop' ? 'In shop' : 'Roadside'}</span><span class="meta">Opened ${fmtDateTime(job.created_at)}${job.completed_at ? ' · completed ' + fmtDateTime(job.completed_at) : ''}</span></div>
       </div>
       <div class="wo-actions">
         ${isAssignedMech && !closed ? `<button type="button" class="work-open wo-act-primary" data-job="${job.id}">Open work screen</button>` : ''}

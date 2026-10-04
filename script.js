@@ -320,7 +320,7 @@ async function fetchJobsForInvoiceLink(){
 // ever had and slicing it down in the browser.
 // Column list excludes only "created_by" — the one job column never
 // actually read anywhere in the app after being set on creation.
-const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, job_type, dest_lat, dest_lng, status, created_at, updated_at, org_id, fleet_profile_id, ro_number, customer_id, unit_id, priority, safety_issue, drivable, complaint, diagnosis, fault_codes, completed_at, requires_authorization, authorized_at, authorized_by_name, authorization_override_at, authorization_override_reason, odometer, warranty_months, warranty_miles, warranty_terms, warranty_claim_status, warranty_source_job_id, warranty_decided_at, warranty_decision_note';
+const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, job_type, dest_lat, dest_lng, status, created_at, updated_at, org_id, fleet_profile_id, ro_number, customer_id, unit_id, priority, safety_issue, drivable, complaint, diagnosis, fault_codes, completed_at, requires_authorization, authorized_at, authorized_by_name, authorization_override_at, authorization_override_reason, odometer, warranty_months, warranty_miles, warranty_terms, warranty_claim_status, warranty_source_job_id, warranty_decided_at, warranty_decision_note, accepted_at, declined_at, decline_reason';
 async function fetchActiveJobs(scope){
   let q = sb.from('jobs').select(JOB_COLUMNS).not('status','in','(' + CLOSED_STATUSES.join(',') + ')').order('created_at', { ascending:true });
   // Scoping here is a query-planning aid, not the security boundary — RLS
@@ -1346,6 +1346,7 @@ function initMechanicView(){
   everyWhileVisible(renderMechJobs, 120000); // fallback only - Realtime handles instant updates
   if(typeof initWorkUI === 'function') initWorkUI();
   if(typeof initClockUI === 'function') initClockUI();
+  if(typeof initNotifications === 'function') initNotifications();
 }
 
 async function renderMechJobs(){
@@ -1376,7 +1377,9 @@ async function renderMechJobs(){
       // so the job goes straight from assigned to being worked on.
       // One big button opens the Work screen, which runs the timers and
       // moves the job through its statuses (Phase 4, tech.js).
-      const actionButtons = `<button type="button" class="j-work work-launch" data-job="${job.id}">▶ Work on this job</button>`;
+      // Until the job is accepted, Accept is the main button and Work steps back.
+      const awaiting = !job.accepted_at && !job.declined_at && ['new','assigned'].includes(job.status);
+      const actionButtons = `<button type="button" class="j-work work-launch${awaiting ? ' work-launch-quiet' : ''}" data-job="${job.id}">▶ Work on this job</button>`;
       return `
         <div class="job-card" data-job="${job.id}">
           <div class="job-card-top">
@@ -1387,6 +1390,7 @@ async function renderMechJobs(){
           ${distRow}
           <div class="row"><span>Status</span><b>${esc(statusLabel(job.status))}</b></div>
           ${directionsBtn}
+          ${typeof acceptBlockHtml === 'function' ? acceptBlockHtml(job) : ''}
           <div class="job-actions">
             ${actionButtons}
             <button class="j-open-ro" data-job="${job.id}">Open work order</button>
@@ -2305,6 +2309,7 @@ function initShopView(){
   if(typeof initRolesUI === 'function') safeInit('initRolesUI', initRolesUI);
   if(typeof initShopRedesign === 'function') safeInit('initShopRedesign', initShopRedesign);
   if(typeof initOpsUI === 'function') safeInit('initOpsUI', initOpsUI);
+  if(typeof initDispatchUI === 'function') safeInit('initDispatchUI', initDispatchUI);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
   safeInit('announcementDismissWiring', ()=>{ document.getElementById('announcementDismiss').onclick = dismissAnnouncement; });

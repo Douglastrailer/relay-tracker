@@ -65,6 +65,7 @@ async function renderWorkScreen(){
       <div class="work-clock-time" id="workClock" data-start="${runningHere ? esc(run.started_at) : ''}">${runningHere ? fmtClock((Date.now() - new Date(run.started_at)) / 1000) : '0:00'}</div>
       <div class="work-clock-sub">This job so far: ${sum.drive_minutes ? 'drive ' + fmtMins(sum.drive_minutes) + ' · ' : ''}labor ${fmtMins(sum.labor_minutes)}</div>
     </div>
+    ${typeof acceptBlockHtml === 'function' ? acceptBlockHtml(job) : ''}
     ${waitingNote}
     <p class="form-error" id="workError"></p>
     <div class="work-buttons">${buttons.map(b => `<button type="button" class="work-btn ${b.cls}" data-action="${b.action}">${esc(b.label)}</button>`).join('') || (isClosedStatus(job.status) ? '<p class="meta">This job is closed.</p>' : '')}</div>
