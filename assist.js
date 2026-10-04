@@ -7,7 +7,9 @@
 
 let assistMsgs = [];          // conversation sent to the assistant (text only)
 let assistBusy = false;
-const ASSIST_SUGGEST = ['Jobs waiting for parts', 'Unpaid invoices', 'Open road calls', 'Who is available?'];
+const ASSIST_SUGGEST = { shop:['Jobs waiting for parts', 'Unpaid invoices', 'Open road calls', 'Who is available?'],
+  mechanic:['My open jobs', 'Jobs waiting for parts', 'Open road calls'], fleet:['Which of my trucks are in the shop?', 'What do I owe?', 'Recent repairs'] };
+const assistSuggest = () => ASSIST_SUGGEST[session && ['mechanic','fleet'].includes(session.role) ? session.role : 'shop'];
 
 function assistTextHtml(t){
   // Escape, then: **bold**, line breaks, and WO numbers become links.
@@ -18,8 +20,8 @@ function assistTextHtml(t){
 function assistRender(){
   const log = document.getElementById('assistLog');
   if(!log) return;
-  log.innerHTML = (assistMsgs.length ? '' : `<div class="assist-hello"><b>Ask about your shop.</b><span>I look things up in Relay and can prepare work orders, estimates and technician changes for you to confirm.</span>
-      <div class="assist-sugg">${ASSIST_SUGGEST.map(s => `<button type="button" class="assist-chip" data-q="${esc(s)}">${esc(s)}</button>`).join('')}</div></div>`)
+  log.innerHTML = (assistMsgs.length ? '' : `<div class="assist-hello"><b>Ask about your shop.</b><span>${session && ['mechanic','fleet'].includes(session.role) ? 'I look things up in Relay for you.' : 'I look things up in Relay and can prepare work orders, estimates and technician changes for you to confirm.'}</span>
+      <div class="assist-sugg">${assistSuggest().map(s => `<button type="button" class="assist-chip" data-q="${esc(s)}">${esc(s)}</button>`).join('')}</div></div>`)
     + assistMsgs.map((m, i) => `<div class="assist-msg ${m.role}">${m.role === 'user' ? esc(m.content) : assistTextHtml(m.content || '')}
         ${m.action ? assistActionHtml(m.action, i) : ''}${m.error ? `<div class="assist-err">${esc(m.error)}</div>` : ''}</div>`).join('')
     + (assistBusy ? '<div class="assist-msg assistant assist-typing"><span></span><span></span><span></span></div>' : '');
@@ -120,7 +122,8 @@ function closeAssist(){ const p = document.getElementById('assistPanel'); if(p) 
 function initAssist(){
   const fab = document.getElementById('assistFab');
   if(!fab) return;
-  const allowed = ['shop','admin'].includes(session.role) && session.orgId;
+  // Everyone signed in: what each person can see is decided by their own login.
+  const allowed = !!session && ['shop','admin','mechanic','fleet'].includes(session.role);
   fab.classList.toggle('hidden', !allowed);
   if(!allowed) return;
   fab.onclick = () => (document.getElementById('assistPanel').classList.contains('hidden') ? openAssist() : closeAssist());
