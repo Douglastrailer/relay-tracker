@@ -2314,6 +2314,7 @@ function initShopView(){
   if(typeof initOpsUI === 'function') safeInit('initOpsUI', initOpsUI);
   if(typeof initDispatchUI === 'function') safeInit('initDispatchUI', initDispatchUI);
   if(typeof initQboUI === 'function') safeInit('initQboUI', initQboUI);
+  if(typeof initAssist === 'function') safeInit('initAssist', initAssist);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
   safeInit('announcementDismissWiring', ()=>{ document.getElementById('announcementDismiss').onclick = dismissAnnouncement; });
