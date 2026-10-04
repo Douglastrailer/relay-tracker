@@ -89,7 +89,13 @@ async function assistAsk(q){
   const history = assistMsgs.filter(m => m.content).slice(-12).map(m => ({ role: m.role, content: m.content }));
   try {
     const { data, error } = await sb.functions.invoke('assistant', { body: { messages: history } });
-    const msg = (data && data.error) || (error && (error.context && error.context.error || error.message));
+    // On an error status, Supabase only says "non-2xx"; the real reason is in the response body.
+    let msg = data && data.error;
+    if(error){
+      msg = error.message;
+      try { const body = error.context && typeof error.context.json === 'function' ? await error.context.clone().json() : null; if(body && body.error) msg = body.error; } catch(_){}
+      if(error.context && error.context.status === 404) msg = 'The assistant function is not deployed yet (no Edge Function named "assistant").';
+    }
     if(msg) assistMsgs.push({ role:'assistant', content:'', error: msg });
     else assistMsgs.push({ role:'assistant', content: data.reply || (data.action ? '' : 'No answer.'), action: data.action || null });
   } catch(e){ assistMsgs.push({ role:'assistant', content:'', error:'Could not reach the assistant. Check your connection.' }); }
