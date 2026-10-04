@@ -360,6 +360,7 @@ async function openRepairOrder(jobId){
           <p class="meta">Priority: ${esc(PRIORITY_LABELS[job.priority] || 'Normal')} · Drivable: ${job.drivable == null ? 'Unknown' : job.drivable ? 'Yes' : 'No'}${job.safety_issue ? ' · Safety issue' : ''}</p>`}
       </section>
       ${isShop ? `<section class="ro-sec"><h4>Customer, unit and technician</h4><div id="woEditBox"><button type="button" class="ghost-btn" id="woEditBtn">Change customer, unit or technician</button></div></section>` : ''}
+      <section class="ro-sec" id="woTechBox"></section>
       <section class="ro-sec hidden" id="woBayBox"></section>
       <section class="ro-sec hidden" id="roWarranty"></section>
     </div>
@@ -404,6 +405,7 @@ async function openRepairOrder(jobId){
   if(typeof loadWoSummary === 'function') loadWoSummary(job, { billing });
   wireWoActions(job, { isShop, billing });
   if(typeof loadWoBay === 'function') loadWoBay(job);
+  if(typeof loadWoTechs === 'function') loadWoTechs(job);
 
   wireCommentToggles(body);
   wireAttachmentToggles(body);

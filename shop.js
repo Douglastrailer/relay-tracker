@@ -55,11 +55,13 @@ async function fetchBoardMetrics(ids){
   if(!ids.length) return out;
   ids.forEach(id => out[id] = {});
   const billing = typeof can !== 'function' || can('billing');
-  const [t, pts, est] = await Promise.all([
+  const [t, pts, est, helpers] = await Promise.all([
     sb.from('job_time_summary').select('job_id, labor_minutes').in('job_id', ids),
     sb.from('job_parts').select('job_id, qty, returned_qty, unit_price').in('job_id', ids),
-    billing ? sb.from('invoices').select('job_id, kind, status, total, created_at').in('job_id', ids).eq('kind', 'estimate').order('created_at') : Promise.resolve({ data:[] })
+    billing ? sb.from('invoices').select('job_id, kind, status, total, created_at').in('job_id', ids).eq('kind', 'estimate').order('created_at') : Promise.resolve({ data:[] }),
+    typeof helperCounts === 'function' ? helperCounts(ids) : Promise.resolve({})
   ]);
+  Object.entries(helpers || {}).forEach(([id, n]) => { if(out[id]) out[id].helpers = n; });
   (t.data || []).forEach(r => { if(out[r.job_id]) out[r.job_id].laborH = Number(r.labor_minutes || 0) / 60; });
   (pts.data || []).forEach(r => { if(out[r.job_id]) out[r.job_id].parts = (out[r.job_id].parts || 0) + (Number(r.qty) - Number(r.returned_qty)) * Number(r.unit_price || 0); });
   (est.data || []).forEach(r => { if(out[r.job_id]) { out[r.job_id].estimate = Number(r.total || 0); out[r.job_id].estimateStatus = r.status; } });
@@ -75,7 +77,7 @@ function woCardHtml(j, techName, m){
       <div class="wo-card-top"><span class="ro-num">${esc(j.ro_number || '#' + j.id)}</span>${j.job_type === 'mobile' ? '<span class="wo-road" title="Roadside">ROAD</span>' : ''}${j.priority && j.priority !== 'normal' ? `<span class="prio-chip prio-${esc(j.priority)}">${esc(PRIORITY_LABELS[j.priority] || j.priority)}</span>` : ''}${j.warranty_claim_status === 'pending_review' ? '<span class="prio-chip prio-high">Warranty?</span>' : ''}</div>
       <div class="wo-card-unit">${esc(j.vehicle || '')}</div>
       ${j.complaint ? `<div class="wo-card-svc">${esc(j.complaint.length > 70 ? j.complaint.slice(0, 68) + '…' : j.complaint)}</div>` : ''}
-      <div class="wo-card-meta"><span>${esc(j.customer || '')}</span><span>${esc(techName || 'Unassigned')}</span></div>
+      <div class="wo-card-meta"><span>${esc(j.customer || '')}</span><span>${esc(techName || 'Unassigned')}${m.helpers ? ' +' + m.helpers : ''}</span></div>
       <div class="wo-card-foot">${jobStatusBadge(j.status)}${facts.length ? `<div class="wo-card-facts">${facts.join('')}</div>` : ''}</div>
     </div>`;
 }

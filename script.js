@@ -113,6 +113,7 @@ function roChipsHtml(j){
   if(j.priority && j.priority !== 'normal') out += `<span class="prio-chip prio-${esc(j.priority)}">${esc(PRIORITY_LABELS[j.priority] || j.priority)}</span>`;
   if(j.safety_issue) out += `<span class="prio-chip prio-safety">Safety</span>`;
   if(j.drivable === false) out += `<span class="prio-chip prio-nodrive">Not drivable</span>`;
+  if(j._helping) out += `<span class="prio-chip prio-low">Helping</span>`;
   if(j.warranty_claim_status === 'pending_review') out += `<span class="prio-chip prio-high" title="This unit had an earlier repair that may still be under warranty">Warranty?</span>`;
   else if(j.warranty_claim_status === 'warranty') out += `<span class="prio-chip prio-low">Warranty</span>`;
   return out ? `<div class="ro-chips">${out}</div>` : '';
@@ -1350,7 +1351,9 @@ function initMechanicView(){
 }
 
 async function renderMechJobs(){
-  const active = await fetchActiveJobs({ mechanicId: session.id });
+  let active = await fetchActiveJobs({ mechanicId: session.id });
+  // Jobs where this mechanic was added as a technician (Redesign R4a).
+  if(typeof fetchHelperJobs === 'function'){ const extra = await fetchHelperJobs(); active = active.concat(extra.filter(x => !active.some(a => a.id === x.id))); }
   const history = await fetchCompletedJobs(15, { mechanicId: session.id });
   mechActiveJobsCache = active; // used by the GPS ticker to update distance without a full rebuild
 
@@ -2310,6 +2313,7 @@ function initShopView(){
   if(typeof initShopRedesign === 'function') safeInit('initShopRedesign', initShopRedesign);
   if(typeof initOpsUI === 'function') safeInit('initOpsUI', initOpsUI);
   if(typeof initDispatchUI === 'function') safeInit('initDispatchUI', initDispatchUI);
+  if(typeof initQboUI === 'function') safeInit('initQboUI', initQboUI);
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
   safeInit('announcementDismissWiring', ()=>{ document.getElementById('announcementDismiss').onclick = dismissAnnouncement; });

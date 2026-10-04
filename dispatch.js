@@ -105,7 +105,8 @@ function drawDispatchMap(){
 
 // ================= Accept job (mechanic) =================
 function acceptBlockHtml(job){
-  if(isClosedStatus(job.status) || !['new','assigned'].includes(job.status)) return '';
+  // Only the lead technician answers the assignment; helpers just work the job.
+  if(isClosedStatus(job.status) || !['new','assigned'].includes(job.status) || job.mechanic_id !== session.id) return '';
   if(job.declined_at) return `<div class="accept-box declined"><b>You said you can't take this job.</b><div class="meta">The shop will reassign it.${job.decline_reason ? ' Your reason: “' + esc(job.decline_reason) + '”' : ''}</div></div>`;
   if(job.accepted_at) return '';
   return `<div class="accept-box"><b>New job for you</b><div class="accept-btns"><button type="button" class="accept-yes" data-accept="${job.id}">Accept job</button><button type="button" class="ghost-btn" data-decline="${job.id}">Can't take it</button></div></div>`;
