@@ -12,9 +12,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=41"/>
+<link rel="stylesheet" href="style.css?v=42"/>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
 </head>
 <body>
@@ -94,182 +94,97 @@
 <main>
 
   <!-- ================= PUBLIC HOME ================= -->
-  <div id="homeView" class="lp">
-
-    <section class="lp-hero">
-      <div class="lp-hero-copy">
-        <h1>Run your shop floor and your road calls from one screen.</h1>
-        <p class="lp-lead">Relay is shop management and dispatch software for truck and trailer repair. Track every job in the bay on one workflow board, send mechanics out on road calls and see them on the map, and invoice from the finished job.</p>
-        <div class="lp-actions">
-          <button class="lp-btn lp-btn-primary" id="landingSignup">Set up your company</button>
-          <button class="lp-btn lp-btn-quiet" id="landingLogin">Sign in</button>
+  <div id="homeView" class="lx">
+    <section class="lx-hero">
+      <div class="lx-hero-copy">
+        <h1>The shop system that also runs the road.</h1>
+        <p class="lx-lede">Relay keeps every truck and trailer repair on one work order — from the call, to the mechanic on the shoulder, to the paid invoice. Your office, your mechanics and your fleet customers all see the same job, live.</p>
+        <div class="lx-actions">
+          <button class="lx-btn lx-btn-primary" id="landingSignup">Set up your company</button>
+          <button class="lx-btn lx-btn-quiet" id="landingLogin">Sign in</button>
         </div>
-        <button type="button" class="lp-textlink" onclick="document.getElementById('lp-how').scrollIntoView({behavior:'smooth'})">See how a job moves through Relay</button>
+        <p class="lx-note">Built for truck and trailer repair shops with in-shop bays and road service.</p>
       </div>
 
-      <figure class="lp-demo" aria-label="Relay workflow board with in-shop and roadside jobs in the columns Assigned, Heading there, and On site">
-        <div class="lp-demo-head">
-          <span class="lp-demo-title">Workflow board</span>
-          <span class="lp-demo-live">5 open jobs: 2 in-shop, 3 roadside</span>
+      <div class="lx-scene" id="lxScene" aria-label="A roadside repair, from dispatch to invoice" role="img">
+        <div class="lx-map">
+          <svg viewBox="0 0 520 360" preserveAspectRatio="none" class="lx-roads" aria-hidden="true">
+            <defs><pattern id="lxGrid" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M26 0H0V26" fill="none" stroke="#17264A" stroke-width="1"/></pattern></defs>
+            <rect width="520" height="360" fill="url(#lxGrid)"/>
+            <path d="M-10 300 C 120 290, 160 210, 260 200 S 420 120, 540 60" class="lx-hwy"/>
+            <path d="M60 -10 C 80 90, 140 150, 150 370" class="lx-road"/>
+            <path d="M330 -10 C 320 120, 380 220, 400 370" class="lx-road"/>
+            <path id="lxRoute" d="M70 312 C 130 300, 170 215, 260 202 S 390 140, 438 108" class="lx-route"/>
+          </svg>
+          <div class="lx-pin lx-pin-shop" style="left:13.5%;top:86.5%"></div>
+          <span class="lx-maplabel" style="left:4%;top:91%">Shop</span>
+          <span class="lx-maplabel" style="right:4%;top:17%">I-10 · exit 72</span>
+          <div class="lx-pin lx-pin-truck" style="left:84.2%;top:30%"><span></span></div>
+          <div class="lx-mech" id="lxMech"><span class="lx-mech-dot"></span><span class="lx-mech-ring"></span></div>
+          <div class="lx-eta" id="lxEta"><b id="lxEtaMin">18</b><span>min away</span></div>
         </div>
-        <div class="lp-hero-board">
-          <div class="lp-vcol"><span class="lp-col-h amber">Assigned <i>2</i></span>
-            <div class="lp-card"><b>Unit 1187</b><span>Brake adjustment</span><em class="lp-tag">In-shop</em></div>
-            <div class="lp-card"><b>Unit 3302</b><span>Reefer won't start</span><em class="lp-tag lp-tag-road">Roadside</em></div>
-          </div>
-          <div class="lp-vcol"><span class="lp-col-h orange">Heading there <i>1</i></span>
-            <div class="lp-card lp-card-live"><b>Unit 4521</b><span>Air leak, I-94 exit 41</span><span class="lp-card-eta"><span class="lp-pulse"></span>Robert, 6.2 miles away</span><em class="lp-tag lp-tag-road">Roadside</em></div>
-          </div>
-          <div class="lp-vcol"><span class="lp-col-h blue">On site <i>2</i></span>
-            <div class="lp-card"><b>Unit 2254</b><span>PM service</span><em class="lp-tag">In-shop</em></div>
-            <div class="lp-card"><b>Unit 0930</b><span>Tire replacement</span><em class="lp-tag lp-tag-road">Roadside</em></div>
-          </div>
+        <div class="lx-wo" aria-hidden="true">
+          <div class="lx-wo-head"><span class="lx-wo-num">WO-000482</span><span class="lx-chip" id="lxStatus" data-s="assigned">Assigned</span></div>
+          <div class="lx-wo-unit">Truck T-55 <span>ABC Logistics</span></div>
+          <div class="lx-wo-svc">Blown steer tire, I-10 eastbound</div>
+          <div class="lx-wo-tech"><span class="lx-avatar">MT</span> Mike Torres <em id="lxAccept">Waiting to accept</em></div>
+          <dl class="lx-wo-lines">
+            <div><dt>Labor</dt><dd id="lxLabor">0:00</dd></div>
+            <div><dt>Parts</dt><dd id="lxParts">—</dd></div>
+            <div class="lx-total"><dt>Total</dt><dd id="lxTotal">$0.00</dd></div>
+          </dl>
+          <div class="lx-wo-foot" id="lxFoot">Customer can follow along</div>
         </div>
-        <figcaption class="lp-demo-foot">Drag a card to change its status. In-shop jobs skip the driving step.</figcaption>
-      </figure>
+      </div>
     </section>
 
-    <section class="lp-section" id="lp-how">
-      <h2>How a job moves through Relay</h2>
-      <ol class="lp-steps">
-        <li>
-          <h3>The request comes in</h3>
-          <p>Your customer fills out your request link: their unit, the problem, and either where they broke down or when they can bring it in. No account needed. Or you create the job yourself.</p>
-        </li>
-        <li>
-          <h3>You assign a mechanic</h3>
-          <p>In-shop jobs go straight onto the board. For a road call, the mechanic goes live and you see them on the map, and so does your fleet customer.</p>
-        </li>
-        <li>
-          <h3>The work gets documented</h3>
-          <p>Status moves across the board as the job progresses. Chat and before/after photos stay attached to the job.</p>
-        </li>
-        <li>
-          <h3>The invoice goes out</h3>
-          <p>Send a branded PDF invoice from the finished job, mark it paid, and ask for a review.</p>
-        </li>
+    <section class="lx-flow" aria-labelledby="lxFlowH">
+      <h2 id="lxFlowH">One work order, start to paid.</h2>
+      <p class="lx-sub">Nobody re-types anything. Each step builds on the one before it.</p>
+      <ol class="lx-steps">
+        <li><b>Request</b><span>A customer sends your request link, or you open a work order yourself.</span></li>
+        <li><b>Estimate</b><span>Diagnosis, labor and parts — sent for approval with one click.</span></li>
+        <li><b>Approval</b><span>The customer approves on their phone. You see it instantly.</span></li>
+        <li><b>Repair</b><span>Timers, parts and photos from the mechanic's phone, in the bay or on the road.</span></li>
+        <li><b>Invoice</b><span>Built from the approved estimate and the real work. Sent as a PDF.</span></li>
+        <li><b>Paid</b><span>Record payments, full or partial. The history stays with the unit.</span></li>
       </ol>
     </section>
 
-    <section class="lp-section lp-row">
-      <div class="lp-row-copy">
-        <h2>Live GPS when the job is on the road</h2>
-        <p>When a mechanic heads out to a breakdown, they go live from their phone and you follow them on the map, with directions to the exact location. Fleet customers see the same progress in their own account, so nobody has to call you for an update. Jobs in the bay don't use GPS at all.</p>
-      </div>
-      <div class="lp-visual lp-visual-map">
-        <div class="lp-map">
-          <svg viewBox="0 0 440 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-            <g class="lp-roads">
-              <path d="M0 250H440M0 150H440M0 70H440M40 0V300M140 0V300M300 0V300M400 0V300"/>
-              <path class="lp-hwy" d="M0 290L440 20"/>
-            </g>
-            <path class="lp-route" d="M40 70H300V150H400V230"/>
-            <g class="lp-shop"><rect x="28" y="58" width="24" height="24" rx="4"/><path d="M34 76v-8l6-4 6 4v8" /></g>
-            <g class="lp-breakdown"><circle class="lp-ring" cx="400" cy="230" r="16"/><circle cx="400" cy="230" r="7"/></g>
-            <g class="lp-tech"><circle r="9"/><circle r="3.5" class="lp-tech-core"/></g>
-            <g class="lp-tech-static"><circle cx="334" cy="150" r="9"/><circle cx="334" cy="150" r="3.5" class="lp-tech-core"/></g>
-          </svg>
-          <div class="lp-eta">
-            <span class="lp-eta-tag">What your fleet customer sees</span>
-            <b>Robert is on the way</b>
-            <span class="lp-eta-meta">6.2 miles away, updated a few seconds ago</span>
-            <span class="lp-eta-unit">Unit 4521, 53' dry van, air leak at the gladhand</span>
-            <ol class="lp-stages">
-              <li class="done">Assigned</li>
-              <li class="now">Heading there</li>
-              <li>On site</li>
-              <li>Complete</li>
-            </ol>
-          </div>
-        </div>
+    <section class="lx-people" aria-labelledby="lxPeopleH">
+      <h2 id="lxPeopleH">Everyone gets the view they need.</h2>
+      <div class="lx-cols">
+        <article>
+          <h3>The office</h3>
+          <p>A shop board from new to invoiced, dispatch with live mechanic locations, estimates, invoices, inventory and purchase orders. Exports for QuickBooks Online.</p>
+        </article>
+        <article>
+          <h3>Mechanics</h3>
+          <p>Their jobs on their phone. Accept a road call, navigate, run the timer, add parts and photos, clock in and out. Nothing they don't need.</p>
+        </article>
+        <article>
+          <h3>Fleet customers</h3>
+          <p>Where the mechanic is and when they'll arrive. Estimates to approve, invoices, and every unit's repair history — without calling to ask.</p>
+        </article>
       </div>
     </section>
 
-    <section class="lp-section lp-row lp-row-flip">
-      <div class="lp-row-copy">
-        <h2>Customers request service without calling you</h2>
-        <p>Share one link. Your customer picks roadside or drop-off, types their location or when they can bring the unit in, and describes the problem. You review each request and turn it into a job with one click, with the details already filled in.</p>
-      </div>
-      <div class="lp-visual lp-visual-phone" aria-hidden="true">
-        <div class="lp-phone">
-          <b>Request service</b>
-          <span class="lp-field">Company name<i>Northline Freight</i></span>
-          <span class="lp-field">Vehicle or unit<i>Unit 1187, tractor</i></span>
-          <span class="lp-seg"><i>Someone comes to me</i><i class="on">I'll bring it in</i></span>
-          <span class="lp-field">When can you bring it in?<i>Tomorrow around 8am</i></span>
-          <span class="lp-submit">Submit request</span>
-        </div>
-      </div>
+    <section class="lx-more" aria-labelledby="lxMoreH">
+      <h2 id="lxMoreH">And the rest of the shop.</h2>
+      <dl class="lx-list">
+        <div><dt>Shop floor screen</dt><dd>Bays, technicians and road calls on a TV in the shop.</dd></div>
+        <div><dt>Digital inspections</dt><dd>Pass, attention or critical, with photos the customer can see.</dd></div>
+        <div><dt>Parts and inventory</dt><dd>Stock by location, low-stock alerts, core charges, vendors.</dd></div>
+        <div><dt>Time and attendance</dt><dd>Clock in and out, billable hours and efficiency per technician.</dd></div>
+        <div><dt>Alerts</dt><dd>Approvals, arrivals and new requests — on the phone, even with Relay closed.</dd></div>
+        <div><dt>Ask Relay</dt><dd>"Which jobs are waiting for parts?" Answers from your own shop's data.</dd></div>
+      </dl>
     </section>
 
-    <section class="lp-section lp-row">
-      <div class="lp-row-copy">
-        <h2>Estimates and invoices from the job itself</h2>
-        <p>Send an estimate for approval, convert it to an invoice when the work is done, and email it as a PDF with your logo and payment details. Save your common services with prices once and add them to any invoice in a click. Paid and unpaid stay visible at a glance.</p>
-      </div>
-      <div class="lp-visual lp-visual-invoice" aria-hidden="true">
-        <div class="lp-doc">
-          <div class="lp-doc-top"><b>Invoice 1042</b><span class="lp-paid">Paid</span></div>
-          <span class="lp-doc-to">Northline Freight, Unit 4521</span>
-          <div class="lp-doc-line"><span>Road call, 1 hr labor</span><span>$185.00</span></div>
-          <div class="lp-doc-line"><span>Gladhand seal kit</span><span>$24.50</span></div>
-          <div class="lp-doc-line"><span>Mileage, 12 mi</span><span>$36.00</span></div>
-          <div class="lp-doc-total"><span>Total</span><span>$245.50</span></div>
-        </div>
-      </div>
+    <section class="lx-cta">
+      <h2>Put your next road call on Relay.</h2>
+      <button class="lx-btn lx-btn-light" id="landingSignup2">Set up your company</button>
     </section>
-
-    <section class="lp-section">
-      <h2>Also in Relay</h2>
-      <ul class="lp-also">
-        <li><b>Job history</b><span>Search every completed job by customer or unit.</span></li>
-        <li><b>Chat and photos per job</b><span>Before and after photos and messages stay with the work.</span></li>
-        <li><b>Price list</b><span>Your services and parts with prices, visible only to the owner.</span></li>
-        <li><b>Team and roles</b><span>Invite mechanics with your company code and manage who has access.</span></li>
-        <li><b>Analytics</b><span>Completion times and job volume by mechanic.</span></li>
-        <li><b>Review requests</b><span>Ask for a Google review once an invoice is paid.</span></li>
-      </ul>
-    </section>
-
-    <section class="lp-section lp-roles">
-      <h2>Built for everyone on the job</h2>
-      <input type="radio" name="lp-role" id="lp-role-shop" class="lp-radio" checked>
-      <input type="radio" name="lp-role" id="lp-role-mech" class="lp-radio">
-      <input type="radio" name="lp-role" id="lp-role-fleet" class="lp-radio">
-      <div class="lp-tabs">
-        <label for="lp-role-shop">Shop owners</label>
-        <label for="lp-role-mech">Mechanics</label>
-        <label for="lp-role-fleet">Fleet managers</label>
-      </div>
-      <div class="lp-panels">
-        <div class="lp-panel lp-p-shop">
-          <p>See your whole operation on one screen: who is live, which jobs are waiting, and what has been invoiced. Take requests from your link, see which mechanic is closest, and bill from the finished job.</p>
-        </div>
-        <div class="lp-panel lp-p-mech">
-          <p>One tap to go live on a roadside call, with turn-by-turn directions and a direct chat with dispatch. Update the job status and add photos from your phone. In-shop jobs need no GPS at all.</p>
-        </div>
-        <div class="lp-panel lp-p-fleet">
-          <p>See every job for your units across the shops you work with, how far away the mechanic is, and the status of each repair, without calling anyone for an update.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="lp-section lp-trust">
-      <h2>Your data stays yours</h2>
-      <p class="lp-trust-body">Every company gets its own private workspace. Jobs, customers, prices, and invoices are separated at the database level, so no other business on Relay can see them. You decide who joins your team, and a deactivated account loses access immediately.</p>
-    </section>
-
-    <section class="lp-cta">
-      <div>
-        <h2>Bring your shop and your road calls into one place.</h2>
-        <p>Set up your company in a few minutes. We review each new company before it goes live.</p>
-      </div>
-      <div class="lp-actions">
-        <button class="lp-btn lp-btn-onDark" id="landingSignup2">Set up your company</button>
-        <button type="button" class="lp-btn lp-btn-ghostDark" onclick="document.getElementById('navContact').click()">Talk to us</button>
-      </div>
-    </section>
-
   </div>
 
   <!-- ================= CONTACT ================= -->
@@ -1026,6 +941,7 @@
 </div>
 <script src="r4.js?v=1"></script>
 <script src="assist.js?v=1"></script>
+<script src="landing.js?v=1"></script>
 <script src="pwa.js?v=1"></script>
 
 </body>
