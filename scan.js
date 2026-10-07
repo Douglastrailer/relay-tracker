@@ -41,7 +41,9 @@ async function scanFile(file){
       sb.from('inventory_items').select('id, name, part_number').eq('org_id', session.orgId).eq('active', true).order('name').limit(10000)]);
     const { data: out, error } = await sb.functions.invoke('scan-invoice', { body: { data, media_type: f.type || 'image/jpeg' } });
     let msg = out && out.error;
-    if(error){ msg = error.message; try { const b = error.context && typeof error.context.json === 'function' ? await error.context.clone().json() : null; if(b && b.error) msg = b.error; } catch(_){} if(error.context && error.context.status === 404) msg = 'Scanning is not set up yet (no Edge Function named "scan-invoice").'; }
+    if(error){ msg = error.message; try { const b = error.context && typeof error.context.json === 'function' ? await error.context.clone().json() : null; if(b && b.error) msg = b.error; } catch(_){} if(error.context && error.context.status === 404) msg = 'Scanning is not set up yet (no Edge Function named "scan-invoice").';
+      // No answer at all: usually the function isn't deployed, or it crashes on start-up (e.g. core.ts missing).
+      if(error.name === 'FunctionsFetchError' || /Failed to send a request/i.test(error.message || '')) msg = 'Couldn\'t reach the scanning service. In Supabase, check that an Edge Function named exactly "scan-invoice" is deployed with both files (index.ts and core.ts), then try again.'; }
     if(msg) throw new Error(msg);
     scanState = { scan: out, locs: locs.data || [], items: items.data || [] };
     scanState.lines = out.lines.map(l => ({ ...l, include: l.kind === 'part' && l.qty > 0, choice: l.match ? String(l.match.item_id) : 'new',
