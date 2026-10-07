@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=42"/>
+<link rel="stylesheet" href="style.css?v=43"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -916,7 +916,7 @@
 <script src="tech.js?v=6"></script>
 <script src="fleet.js?v=3"></script>
 <script src="unit.js?v=3"></script>
-<script src="inv.js?v=2"></script>
+<script src="inv.js?v=3"></script>
 <script src="analytics.js?v=2"></script>
 <script src="comms.js?v=2"></script>
 <script src="roles.js?v=1"></script>
@@ -940,7 +940,14 @@
   </form>
 </div>
 <script src="r4.js?v=1"></script>
+<div id="scanModal" class="modal-overlay ro-overlay hidden" role="dialog" aria-modal="true" aria-label="Scan vendor invoice">
+  <div class="modal-card ro-card scan-card">
+    <button class="modal-close" id="scanClose" aria-label="Close">×</button>
+    <div id="scanBody"></div>
+  </div>
+</div>
 <script src="assist.js?v=1"></script>
+<script src="scan.js?v=1"></script>
 <script src="landing.js?v=1"></script>
 <script src="pwa.js?v=1"></script>
 

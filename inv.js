@@ -62,6 +62,7 @@ function renderParts(){
       <input type="search" id="invSearch" placeholder="Search name, part #, brand, cross-reference, vendor" aria-label="Search parts">
       <label class="rec-check"><input type="checkbox" id="invLowOnly"> Low stock only</label>
       <button type="button" class="ghost-btn" id="invReorder">Reorder low stock</button>
+      <button type="button" class="ghost-btn" id="invScan">Scan vendor invoice</button>
       <button type="button" id="invAdd">Add part or service</button>
     </div><div id="invList" class="rec-list"></div>`;
   const draw = () => {
@@ -97,6 +98,7 @@ function renderParts(){
   document.getElementById('invSearch').oninput = draw;
   document.getElementById('invLowOnly').onchange = draw;
   document.getElementById('invAdd').onclick = () => openItemForm(null);
+  const scanBtn = document.getElementById('invScan'); if(scanBtn) scanBtn.onclick = () => startInvoiceScan();
   document.getElementById('invReorder').onclick = reorderLowStock;
   draw();
 }

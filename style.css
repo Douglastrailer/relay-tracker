@@ -1789,3 +1789,31 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
   .lx-hero, .lx-flow, .lx-people, .lx-more{ padding-left:18px; padding-right:18px; }
 }
 @media (prefers-reduced-motion: reduce){ .lx-pin-truck span, .lx-driving .lx-route{ animation:none; } .lx-eta, .lx-chip, .lx-wo-foot{ transition:none; } }
+
+/* Scan vendor invoice */
+#scanModal .modal-card.scan-card{ max-width:980px; width:calc(100% - 48px); }
+.scan-title{ margin:0 0 4px; font-size:1.3rem; }
+.scan-head{ margin:14px 0 10px; }
+.scan-ok, .scan-new{ display:inline-block; margin-top:4px; font-size:.78rem; font-weight:700; }
+.scan-ok{ color:var(--ok); } .scan-new{ color:var(--warn); }
+.scan-lines{ display:flex; flex-direction:column; border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; }
+.scan-line{ display:grid; grid-template-columns:34px minmax(0, 1fr) auto; gap:12px; align-items:start; padding:12px; border-bottom:1px solid var(--line); background:var(--panel); }
+.scan-line:last-child{ border-bottom:0; }
+.scan-line.off{ background:var(--panel-2); opacity:.65; }
+.scan-inc input{ width:20px; height:20px; margin-top:4px; }
+.scan-read{ font-size:.95rem; overflow-wrap:anywhere; }
+.scan-read b{ font-family:var(--font-mono); font-size:.88rem; }
+.scan-match{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+.scan-match select, .scan-match input{ min-height:40px; padding:6px 8px; border:1px solid var(--line-strong); border-radius:var(--r-md); background:var(--panel-2); color:var(--ink); font:inherit; max-width:100%; }
+.scan-nums{ display:flex; gap:8px; }
+.scan-nums .field{ margin:0; width:96px; }
+.scan-nums input{ min-height:40px; }
+.scan-foot{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-top:14px; font-weight:600; }
+.scan-wait{ display:flex; flex-direction:column; align-items:center; gap:10px; padding:48px 16px; text-align:center; }
+.scan-spin{ width:34px; height:34px; border-radius:50%; border:3px solid var(--line); border-top-color:var(--accent); animation:scanSpin .8s linear infinite; }
+@keyframes scanSpin{ to{ transform:rotate(360deg); } }
+@media (max-width:700px){
+  #scanModal .modal-card.scan-card{ width:100%; }
+  .scan-line{ grid-template-columns:30px minmax(0, 1fr); }
+  .scan-nums{ grid-column:2; } .scan-nums .field{ width:auto; flex:1; }
+}
