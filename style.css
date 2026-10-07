@@ -1817,3 +1817,24 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
   .scan-line{ grid-template-columns:30px minmax(0, 1fr); }
   .scan-nums{ grid-column:2; } .scan-nums .field{ width:auto; flex:1; }
 }
+
+/* R6a — import + setup checklist */
+#importBox{ margin-bottom:18px; }
+.imp-file{ display:inline-flex; align-items:center; cursor:pointer; }
+.imp-map{ margin-top:14px; border-top:1px solid var(--line); padding-top:12px; }
+.imp-preview td, .imp-preview th{ white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis; }
+.imp-done{ margin-top:12px; padding:10px 12px; border-radius:var(--r-md); background:var(--ok-soft); color:var(--ok); }
+.imp-errs{ margin-top:8px; max-height:220px; overflow:auto; font-size:.88rem; color:var(--crit); border:1px solid var(--line); border-radius:var(--r-md); padding:8px 10px; }
+.setup-box{ background:var(--panel); border:1px solid var(--line); border-left:4px solid var(--accent); border-radius:var(--r-lg); padding:16px 18px; margin-bottom:22px; }
+.setup-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.setup-head h2{ margin:0; font-size:1.15rem; }
+.setup-bar{ height:6px; border-radius:999px; background:var(--panel-2); margin:10px 0 12px; overflow:hidden; }
+.setup-bar span{ display:block; height:100%; background:var(--accent); border-radius:999px; }
+.setup-steps{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:8px 20px; }
+.setup-steps li{ display:flex; align-items:center; gap:12px; padding:8px 0; }
+.setup-steps li > div{ flex:1; display:flex; flex-direction:column; }
+.setup-steps li > div span{ font-size:.85rem; color:var(--ink-soft); }
+.setup-steps li.ok b{ color:var(--ink-soft); text-decoration:line-through; }
+.setup-steps em{ font-style:normal; font-weight:700; color:var(--ok); font-size:.85rem; }
+.setup-mark{ flex:none; width:28px; height:28px; border-radius:50%; border:2px solid var(--line-strong); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.85rem; }
+.setup-steps li.ok .setup-mark{ background:var(--ok); border-color:var(--ok); color:#fff; }
