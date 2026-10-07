@@ -1838,3 +1838,12 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
 .setup-steps em{ font-style:normal; font-weight:700; color:var(--ok); font-size:.85rem; }
 .setup-mark{ flex:none; width:28px; height:28px; border-radius:50%; border:2px solid var(--line-strong); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.85rem; }
 .setup-steps li.ok .setup-mark{ background:var(--ok); border-color:var(--ok); color:#fff; }
+
+/* Phones, signed in: a FIXED top bar. iPhone Safari misplaces "sticky" bars after scrolling
+   (the bar could land in the middle of the open menu). Fixed + reserved space is reliable. */
+@media (max-width:900px){
+  body.in-app .topbar{ position:fixed; top:0; left:0; right:0; z-index:1000; }
+  body.in-app{ padding-top:var(--topbar-h); }
+  body.in-app.nav-open{ overflow:hidden; overscroll-behavior:none; }      /* the page behind the open menu doesn't scroll */
+  body.has-sidebar .dash-tabs{ top:var(--topbar-h); bottom:0; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+}
