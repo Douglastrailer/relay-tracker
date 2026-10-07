@@ -31,7 +31,7 @@ async function loadRoEstimates(job, opts){
   const box = document.getElementById('roEstimates');
   if(!box) return;
   const isShop = opts.isShop;
-  const docs = isShop ? ((await sb.from('invoices').select('id, kind, status, total, created_at, responded_at, approved_by_name').eq('job_id', job.id).order('created_at')).data || []) : [];
+  const docs = isShop ? ((await sb.from('invoices').select('doc_number, id, kind, status, total, created_at, responded_at, approved_by_name').eq('job_id', job.id).order('created_at')).data || []) : [];
   let auth = '';
   if(job.requires_authorization){
     if(job.authorized_at) auth = `<div class="auth-banner ok">Approved by <b>${esc(job.authorized_by_name || 'customer')}</b> · ${fmtDateTime(job.authorized_at)}</div>`;
@@ -48,7 +48,7 @@ async function loadRoEstimates(job, opts){
   }
   box.innerHTML = `<h4>Estimates &amp; invoices</h4>${auth}
     ${isShop ? (docs.length ? docs.map(d => `<div class="insp-row">
-        <div class="insp-row-main"><b>${d.kind === 'estimate' ? 'Estimate' : 'Invoice'} #${d.id}</b> <span class="meta">· ${money2(d.total)}</span>
+        <div class="insp-row-main"><b>${d.kind === 'estimate' ? 'Estimate' : 'Invoice'} ${esc(docNo(d))}</b> <span class="meta">· ${money2(d.total)}</span>
           <div class="meta">${esc(DOC_STATUS[d.status] || d.status)}${d.approved_by_name && d.status === 'approved' ? ' by ' + esc(d.approved_by_name) : ''} · ${fmtDate(d.created_at)}</div></div>
         <button type="button" class="est-open" data-doc="${d.id}">Open</button></div>`).join('') : '<p class="meta">No estimate yet.</p>')
       + `<div class="insp-start"><button type="button" id="estNewBtn">New estimate</button></div>` : ''}`;
@@ -118,7 +118,7 @@ function renderEstimateEditor(){
   const unusedRecs = estCurrent.recs.filter(r => !lines.some(l => l.recommended_repair_id === r.id));
   body.innerHTML = `
     <div class="ro-head"><div>
-      <div class="ro-head-num">${isEst ? 'ESTIMATE' : 'INVOICE'} #${doc.id}${job && job.ro_number ? ' · ' + esc(job.ro_number) : ''}</div>
+      <div class="ro-head-num">${isEst ? 'ESTIMATE' : 'INVOICE'} ${esc(docNo(doc))}${job && job.ro_number ? ' · ' + esc(job.ro_number) : ''}</div>
       <h2>${esc(doc.customer_name)}${doc.unit_number ? ' — ' + esc(doc.unit_number) : ''}</h2>
       <div class="meta">${esc(DOC_STATUS[doc.status] || doc.status)} · created ${fmtDate(doc.created_at)}</div></div></div>
     ${approvalInfoHtml(doc)}
@@ -277,7 +277,7 @@ function wireEditor(editable){
     if(!confirm('Create an invoice from the approved lines?')) return;
     const { data, error } = await sb.rpc('convert_estimate_to_invoice', { p_estimate: estCurrent.doc.id });
     if(error){ showEstError(error.message); return; }
-    recordsToast('Invoice #' + data + ' created');
+    recordsToast('Invoice created');
     afterChange(Number(data));
   });
   on('estEmailInv', async () => {

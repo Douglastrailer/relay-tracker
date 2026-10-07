@@ -100,7 +100,7 @@
   function render(){
     const e = data.estimate, lines = data.lines || [], job = data.job || {};
     const head = el('div', { class:'card' },
-      el('div', { class:'meta', text: 'Estimate #' + e.id + (job.ro_number ? ' · ' + job.ro_number : '') + ' · ' + new Date(e.created_at).toLocaleDateString() }),
+      el('div', { class:'meta', text: 'Estimate ' + (e.doc_number || '#' + e.id) + (job.ro_number ? ' · ' + job.ro_number : '') + ' · ' + new Date(e.created_at).toLocaleDateString() }),
       el('h2', { text: e.customer_name + (e.unit_number ? ' — Unit ' + e.unit_number : '') }),
       job.complaint ? el('div', { class:'meta', text: 'Reported problem: ' + job.complaint }) : null,
       e.po_number ? el('div', { class:'meta', text: 'PO ' + e.po_number }) : null,

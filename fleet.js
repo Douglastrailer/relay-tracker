@@ -26,7 +26,7 @@ async function refreshFleetPortal(){
     fetchAllOrganizations(),
     sb.from('jobs').select(JOB_COLUMNS).order('created_at', { ascending:false }).limit(500),
     sb.from('units').select('id, org_id, customer_id, unit_number, unit_type, trailer_type, vin, year, make, model, plate, plate_state, odometer, active').eq('active', true).order('unit_number').limit(1000),
-    sb.from('invoices').select('id, org_id, job_id, kind, status, total, due_date, created_at, approval_token, unit_number, customer_name, approved_by_name, responded_at').order('created_at', { ascending:false }).limit(300)
+    sb.from('invoices').select('doc_number, id, org_id, job_id, kind, status, total, due_date, created_at, approval_token, unit_number, customer_name, approved_by_name, responded_at').order('created_at', { ascending:false }).limit(300)
   ]);
   fleetPortal.orgs = orgs || [];
   fleetPortal.jobs = jobsRes.data || [];
@@ -57,9 +57,9 @@ function renderFleetDashboard(){
   document.querySelectorAll('#fleetStats [data-goto]').forEach(b => b.onclick = () => showFleetTab(b.dataset.goto));
   const jobFor = d => jobs.find(j => j.id === d.job_id) || {};
   const items = [];
-  toApprove.forEach(d => { const j = jobFor(d); items.push(`<div class="attn-row attn-approve"><div><b>Estimate #${d.id} needs your approval</b><div class="meta">${esc(fleetOrgName(d.org_id))} · ${esc(j.ro_number || '')} · ${esc(d.unit_number || j.vehicle || '')} · ${fleetMoney(d.total)}</div></div>
+  toApprove.forEach(d => { const j = jobFor(d); items.push(`<div class="attn-row attn-approve"><div><b>Estimate ${esc(docNo(d))} needs your approval</b><div class="meta">${esc(fleetOrgName(d.org_id))} · ${esc(j.ro_number || '')} · ${esc(d.unit_number || j.vehicle || '')} · ${fleetMoney(d.total)}</div></div>
       <a class="attn-btn" href="${esc(fleetApproveUrl(d.approval_token))}" target="_blank" rel="noopener">Review &amp; approve</a></div>`); });
-  overdue.forEach(d => items.push(`<div class="attn-row attn-overdue"><div><b>Invoice #${d.id} is overdue</b><div class="meta">${esc(fleetOrgName(d.org_id))} · due ${fmtDate(d.due_date)} · ${fleetMoney(d.total)}</div></div>
+  overdue.forEach(d => items.push(`<div class="attn-row attn-overdue"><div><b>Invoice ${esc(docNo(d))} is overdue</b><div class="meta">${esc(fleetOrgName(d.org_id))} · due ${fmtDate(d.due_date)} · ${fleetMoney(d.total)}</div></div>
       <button type="button" class="attn-btn ghost" data-pdf="${d.id}">View invoice</button></div>`));
   active.filter(j => j.status === 'waiting_parts').forEach(j => items.push(`<div class="attn-row"><div><b>${esc(j.vehicle)} is waiting for parts</b><div class="meta">${esc(fleetOrgName(j.org_id))} · ${esc(j.ro_number || '')}</div></div>
       <button type="button" class="attn-btn ghost j-open-ro" data-job="${j.id}">Details</button></div>`));
@@ -119,7 +119,7 @@ function renderFleetInvoices(){
   const cls = d => d.kind === 'estimate' ? (d.status === 'sent' ? 'waiting' : d.status === 'declined' ? 'cancelled' : 'arrived') : (d.status === 'paid' ? 'arrived' : isOverdue(d) ? 'overdue' : 'waiting');
   box.innerHTML = docs.length ? docs.map(d => { const j = jobs.find(x => x.id === d.job_id) || {};
     return `<div class="fleet-doc">
-      <div class="rec-main"><b>${d.kind === 'estimate' ? 'Estimate' : 'Invoice'} #${d.id}</b>
+      <div class="rec-main"><b>${d.kind === 'estimate' ? 'Estimate' : 'Invoice'} ${esc(docNo(d))}</b>
         <div class="meta">${[fleetOrgName(d.org_id), j.ro_number, d.unit_number || j.vehicle, fmtDate(d.created_at), d.kind === 'invoice' && d.due_date && d.status !== 'paid' ? 'due ' + fmtDate(d.due_date) : ''].filter(Boolean).map(esc).join(' · ')}</div></div>
       <div class="fleet-doc-side"><b>${fleetMoney(d.total)}</b><span class="badge ${cls(d)}"><span class="bd"></span>${esc(label(d))}</span>
         ${d.kind === 'estimate' && d.status === 'sent' && d.approval_token ? `<a class="attn-btn" href="${esc(fleetApproveUrl(d.approval_token))}" target="_blank" rel="noopener">Review &amp; approve</a>` : ''}

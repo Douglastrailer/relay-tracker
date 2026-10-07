@@ -43,7 +43,7 @@ async function openUnitHistory(unitId){
   const jobIds = jobs.map(j => j.id);
   const [custRes, invRes, photoRes] = await Promise.all([
     u.customer_id ? sb.from('customers').select('company_name').eq('id', u.customer_id).maybeSingle() : Promise.resolve({ data:null }),
-    jobIds.length ? sb.from('invoices').select('id, job_id, kind, status, total, created_at, due_date, invoice_items(description, quantity, unit_price, item_type, customer_decision)').in('job_id', jobIds).neq('status', 'draft').order('created_at', { ascending:false }) : Promise.resolve({ data:[] }),
+    jobIds.length ? sb.from('invoices').select('doc_number, id, job_id, kind, status, total, created_at, due_date, invoice_items(description, quantity, unit_price, item_type, customer_decision)').in('job_id', jobIds).neq('status', 'draft').order('created_at', { ascending:false }) : Promise.resolve({ data:[] }),
     jobIds.length ? sb.from('job_attachments').select('id, job_id, file_path, file_name, file_type, created_at').in('job_id', jobIds).order('created_at', { ascending:false }).limit(40) : Promise.resolve({ data:[] })
   ]);
   unitHistCurrent = { u, sum: sumRes.data || {}, jobs, insps: inspRes.data || [], docs: invRes.data || [], photos: (photoRes.data || []).filter(p => /^image\//.test(p.file_type || '') || /\.(jpe?g|png|webp|gif)$/i.test(p.file_name || '')), customer: custRes.data ? custRes.data.company_name : '' };
@@ -124,7 +124,7 @@ function renderUnitHistory(){
     </section>
 
     <section class="ro-sec"><h4>Invoices &amp; estimates (${docs.length})</h4>
-      ${docs.length ? docs.map(d => `<div class="ro-inv"><span>${d.kind === 'estimate' ? 'Estimate' : 'Invoice'} #${d.id}</span><span class="meta">${fmtDate(d.created_at)}</span>
+      ${docs.length ? docs.map(d => `<div class="ro-inv"><span>${d.kind === 'estimate' ? 'Estimate' : 'Invoice'} ${esc(docNo(d))}</span><span class="meta">${fmtDate(d.created_at)}</span>
         <span class="rec-tag">${esc(String(d.status).replace(/_/g, ' '))}</span><b>${unitMoney(d.total)}</b><button type="button" class="text-btn" data-pdf="${d.id}">PDF</button></div>`).join('') : '<p class="meta">None yet.</p>'}
     </section>
 
@@ -233,7 +233,7 @@ async function lookupUnitsByDocNumber(q){
     (data || []).forEach(j => j.unit_id && ids.add(j.unit_id));
   }
   if(numMatch){
-    const { data } = await sb.from('invoices').select('job_id, jobs(unit_id)').eq('org_id', session.orgId).eq('id', Number(numMatch[1]));
+    const { data } = await sb.from('invoices').select('doc_number, job_id, jobs(unit_id)').eq('org_id', session.orgId).eq('id', Number(numMatch[1]));
     (data || []).forEach(d => d.jobs && d.jobs.unit_id && ids.add(d.jobs.unit_id));
     const { data: ro } = await sb.from('jobs').select('unit_id').eq('org_id', session.orgId).in('ro_number', ['WO-' + numMatch[1].padStart(6, '0'), 'RO-' + numMatch[1].padStart(6, '0')]);
     (ro || []).forEach(j => j.unit_id && ids.add(j.unit_id));

@@ -77,7 +77,7 @@ function qboRange(){
   return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: new Date(now.getFullYear(), now.getMonth() + 1, 1) };
 }
 async function loadQboInvoices(rg){
-  const { data } = await sb.from('invoices').select('id, job_id, customer_name, created_at, due_date, payment_terms, total, tax_amount, discount_amount, status, unit_number, invoice_items(description, quantity, unit_price, item_type, customer_decision), jobs(ro_number, vehicle, completed_at)')
+  const { data } = await sb.from('invoices').select('doc_number, id, job_id, customer_name, created_at, due_date, payment_terms, total, tax_amount, discount_amount, status, unit_number, invoice_items(description, quantity, unit_price, item_type, customer_decision), jobs(ro_number, vehicle, completed_at)')
     .eq('org_id', session.orgId).eq('kind', 'invoice').neq('status', 'draft').gte('created_at', rg.from.toISOString()).lt('created_at', rg.to.toISOString()).order('created_at').limit(5000);
   return data || [];
 }
@@ -85,7 +85,7 @@ function qboInvoiceRows(invs){
   const head = ['InvoiceNo','Customer','InvoiceDate','DueDate','Terms','Memo','Item(Product/Service)','ItemDescription','ItemQuantity','ItemRate','ItemAmount','Service Date'];
   const groups = invs.map(i => {
     const j = i.jobs || {};
-    const base = [String(i.id), i.customer_name || 'Customer', qboDate(i.created_at), qboDate(i.due_date || i.created_at), QBO_TERMS[i.payment_terms] || '',
+    const base = [String(i.doc_number || i.id), i.customer_name || 'Customer', qboDate(i.created_at), qboDate(i.due_date || i.created_at), QBO_TERMS[i.payment_terms] || '',
                   [j.ro_number, i.unit_number || j.vehicle].filter(Boolean).join(' · ')];
     const lines = (i.invoice_items || []).filter(l => l.customer_decision !== 'declined').map(l => base.concat([QBO_ITEM[l.item_type] || 'Other', l.description, Number(l.quantity), Number(l.unit_price),
       (Math.round(Number(l.quantity) * Number(l.unit_price) * 100) / 100).toFixed(2), qboDate(j.completed_at)]));
@@ -125,11 +125,11 @@ async function qboExport(kind){
     files.forEach((rows, k) => downloadCsv(`relay-qbo-invoices-${stamp}${files.length > 1 ? '-part' + (k + 1) : ''}.csv`, rows));
     renderQboWarnings(invs, files.length);
   } else if(kind === 'payments'){
-    const { data } = await sb.from('payments').select('amount, method, reference, paid_on, note, invoices(id, customer_name)').eq('org_id', session.orgId)
+    const { data } = await sb.from('payments').select('amount, method, reference, paid_on, note, invoices(id, doc_number, customer_name)').eq('org_id', session.orgId)
       .gte('paid_on', rg.from.toISOString().slice(0, 10)).lt('paid_on', rg.to.toISOString().slice(0, 10)).order('paid_on').limit(5000);
     if(!(data || []).length){ err.textContent = 'No payments in this period.'; return; }
     downloadCsv(`relay-qbo-payments-${stamp}.csv`, [['Date','Invoice No','Customer','Amount','Payment method','Reference','Memo']]
-      .concat(data.map(p => [qboDate(p.paid_on), p.invoices ? p.invoices.id : '', p.invoices ? p.invoices.customer_name : '', Number(p.amount).toFixed(2), ({ cash:'Cash', check:'Check', card:'Credit card', ach:'ACH', other:'Other' })[p.method] || p.method, p.reference, p.note])));
+      .concat(data.map(p => [qboDate(p.paid_on), p.invoices ? (p.invoices.doc_number || p.invoices.id) : '', p.invoices ? p.invoices.customer_name : '', Number(p.amount).toFixed(2), ({ cash:'Cash', check:'Check', card:'Credit card', ach:'ACH', other:'Other' })[p.method] || p.method, p.reference, p.note])));
   }
   recordsToast('Downloaded');
 }
@@ -138,7 +138,7 @@ function renderQboWarnings(invs, nFiles){
   const disc = invs.filter(i => Number(i.discount_amount) > 0), tax = invs.filter(i => Number(i.tax_amount) > 0);
   const notes = [];
   if(nFiles > 1) notes.push(`The invoices were split into <b>${nFiles} files</b> (QuickBooks takes at most 100 invoices or 1,000 rows per file). Import each one.`);
-  if(disc.length) notes.push(`<b>${disc.length} invoice${disc.length === 1 ? ' has' : 's have'} a discount</b> (${disc.map(i => '#' + i.id).join(', ')}). QuickBooks can't import negative lines, so add those discounts in QuickBooks after importing.`);
+  if(disc.length) notes.push(`<b>${disc.length} invoice${disc.length === 1 ? ' has' : 's have'} a discount</b> (${disc.map(i => docNo(i)).join(', ')}). QuickBooks can't import negative lines, so add those discounts in QuickBooks after importing.`);
   if(tax.length) notes.push(`<b>${tax.length} invoice${tax.length === 1 ? ' includes' : 's include'} sales tax</b> as a "Sales Tax" line. QuickBooks won't import invoices at all if its own sales tax feature is turned on; in that case enter these invoices there instead.`);
   box.innerHTML = notes.length ? `<div class="auth-banner wait">${notes.map(n => `<p>${n}</p>`).join('')}</div>` : '<p class="meta">Ready to import.</p>';
 }

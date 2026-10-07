@@ -44,7 +44,7 @@ async function renderTodayTiles(active, mechanics, liveCount){
   // Exact counts from the database (not limited to the recent list).
   const [doneRes, revRes] = await Promise.all([
     sb.from('jobs').select('id', { count:'exact', head:true }).eq('org_id', session.orgId).gte('completed_at', midnight.toISOString()).in('status', ['complete','invoiced','paid']),
-    billing ? sb.from('invoices').select('total').eq('org_id', session.orgId).eq('kind', 'invoice').neq('status', 'draft').gte('created_at', midnight.toISOString()) : Promise.resolve({ data:null })
+    billing ? sb.from('invoices').select('doc_number, total').eq('org_id', session.orgId).eq('kind', 'invoice').neq('status', 'draft').gte('created_at', midnight.toISOString()) : Promise.resolve({ data:null })
   ]);
   draw(doneRes.count ?? 0, billing ? (revRes.data || []).reduce((s, r) => s + Number(r.total || 0), 0) : undefined);
 }
@@ -58,7 +58,7 @@ async function fetchBoardMetrics(ids){
   const [t, pts, est, helpers] = await Promise.all([
     sb.from('job_time_summary').select('job_id, labor_minutes').in('job_id', ids),
     sb.from('job_parts').select('job_id, qty, returned_qty, unit_price').in('job_id', ids),
-    billing ? sb.from('invoices').select('job_id, kind, status, total, created_at').in('job_id', ids).eq('kind', 'estimate').order('created_at') : Promise.resolve({ data:[] }),
+    billing ? sb.from('invoices').select('doc_number, job_id, kind, status, total, created_at').in('job_id', ids).eq('kind', 'estimate').order('created_at') : Promise.resolve({ data:[] }),
     typeof helperCounts === 'function' ? helperCounts(ids) : Promise.resolve({})
   ]);
   Object.entries(helpers || {}).forEach(([id, n]) => { if(out[id]) out[id].helpers = n; });
@@ -174,7 +174,7 @@ async function runGlobalSearch(qRaw){
       .or(num ? `ro_number.in.(WO-${num.padStart(6, '0')},RO-${num.padStart(6, '0')}),vehicle.ilike.${like},customer.ilike.${like}` : `ro_number.ilike.${like},vehicle.ilike.${like},customer.ilike.${like},complaint.ilike.${like}`)
       .order('created_at', { ascending:false }).limit(8),
     sb.from('customers').select('id, company_name, contact_name, phone').eq('org_id', org).or(`company_name.ilike.${like},contact_name.ilike.${like},phone.ilike.${like},email.ilike.${like}`).limit(5),
-    billing && num ? sb.from('invoices').select('id, kind, status, total, customer_name').eq('org_id', org).eq('id', Number(num)).limit(2) : Promise.resolve({ data:[] }),
+    billing && num ? sb.from('invoices').select('doc_number, id, kind, status, total, customer_name').eq('org_id', org).or(`id.eq.${Number(num)},doc_number.in.(INV-${num.padStart(4, '0')},EST-${num.padStart(4, '0')})`).limit(4) : Promise.resolve({ data:[] }),
     sb.from('inventory_items').select('id, name, part_number, brand').eq('org_id', org).eq('active', true).or(`part_number.ilike.${like},name.ilike.${like},brand.ilike.${like},cross_ref.ilike.${like}`).limit(5)
   ]);
   if(seq !== gsSeq) return;   // a newer search finished first
@@ -184,7 +184,7 @@ async function runGlobalSearch(qRaw){
     sec('Units', (units.data || []).map(u => item(`data-gs="unit" data-id="${u.id}"`, esc(({ truck:'Truck', trailer:'Trailer' })[u.unit_type] || 'Unit') + ' ' + esc(u.unit_number), [u.customers && u.customers.company_name, u.vin && 'VIN ' + u.vin, u.plate].filter(Boolean).map(esc).join(' · ')))) +
     sec('Work orders', (jobs.data || []).map(j => item(`data-gs="job" data-id="${j.id}"`, esc(j.ro_number || '#' + j.id) + ' · ' + esc(j.vehicle || ''), esc(j.customer || '') + ' · ' + esc(statusLabel(j.status)) + (j.complaint ? ' · ' + esc(j.complaint.slice(0, 50)) : '')))) +
     sec('Customers', (custs.data || []).map(c => item(`data-gs="customer" data-id="${c.id}"`, esc(c.company_name), [c.contact_name, c.phone].filter(Boolean).map(esc).join(' · ')))) +
-    sec('Estimates & invoices', (docs.data || []).map(d => item(`data-gs="doc" data-id="${d.id}"`, (d.kind === 'estimate' ? 'Estimate' : 'Invoice') + ' #' + d.id, esc(d.customer_name || '') + ' · ' + shopMoney(d.total) + ' · ' + esc(String(d.status).replace(/_/g, ' '))))) +
+    sec('Estimates & invoices', (docs.data || []).map(d => item(`data-gs="doc" data-id="${d.id}"`, (d.kind === 'estimate' ? 'Estimate' : 'Invoice') + ' ' + esc(docNo(d)), esc(d.customer_name || '') + ' · ' + shopMoney(d.total) + ' · ' + esc(String(d.status).replace(/_/g, ' '))))) +
     sec('Parts', (parts.data || []).map(p => item(`data-gs="part" data-id="${p.id}"`, esc(p.name), [p.part_number, p.brand].filter(Boolean).map(esc).join(' · '))));
   out.innerHTML = html || `<div class="gs-empty">Nothing found for “${esc(q)}”.</div>`;
   out.classList.remove('hidden');
@@ -230,7 +230,7 @@ async function loadWoSummary(job, opts){
   const [t, pts, est, insp] = await Promise.all([
     sb.from('job_time_summary').select('labor_minutes, drive_minutes').eq('job_id', job.id).maybeSingle(),
     sb.from('job_parts').select('qty, returned_qty, unit_price').eq('job_id', job.id),
-    billing ? sb.from('invoices').select('id, kind, status, total').eq('job_id', job.id).order('created_at') : Promise.resolve({ data:[] }),
+    billing ? sb.from('invoices').select('doc_number, id, kind, status, total').eq('job_id', job.id).order('created_at') : Promise.resolve({ data:[] }),
     sb.from('inspections').select('id, status, inspection_items(result)').eq('job_id', job.id)
   ]);
   const laborH = t.data ? Number(t.data.labor_minutes || 0) / 60 : 0;
@@ -280,7 +280,7 @@ function initShopRedesign(){
 // Approved estimate → becomes the invoice (approved lines only). Otherwise a
 // draft invoice is filled from the parts used and the tracked labor.
 async function generateInvoiceFromWork(job){
-  const { data: docs } = await sb.from('invoices').select('id, kind, status').eq('job_id', job.id).order('created_at');
+  const { data: docs } = await sb.from('invoices').select('doc_number, id, kind, status').eq('job_id', job.id).order('created_at');
   const existing = (docs || []).find(d => d.kind === 'invoice');
   if(existing){ openEstimateEditor(existing.id); return; }
   const approved = (docs || []).filter(d => d.kind === 'estimate' && d.status === 'approved').pop();

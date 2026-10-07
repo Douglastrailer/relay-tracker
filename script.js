@@ -217,6 +217,8 @@ function addBaseMapToggle(map){
   map.getContainer().appendChild(btn);
   return { streetLayer, satelliteLayer };
 }
+// The shop's own document number (INV-0042 / EST-0007); older rows fall back to #id.
+function docNo(d){ return d && d.doc_number ? d.doc_number : '#' + (d ? d.id : ''); }
 function esc(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -302,7 +304,7 @@ async function fetchCompanies(){
 let invoiceLimit = 100;
 async function fetchInvoices(){
   const { data, error } = await sb.from('invoices')
-    .select('id, job_id, kind, source_estimate_id, customer_name, customer_email, customer_address, unit_number, status, notes, created_at, sent_at, paid_at, total, tax_amount, tax_rate, discount_amount, po_number, payment_terms, due_date, approved_by_name, invoice_items(id, description, quantity, unit_price, customer_decision)')
+    .select('doc_number, id, job_id, kind, source_estimate_id, customer_name, customer_email, customer_address, unit_number, status, notes, created_at, sent_at, paid_at, total, tax_amount, tax_rate, discount_amount, po_number, payment_terms, due_date, approved_by_name, invoice_items(id, description, quantity, unit_price, customer_decision)')
     .eq('org_id', session.orgId)
     .order('created_at', { ascending:false })
     .limit(invoiceLimit);   // newest first; "Load more" asks for the next 100
@@ -1607,7 +1609,7 @@ async function convertEstimateToInvoice(estimateId){
 async function sendReviewRequest(invoiceId, email){
   if(!email || !email.includes('@')){ alert('Enter a valid email address first.'); return; }
   // Phase 9: invoices on a repair order use the tracked review flow (one per job, opens recorded).
-  const { data: inv } = await sb.from('invoices').select('job_id').eq('id', invoiceId).maybeSingle();
+  const { data: inv } = await sb.from('invoices').select('doc_number, job_id').eq('id', invoiceId).maybeSingle();
   if(inv && inv.job_id){
     let { error } = await sb.rpc('request_review', { p_job: inv.job_id, p_email: email, p_resend: false });
     if(error && /already/.test(error.message) && confirm('A review was already requested for this job. Send another?')){
@@ -2917,7 +2919,7 @@ async function refreshAdminData(){
   // invoices — read-only here; admin uses the same View PDF the shop
   // uses, but paid/unpaid status and sending stay owned by the shop.
   const { data: allInvoices, error: allInvErr } = await sb.from('invoices')
-    .select('id, org_id, job_id, customer_name, customer_address, unit_number, status, notes, created_at, invoice_items(id, description, quantity, unit_price)')
+    .select('doc_number, id, org_id, job_id, customer_name, customer_address, unit_number, status, notes, created_at, invoice_items(id, description, quantity, unit_price)')
     .order('created_at', { ascending:false })
     .limit(100);
   if(allInvErr) console.error('admin invoices fetch', allInvErr);
