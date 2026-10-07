@@ -8,16 +8,23 @@ let scanState = null;
 const scanMoney = n => '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 });
 
 function scanShrink(file){
-  // Invoices have small print: keep more detail than ordinary photos.
-  return new Promise(resolve => {
-    if(!/^image\//i.test(file.type) || typeof createImageBitmap !== 'function'){ resolve(file); return; }
-    createImageBitmap(file).then(bmp => {
-      const scale = Math.min(1, 2200 / Math.max(bmp.width, bmp.height));
-      const c = document.createElement('canvas'); c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
-      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-      c.toBlob(b => resolve(b ? new File([b], 'invoice.jpg', { type:'image/jpeg' }) : file), 'image/jpeg', 0.85);
-    }).catch(() => resolve(file));
+  // Invoices have small print, but phone photos are huge: aim for ~1800 px JPEG (a few hundred KB).
+  // Two ways to decode, so it also works where createImageBitmap can't read the photo.
+  if(!/^image\//i.test(file.type)) return Promise.resolve(file);
+  const draw = (src, w, h) => new Promise(resolve => {
+    const scale = Math.min(1, 1800 / Math.max(w, h));
+    const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * scale)); c.height = Math.max(1, Math.round(h * scale));
+    c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+    c.toBlob(b => resolve(b ? new File([b], 'invoice.jpg', { type:'image/jpeg' }) : null), 'image/jpeg', 0.8);
   });
+  const viaImg = () => new Promise(resolve => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = async () => { const out = await draw(img, img.naturalWidth, img.naturalHeight); URL.revokeObjectURL(url); resolve(out || file); };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+  if(typeof createImageBitmap !== 'function') return viaImg();
+  return createImageBitmap(file).then(bmp => draw(bmp, bmp.width, bmp.height)).then(out => out || viaImg()).catch(viaImg);
 }
 const fileToBase64 = (f) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = () => rej(new Error('Could not read the file.')); r.readAsDataURL(f); });
 
@@ -35,7 +42,7 @@ async function scanFile(file){
   openScanModal('<div class="scan-wait"><div class="scan-spin"></div><b>Reading the invoice…</b><span>This takes about 10–20 seconds.</span></div>');
   try {
     const f = file.type === 'application/pdf' ? file : await scanShrink(file);
-    if(f.size > 6.5 * 1024 * 1024) throw new Error('That file is too large. Use a photo, or a PDF under 6 MB.');
+    if(f.size > 4.5 * 1024 * 1024) throw new Error(f.type === 'application/pdf' ? 'That PDF is too large. Use a PDF under 4 MB, or take a photo instead.' : 'That photo is too large to send. Try taking it again, a little further away.');
     const [data, locs, items] = await Promise.all([fileToBase64(f),
       sb.from('stock_locations').select('id, name, kind').eq('org_id', session.orgId).eq('active', true).order('kind').order('name'),
       sb.from('inventory_items').select('id, name, part_number').eq('org_id', session.orgId).eq('active', true).order('name').limit(10000)]);
