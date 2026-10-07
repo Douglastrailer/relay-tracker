@@ -2,18 +2,19 @@
 // RelayFleet — Phase 10: office roles and fleet users in the app.
 // The database enforces every permission (staff_can); this file only
 // keeps people from seeing tabs and buttons their role cannot use, and
-// gives the owner/manager a place to set roles.
+// gives the owner a place to set roles.
 // ============================================================
 
-// Mirrors public.staff_can() in migration 0013.
-const STAFF_CAPS = { owner:'*', manager:'*', advisor:['billing','purchasing','inventory','warranty'], dispatcher:[] };
-const STAFF_LABEL = { owner:'Owner', manager:'Manager', dispatcher:'Dispatcher', advisor:'Service advisor' };
+// Mirrors public.staff_can() in migration 0022: two shop roles.
+// Owner and Office staff can use every feature; only the owner manages the team.
+// (Old role names still cached in an open tab count as Office staff.)
+const STAFF_LABEL = { owner:'Owner', office:'Office staff' };
 function can(cap){
   if(!session) return false;
   if(session.role === 'admin') return true;
   if(session.role !== 'shop') return false;
-  const r = STAFF_CAPS[session.staffRole || 'owner'];
-  return r === '*' || (Array.isArray(r) && r.includes(cap));
+  if((session.staffRole || 'owner') === 'owner') return true;
+  return cap !== 'team';
 }
 const TAB_CAPS = { 'shop-invoices':'billing', 'shop-inventory':'inventory', 'shop-analytics':'analytics', 'shop-billing':'settings', 'shop-team':'team' };
 
@@ -48,19 +49,19 @@ async function renderRolesPanel(){
   const people = staffRes.data || [];
   const fleets = (linkRes.data || []).map(l => l.profiles).filter(Boolean);
   const amOwner = session.staffRole === 'owner' || session.role === 'admin';
-  const roleOf = p => p.role === 'mechanic' ? 'mechanic' : (p.staff_role || 'owner');
+  const roleOf = p => p.role === 'mechanic' ? 'mechanic' : (p.staff_role === 'owner' || !p.staff_role ? 'owner' : 'office');
   const select = p => {
     const r = roleOf(p);
     if(p.id === session.id) return `<span class="rec-tag">${esc(STAFF_LABEL[r] || 'Mechanic')} (you)</span>`;
     if(r === 'owner') return '<span class="rec-tag">Owner</span>';
-    const opts = [['mechanic','Mechanic'], ['dispatcher','Dispatcher'], ['advisor','Service advisor']].concat(amOwner || r === 'manager' ? [['manager','Manager']] : []);
-    return `<select class="role-select" data-id="${p.id}" aria-label="Role for ${esc(p.name)}" ${r === 'manager' && !amOwner ? 'disabled' : ''}>${opts.map(([v, l]) => `<option value="${v}" ${v === r ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+    const opts = [['office','Office staff'], ['mechanic','Mechanic']];
+    return `<select class="role-select" data-id="${p.id}" aria-label="Role for ${esc(p.name)}" ${amOwner ? '' : 'disabled'}>${opts.map(([v, l]) => `<option value="${v}" ${v === r ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
   };
   box.innerHTML = `<div class="section-head" style="margin-top:22px;"><h2>Office staff &amp; roles</h2></div>
     <div class="card">
       <p class="meta" style="margin-top:0;">New staff join with the mechanic invite code; then set their role here.
-        <b>Dispatcher</b>: jobs, board, customers, units, messages. <b>Service advisor</b>: also estimates, invoices, parts and purchasing.
-        <b>Manager</b>: everything except making managers. Only the owner sees money reports and settings unless they make a manager.</p>
+        <b>Office staff</b> can use every feature of Relay, the same as the owner. Only the owner changes roles and deactivates people.
+        <b>Mechanics</b> see their own jobs on their phone.</p>
       <div class="role-list">${people.map(p => `<div class="role-row${p.active ? '' : ' is-inactive'}"><div><b>${esc(p.name)}</b>${p.active ? '' : ' <span class="meta">(deactivated)</span>'}</div>
         <div class="role-ctl">${select(p)}${p.role === 'shop' && roleOf(p) !== 'owner' && p.id !== session.id ? `<button type="button" class="text-btn" data-staff-active="${p.id}" data-on="${p.active}">${p.active ? 'Deactivate' : 'Reactivate'}</button>` : ''}</div></div>`).join('')}</div>
       ${fleets.length ? `<h4 class="rec-subhead">Fleet accounts</h4><p class="meta">A <b>fleet user</b> follows their repairs and units but does not see estimates, invoices or prices.</p>
@@ -70,7 +71,6 @@ async function renderRolesPanel(){
     </div>`;
   box.querySelectorAll('.role-select').forEach(sel => sel.onchange = async () => {
     const err = document.getElementById('rolesErr'); err.textContent = '';
-    if(sel.value === 'manager' && !confirm('Managers can see money reports, change settings and manage the team. Make this person a manager?')){ renderRolesPanel(); return; }
     const { error } = await sb.rpc('set_team_role', { p_profile: sel.dataset.id, p_staff_role: sel.value });
     if(error){ err.textContent = error.message; renderRolesPanel(); return; }
     recordsToast('Role updated');
