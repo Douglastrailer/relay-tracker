@@ -1874,3 +1874,7 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
 .voice-confirm #voiceYes{ background:var(--ok); color:#fff; border:none; }
 .voice-off{ color:var(--ink-soft); font-size:.9rem; }
 @media (prefers-reduced-motion: reduce){ .voice-mic.rec{ animation:none; } }
+.voice-pick{ flex-basis:100%; font-size:.9rem; }
+.voice-pick summary{ cursor:pointer; color:var(--accent); font-weight:700; min-height:32px; display:flex; align-items:center; }
+.voice-pick-row{ display:flex; gap:8px; margin:6px 0; }
+.voice-pick-row select{ flex:1; min-height:44px; padding:6px 8px; border:1px solid var(--line-strong); border-radius:var(--r-md); background:var(--panel); color:var(--ink); font:inherit; }

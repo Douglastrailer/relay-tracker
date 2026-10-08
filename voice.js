@@ -63,20 +63,32 @@ function voiceTone(kind){
     });
   } catch(_){}
 }
+function voiceList(){
+  try { return (window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : []).filter(v => /^en/i.test(v.lang)); } catch(_){ return []; }
+}
+function voiceScore(v){
+  const n = String(v.name || '');
+  let sc = 0;
+  if(/premium/i.test(n)) sc += 60; else if(/enhanced/i.test(n)) sc += 45; else if(/neural|natural|online/i.test(n)) sc += 40;
+  if(/Google US English/i.test(n)) sc += 35;
+  if(/\b(Ava|Zoe|Evan|Nathan|Allison|Susan|Aria|Jenny|Guy)\b/i.test(n)) sc += 10;
+  if(/^en(-|_)US/i.test(v.lang)) sc += 5;
+  if(/\b(Fred|Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Wobble|Zarvox|Trinoids|Whisper|Jester|Organ|Superstar|Ralph|Junior|Kathy)\b/i.test(n)) sc -= 100;   // novelty / robotic voices
+  return sc;
+}
 function voicePickVoice(){
-  try {
-    const vs = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
-    const pref = ['Samantha', 'Google US English', 'Microsoft Aria', 'Microsoft Jenny', 'Ava', 'Allison', 'Karen'];
-    for(const name of pref){ const v = vs.find(x => x.name && x.name.includes(name)); if(v) return v; }
-    return vs.find(x => /^en(-|_)US/i.test(x.lang)) || vs.find(x => /^en/i.test(x.lang)) || null;
-  } catch(_){ return null; }
+  const vs = voiceList(); if(!vs.length) return null;
+  let saved = null; try { saved = localStorage.getItem('relay.voiceName'); } catch(_){}
+  const mine = saved && vs.find(v => v.name === saved); if(mine) return mine;
+  return vs.slice().sort((a, b) => voiceScore(b) - voiceScore(a))[0] || null;
 }
 function voiceSay(text, tone){
   if(tone) voiceTone(tone);
   const out = document.getElementById('voiceSaid'); if(out) out.textContent = text;
   try { if('speechSynthesis' in window){ window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = 1.03; const v = voicePickVoice(); if(v) u.voice = v; window.speechSynthesis.speak(u); } } catch(_){}
 }
-// iPhone only plays sound/speech started from a tap: unlock both on the first tap.
+// iPhone only plays sound/speech started from a tap: unlock both on the first touch anywhere
+// (doing it on the mic tap itself can cut the microphone off).
 function voiceUnlock(){
   try { const AC = window.AudioContext || window.webkitAudioContext; if(AC){ voiceAudio = voiceAudio || new AC(); if(voiceAudio.state === 'suspended') voiceAudio.resume(); } } catch(_){}
   try { if('speechSynthesis' in window && !voiceUnlock.done){ const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); voiceUnlock.done = true; } } catch(_){}
@@ -93,30 +105,49 @@ function renderVoiceBar(job, buttons){
   if(!bar){ body.insertAdjacentHTML('afterbegin', '<div id="voiceBar" class="voice-bar"></div>'); bar = document.getElementById('voiceBar'); }
   bar.innerHTML = voiceSupported()
     ? `<button type="button" class="voice-mic" id="voiceMic" aria-label="Speak a command"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span id="voiceMicLabel">Tap and speak</span></button>
-       <div class="voice-out"><div id="voiceHeard" class="voice-heard"></div><div id="voiceSaid" class="voice-said">Try “start repair” or “add two brake drums”.</div></div><div id="voiceConfirm"></div>`
+       <div class="voice-out"><div id="voiceHeard" class="voice-heard"></div><div id="voiceSaid" class="voice-said">Try “start repair” or “add two brake drums”.</div></div><div id="voiceConfirm"></div>
+       <details class="voice-pick"><summary>Voice</summary><div class="voice-pick-row"><select id="voiceSel" aria-label="Voice"></select><button type="button" class="ghost-btn" id="voiceTest">Test</button></div>
+         <p class="meta">Robotic? On iPhone: Settings → Accessibility → Spoken Content → Voices → English, download a <b>Premium</b> or <b>Enhanced</b> voice (e.g. Ava or Zoe), then pick it here.</p></details>`
     : '<div class="voice-off">Voice commands need Chrome or Safari. The buttons below work as usual.</div>';
   const mic = document.getElementById('voiceMic'); if(mic) mic.onclick = () => voiceListen();
+  voiceFillPicker();
+  try { if('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = voiceFillPicker; } catch(_){}
+}
+function voiceFillPicker(){
+  const sel = document.getElementById('voiceSel'); if(!sel) return;
+  const vs = voiceList().sort((a, b) => voiceScore(b) - voiceScore(a));
+  const cur = voicePickVoice();
+  sel.innerHTML = vs.length ? vs.map(v => `<option value="${esc(v.name)}" ${cur && v.name === cur.name ? 'selected' : ''}>${esc(v.name)}${/premium|enhanced/i.test(v.name) ? '' : ''}</option>`).join('') : '<option value="">Phone default</option>';
+  sel.onchange = () => { try { localStorage.setItem('relay.voiceName', sel.value); } catch(_){} voiceSay("Hi, I'm Relay. This is how I'll sound."); };
+  const t = document.getElementById('voiceTest'); if(t) t.onclick = () => { voiceUnlock(); voiceSay("Hi, I'm Relay. Say start repair, or ask what's wrong with the truck."); };
 }
 function voiceListen(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR) return;
   if(voiceRec){ try { voiceRec.stop(); } catch(_){} return; }
   try { if('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch(_){}
-  voiceUnlock();
-  voiceTone('listen');
-  const rec = new SR(); rec.lang = 'en-US'; rec.interimResults = true; rec.maxAlternatives = 1;
+  const rec = new SR(); rec.lang = 'en-US'; rec.interimResults = true; rec.maxAlternatives = 1; rec.continuous = false;
   voiceRec = rec;
   const mic = document.getElementById('voiceMic'), lab = document.getElementById('voiceMicLabel'), heard = document.getElementById('voiceHeard');
-  if(mic) mic.classList.add('rec'); if(lab) lab.textContent = 'Listening…';
-  let finalText = '';
-  rec.onresult = (e) => { const t = [...e.results].map(r => r[0].transcript).join(' '); if(heard) heard.textContent = '“' + t + '”'; if([...e.results].some(r => r.isFinal)) finalText = t; };
-  let blocked = false;
-  rec.onerror = (e) => { if(e && e.error === 'not-allowed'){ blocked = true; voiceSay('Allow the microphone for Relay in your phone settings to use voice.', 'error'); } };
-  rec.onend = () => { voiceRec = null; if(mic) mic.classList.remove('rec'); if(lab) lab.textContent = 'Tap and speak'; voiceTone('stop');
-    if(finalText) handleVoice(finalText); else if(!blocked) voiceSay("I didn't hear anything. Tap and try again."); };
-  // wait for the chime to finish so the microphone doesn't hear it
-  setTimeout(() => { if(voiceRec !== rec) return; try { rec.start(); } catch(_){ voiceRec = null; } }, 280);
+  if(mic) mic.classList.add('rec'); if(lab) lab.textContent = 'Listening…'; if(heard) heard.textContent = '';
+  let finalText = '', lastText = '', problem = null;
+  rec.onstart = () => voiceTone('listen');                    // like Siri: the chime means "go ahead"
+  rec.onresult = (e) => { const t = [...e.results].map(r => r[0].transcript).join(' '); lastText = t; if(heard) heard.textContent = '“' + t + '”'; if([...e.results].some(r => r.isFinal)) finalText = t; };
+  rec.onerror = (e) => { problem = (e && e.error) || 'unknown'; };
+  rec.onend = () => {
+    voiceRec = null; if(mic) mic.classList.remove('rec'); if(lab) lab.textContent = 'Tap and speak'; voiceTone('stop');
+    const text = finalText || lastText;
+    if(text) return handleVoice(text);
+    if(problem === 'not-allowed') return voiceSay('Relay is not allowed to use the microphone. Allow it in your phone settings, then try again.', 'error');
+    if(problem === 'service-not-allowed') return voiceSay(voiceStandalone() ? 'On iPhone, voice does not work when Relay is opened from the Home Screen. Open relayfleet.us in Safari to use voice.' : 'Voice input is turned off on this phone. Check that Siri and Dictation are enabled.', 'error');
+    if(problem === 'audio-capture') return voiceSay('I could not use the microphone. Another app may be using it.', 'error');
+    if(problem === 'network') return voiceSay('Voice needs an internet connection. Check your signal and try again.', 'error');
+    voiceSay("I didn't hear anything. Tap and try again.");
+  };
+  try { rec.start(); }                                         // must happen right inside the tap
+  catch(_){ voiceRec = null; if(mic) mic.classList.remove('rec'); if(lab) lab.textContent = 'Tap and speak'; voiceSay('Voice could not start. Tap and try again.', 'error'); }
 }
+function voiceStandalone(){ return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true; }
 async function handleVoice(text){
   const ctx = voiceCtx; if(!ctx) return;
   const cmd = parseVoice(text);
@@ -188,9 +219,8 @@ async function voiceFindPart(q){
 function voiceAsk(question, run){
   voiceCtx.pending = { question, run };
   renderVoiceConfirm();
-  voiceSay(question + ' Say yes or no.');
-  // listen for the answer once the question has been spoken
-  setTimeout(() => { if(voiceCtx && voiceCtx.pending && !voiceRec) voiceListen(); }, 1800);
+  // Phones only allow the microphone to start from a tap, so the answer is a tap: Yes / No, or the mic + "yes".
+  voiceSay(question + ' Tap yes, or tap the mic and say yes.');
 }
 function renderVoiceConfirm(){
   const box = document.getElementById('voiceConfirm'); if(!box) return;
@@ -246,3 +276,8 @@ async function voiceAskRelay(text, job){
     return voiceSay(clean, 'ok');
   } catch(_){ return voiceSay("Sorry, I couldn't reach Relay right now.", 'error'); }
 }
+
+document.addEventListener('pointerdown', function voiceFirstTouch(e){
+  if(e.target && e.target.closest && e.target.closest('#voiceMic')) return;
+  voiceUnlock(); document.removeEventListener('pointerdown', voiceFirstTouch, true);
+}, true);
