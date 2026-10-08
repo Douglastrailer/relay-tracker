@@ -1,3 +1,5 @@
-RelayFleet: in-app PDF viewer
+RelayFleet website - complete set (all files)
 
-Upload ALL 5 files to GitHub. No database or function changes.
+Upload ALL files in this folder to GitHub (Add file > Upload files, select all, Commit).
+This replaces every website file with the latest version.
+Database: make sure migrations up to 0025 have been run.

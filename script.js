@@ -308,7 +308,7 @@ async function fetchInvoices(){
     .eq('org_id', session.orgId)
     .order('created_at', { ascending:false })
     .limit(invoiceLimit);   // newest first; "Load more" asks for the next 100
-  if(error){ console.error('fetchInvoices', error); return []; }
+  if(error){ console.error('fetchInvoices', error); const e = []; e.loadError = error.message || String(error); return e; }   // an error must not look like an empty list
   return data || [];
 }
 async function fetchJobsForInvoiceLink(){
@@ -1698,6 +1698,10 @@ async function refreshInvoices(){
   const list = document.getElementById('invoiceList');
   if(!list) return;
   const invoices = await fetchInvoices();
+  if(invoices.loadError){
+    list.innerHTML = `<div class="auth-banner wait"><b>Invoices couldn't be loaded.</b> ${esc(invoices.loadError)}${/doc_number/.test(invoices.loadError) ? '<br>The database is missing an update: run migration 0023_doc_numbers.sql (then 0024 and 0025) in Supabase, then refresh.' : ''}</div>`;
+    return;
+  }
   list.innerHTML = (invoices.length ? invoices.map(invoiceCardHtml).join('') : '<div class="empty-note">No invoices or estimates yet.</div>')
     + (invoices.length >= invoiceLimit ? '<div class="load-more-row"><button type="button" class="ghost-btn" id="invLoadMore">Load older</button></div>' : '');
   const more = document.getElementById('invLoadMore');
