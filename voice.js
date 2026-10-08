@@ -18,6 +18,13 @@ function parseVoice(raw){
   const note = t.match(/^(?:add (?:a )?note|note|notes|write down|leave a note)[: ]+(.+)$/);
   if(note) return { intent:'note', text: String(raw).replace(/^\s*(add (a )?note|notes?|write down|leave a note)[:,]?\s*/i, '').trim() || note[1] };
   if(/\b(help|what can i say|commands)\b/.test(t)) return { intent:'help' };
+  // questions about this job, answered out loud
+  if(/\b(what'?s|what is) (wrong|the (problem|complaint|issue))|\bwhat'?s the (problem|complaint|issue)\b|\bwhy is (it|the truck|the trailer) here\b/.test(t)) return { intent:'ask_complaint' };
+  if(/\bwho'?s the customer\b|\bwho is the customer\b|\bwhose (truck|trailer|unit)\b|\bwhat (truck|trailer|unit) is (this|it)\b/.test(t)) return { intent:'ask_unit' };
+  if(/\bwhere'?s the (truck|trailer|unit|breakdown|customer)\b|\bwhere is the (truck|trailer|unit|breakdown)\b|\bhow far\b|\bwhat'?s the address\b|\bwhat is the address\b/.test(t)) return { intent:'ask_where' };
+  if(/\bhow long have i\b|\bhow much time\b|\bhow long (is|has) (the|my) timer\b|\bmy time\b/.test(t)) return { intent:'ask_time' };
+  if(/\bwhat parts\b|\bparts (are )?on (this|the) job\b|\bwhich parts\b/.test(t)) return { intent:'ask_parts' };
+  if(/\bwhat'?s the status\b|\bwhat is the status\b|\bwhat'?s next\b|\bwhat should i do( next)?\b|\bwhere am i at\b/.test(t)) return { intent:'ask_status' };
   if(/\b(take|add|snap) (a )?(photo|picture|pic)\b|^(photo|picture|camera)$/.test(t)) return { intent:'photo' };
   if(/\b(navigate|directions|take me there|how do i get there)\b/.test(t)) return { intent:'navigate' };
   if(/\baccept\b.*\b(job|call)\b|^accept( it)?$|\btake the (job|call)\b/.test(t)) return { intent:'accept' };
@@ -40,9 +47,39 @@ function parseVoice(raw){
   if(/\b(job (is )?done|all done|finished|complete|completed|wrap(ped)? (it )?up|done with (this|the) job)\b/.test(t)) return { intent:'complete' };
   return { intent:'unknown' };
 }
-function voiceSay(text){
+// Short sounds, made in the browser (no audio files): like Siri / Google.
+let voiceAudio = null;
+function voiceTone(kind){
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return;
+    voiceAudio = voiceAudio || new AC(); if(voiceAudio.state === 'suspended') voiceAudio.resume();
+    const notes = { listen:[[784, 0], [1175, 0.11]], stop:[[1047, 0], [698, 0.1]], ok:[[1319, 0]], error:[[330, 0], [262, 0.14]] }[kind] || [];
+    const now = voiceAudio.currentTime;
+    notes.forEach(([freq, at]) => {
+      const o = voiceAudio.createOscillator(), g = voiceAudio.createGain();
+      o.type = kind === 'error' ? 'triangle' : 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, now + at); g.gain.exponentialRampToValueAtTime(0.22, now + at + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, now + at + 0.16);
+      o.connect(g); g.connect(voiceAudio.destination); o.start(now + at); o.stop(now + at + 0.18);
+    });
+  } catch(_){}
+}
+function voicePickVoice(){
+  try {
+    const vs = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+    const pref = ['Samantha', 'Google US English', 'Microsoft Aria', 'Microsoft Jenny', 'Ava', 'Allison', 'Karen'];
+    for(const name of pref){ const v = vs.find(x => x.name && x.name.includes(name)); if(v) return v; }
+    return vs.find(x => /^en(-|_)US/i.test(x.lang)) || vs.find(x => /^en/i.test(x.lang)) || null;
+  } catch(_){ return null; }
+}
+function voiceSay(text, tone){
+  if(tone) voiceTone(tone);
   const out = document.getElementById('voiceSaid'); if(out) out.textContent = text;
-  try { if('speechSynthesis' in window){ window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = 1.05; window.speechSynthesis.speak(u); } } catch(_){}
+  try { if('speechSynthesis' in window){ window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = 1.03; const v = voicePickVoice(); if(v) u.voice = v; window.speechSynthesis.speak(u); } } catch(_){}
+}
+// iPhone only plays sound/speech started from a tap: unlock both on the first tap.
+function voiceUnlock(){
+  try { const AC = window.AudioContext || window.webkitAudioContext; if(AC){ voiceAudio = voiceAudio || new AC(); if(voiceAudio.state === 'suspended') voiceAudio.resume(); } } catch(_){}
+  try { if('speechSynthesis' in window && !voiceUnlock.done){ const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); voiceUnlock.done = true; } } catch(_){}
 }
 function voiceSupported(){ return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
 
@@ -65,15 +102,20 @@ function voiceListen(){
   if(!SR) return;
   if(voiceRec){ try { voiceRec.stop(); } catch(_){} return; }
   try { if('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch(_){}
+  voiceUnlock();
+  voiceTone('listen');
   const rec = new SR(); rec.lang = 'en-US'; rec.interimResults = true; rec.maxAlternatives = 1;
   voiceRec = rec;
   const mic = document.getElementById('voiceMic'), lab = document.getElementById('voiceMicLabel'), heard = document.getElementById('voiceHeard');
   if(mic) mic.classList.add('rec'); if(lab) lab.textContent = 'Listening…';
   let finalText = '';
   rec.onresult = (e) => { const t = [...e.results].map(r => r[0].transcript).join(' '); if(heard) heard.textContent = '“' + t + '”'; if([...e.results].some(r => r.isFinal)) finalText = t; };
-  rec.onerror = (e) => { if(e && e.error === 'not-allowed') voiceSay('Allow the microphone for Relay in your phone settings to use voice.'); };
-  rec.onend = () => { voiceRec = null; if(mic) mic.classList.remove('rec'); if(lab) lab.textContent = 'Tap and speak'; if(finalText) handleVoice(finalText); };
-  try { rec.start(); } catch(_){ voiceRec = null; }
+  let blocked = false;
+  rec.onerror = (e) => { if(e && e.error === 'not-allowed'){ blocked = true; voiceSay('Allow the microphone for Relay in your phone settings to use voice.', 'error'); } };
+  rec.onend = () => { voiceRec = null; if(mic) mic.classList.remove('rec'); if(lab) lab.textContent = 'Tap and speak'; voiceTone('stop');
+    if(finalText) handleVoice(finalText); else if(!blocked) voiceSay("I didn't hear anything. Tap and try again."); };
+  // wait for the chime to finish so the microphone doesn't hear it
+  setTimeout(() => { if(voiceRec !== rec) return; try { rec.start(); } catch(_){ voiceRec = null; } }, 280);
 }
 async function handleVoice(text){
   const ctx = voiceCtx; if(!ctx) return;
@@ -82,24 +124,26 @@ async function handleVoice(text){
   // answering a question we asked
   if(ctx.pending){
     if(cmd.intent === 'yes'){ const p = ctx.pending; ctx.pending = null; renderVoiceConfirm(); return p.run(); }
-    if(cmd.intent === 'no'){ ctx.pending = null; renderVoiceConfirm(); return voiceSay('Cancelled.'); }
+    if(cmd.intent === 'no'){ ctx.pending = null; renderVoiceConfirm(); return voiceSay('Cancelled.', 'stop'); }
     ctx.pending = null; renderVoiceConfirm();
   }
   const job = ctx.job;
   if(cmd.intent === 'help') return voiceSay(VOICE_HELP);
-  if(cmd.intent === 'unknown' || cmd.intent === 'yes' || cmd.intent === 'no') return voiceSay("Sorry, I didn't catch that. Say help to hear the commands.");
+  if(cmd.intent.startsWith('ask_')) return voiceAnswer(cmd.intent, job);
+  if(cmd.intent === 'unknown' && voiceLooksLikeQuestion(text)) return voiceAskRelay(text, job);
+  if(cmd.intent === 'unknown' || cmd.intent === 'yes' || cmd.intent === 'no') return voiceSay("Sorry, I didn't catch that. Say help to hear the commands.", 'error');
   if(VOICE_ACTIONS[cmd.intent]){
-    if(!ctx.allowed.includes(cmd.intent)) return voiceSay("You can't do that right now on this job.");
-    if(cmd.intent === 'complete') return voiceAsk(`Complete ${job.ro_number || 'this job'}?`, async () => { await doWorkAction(job, 'complete', null, { confirmed:true }); voiceSay(VOICE_ACTIONS.complete); });
+    if(!ctx.allowed.includes(cmd.intent)) return voiceSay("You can't do that right now on this job.", 'error');
+    if(cmd.intent === 'complete') return voiceAsk(`Complete ${job.ro_number || 'this job'}?`, async () => { await doWorkAction(job, 'complete', null, { confirmed:true }); voiceSay(VOICE_ACTIONS.complete, 'ok'); });
     await doWorkAction(job, cmd.intent, null, { confirmed:true });
     const err = document.getElementById('workError');
-    return voiceSay(err && err.textContent ? err.textContent : VOICE_ACTIONS[cmd.intent]);
+    return err && err.textContent ? voiceSay(err.textContent, 'error') : voiceSay(VOICE_ACTIONS[cmd.intent], 'ok');
   }
   if(cmd.intent === 'accept'){
     if(job.mechanic_id !== session.id || job.accepted_at || !['new','assigned'].includes(job.status)) return voiceSay('There is nothing to accept on this job.');
     const { error } = await sb.rpc('respond_to_assignment', { p_job: job.id, p_accept: true });
     if(error) return voiceSay(error.message);
-    voiceSay('Job accepted.'); return renderWorkScreen();
+    voiceSay('Job accepted.', 'ok'); return renderWorkScreen();
   }
   if(cmd.intent === 'navigate'){
     if(!(job.job_type === 'mobile' && job.dest_lat)) return voiceSay('This job has no breakdown location.');
@@ -107,7 +151,7 @@ async function handleVoice(text){
   }
   if(cmd.intent === 'note'){
     if(!cmd.text) return voiceSay('Say note, then what you want to write.');
-    return voiceAsk(`Add note: ${cmd.text}?`, async () => { await addJobComment(job.id, cmd.text); voiceSay('Note added.'); });
+    return voiceAsk(`Add note: ${cmd.text}?`, async () => { await addJobComment(job.id, cmd.text); voiceSay('Note added.', 'ok'); });
   }
   if(cmd.intent === 'photo'){
     voiceSay('Opening the camera.');
@@ -119,11 +163,11 @@ async function handleVoice(text){
   if(cmd.intent === 'part'){
     if(isClosedStatus(job.status)) return voiceSay('This job is closed.');
     const it = await voiceFindPart(cmd.query);
-    if(!it) return voiceSay(`I couldn't find ${cmd.query} in the parts list. Add it from the work order instead.`);
-    if(it.many) return voiceSay(`More than one part matches ${cmd.query}. Say the part number.`);
+    if(!it) return voiceSay(`I couldn't find ${cmd.query} in the parts list. Add it from the work order instead.`, 'error');
+    if(it.many) return voiceSay(`More than one part matches ${cmd.query}. Say the part number.`, 'error');
     return voiceAsk(`Add ${cmd.qty} ${it.name}${it.part_number ? ', part ' + it.part_number : ''}?`, async () => {
       const { error } = await sb.rpc('use_part', { p_job: job.id, p_item: it.id, p_location: null, p_qty: cmd.qty });
-      voiceSay(error ? error.message : `Added ${cmd.qty} ${it.name}.`);
+      voiceSay(error ? error.message : `Added ${cmd.qty} ${it.name}.`, error ? 'error' : 'ok');
     });
   }
 }
@@ -156,4 +200,49 @@ function renderVoiceConfirm(){
     document.getElementById('voiceYes').onclick = () => { const q = voiceCtx.pending; voiceCtx.pending = null; renderVoiceConfirm(); q.run(); };
     document.getElementById('voiceNo').onclick = () => { voiceCtx.pending = null; renderVoiceConfirm(); voiceSay('Cancelled.'); };
   }
+}
+
+// ---------- answers about this job ----------
+const VOICE_STATUS = { new:'new', assigned:'assigned to you, not started', en_route:'on the way', on_site:'on site', diagnosing:'being diagnosed', waiting_approval:'waiting for the customer to approve the estimate',
+  waiting_parts:'waiting for parts', repairing:'being repaired', quality_control:'in quality check', complete:'completed', invoiced:'invoiced', paid:'paid' };
+function voiceLooksLikeQuestion(t){ t = String(t).trim().toLowerCase(); return /^(what|how|where|who|when|which|why|is|are|was|were|do|does|did|can|could|should|has|have|tell me|show me|find)\b/.test(t) || t.split(/\s+/).length >= 5; }
+async function voiceAnswer(intent, job){
+  if(intent === 'ask_complaint') return voiceSay(job.complaint ? `The complaint is: ${job.complaint}.` : 'There is no complaint written on this job.', 'ok');
+  if(intent === 'ask_unit') return voiceSay(`${job.vehicle || 'This unit'}, for ${job.customer || 'the customer'}. Work order ${String(job.ro_number || '').replace(/^WO-0*/, '')}.`, 'ok');
+  if(intent === 'ask_where'){
+    if(!(job.job_type === 'mobile' && job.dest_lat)) return voiceSay(`${job.vehicle || 'The unit'} is an in-shop job.`, 'ok');
+    const me = typeof fetchLocation === 'function' ? await fetchLocation(session.id) : null;
+    if(!me || me.lat == null) return voiceSay('I do not have your location yet. Go live or say navigate for directions.', 'error');
+    const mi = milesBetween(me.lat, me.lng, job.dest_lat, job.dest_lng);
+    const min = Math.max(1, Math.round(mi / 45 * 60));
+    return voiceSay(`The truck is about ${mi < 10 ? mi.toFixed(1) : Math.round(mi)} miles away, around ${min} minute${min === 1 ? '' : 's'}. Say navigate for directions.`, 'ok');
+  }
+  if(intent === 'ask_time'){
+    const { data } = await sb.from('job_time_summary').select('drive_minutes, labor_minutes').eq('job_id', job.id).maybeSingle();
+    const lab = Math.round((data && data.labor_minutes) || 0), drv = Math.round((data && data.drive_minutes) || 0);
+    const fmt = m => (m >= 60 ? Math.floor(m / 60) + ' hour' + (Math.floor(m / 60) === 1 ? '' : 's') + (m % 60 ? ' ' + (m % 60) + ' minutes' : '') : m + ' minutes');
+    return voiceSay(`On this job: ${fmt(lab)} of labor${drv ? ' and ' + fmt(drv) + ' driving' : ''}.`, 'ok');
+  }
+  if(intent === 'ask_parts'){
+    const { data } = await sb.from('job_parts').select('qty, returned_qty, inventory_items(name)').eq('job_id', job.id);
+    const rows = (data || []).map(r => ({ q: Number(r.qty) - Number(r.returned_qty || 0), n: (r.inventory_items || {}).name })).filter(r => r.q > 0 && r.n);
+    return voiceSay(rows.length ? 'Parts on this job: ' + rows.map(r => `${r.q} ${r.n}`).join(', ') + '.' : 'No parts on this job yet.', 'ok');
+  }
+  if(intent === 'ask_status'){
+    const allowed = (voiceCtx && voiceCtx.allowed) || [];
+    const next = { start_drive:'start driving', arrived:'mark arrived', start_diagnosis:'start diagnosis', start_repair:'start repair', resume:'resume', quality_check:'quality check', complete:'say job done' };
+    const can = allowed.map(a => next[a]).filter(Boolean).slice(0, 2);
+    return voiceSay(`This job is ${VOICE_STATUS[job.status] || job.status}.${can.length ? ' You can ' + can.join(' or ') + '.' : ''}`, 'ok');
+  }
+}
+// Anything else: ask Relay's assistant (read-only for mechanics) and read the answer out loud.
+async function voiceAskRelay(text, job){
+  const said = document.getElementById('voiceSaid'); if(said) said.textContent = 'Thinking…';
+  try {
+    const q = `About ${job.ro_number || 'this job'} (${job.vehicle || ''}, ${job.customer || ''}): ${text}`;
+    const { data, error } = await sb.functions.invoke('assistant', { body: { messages: [{ role:'user', content: q }] } });
+    if(error || !data || data.error || !data.reply) return voiceSay("Sorry, I couldn't get an answer for that. Say help to hear what I can do.", 'error');
+    const clean = String(data.reply).replace(/\*\*/g, '').replace(/\bWO-0*(\d+)/g, 'work order $1').replace(/[#`_]/g, '').replace(/\s*\n+\s*[-•]?\s*/g, '. ').slice(0, 600);
+    return voiceSay(clean, 'ok');
+  } catch(_){ return voiceSay("Sorry, I couldn't reach Relay right now.", 'error'); }
 }

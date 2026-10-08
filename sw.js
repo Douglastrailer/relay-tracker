@@ -2,7 +2,7 @@
 // open without a signal. Always asks the network first, so an upload to
 // GitHub reaches everyone right away; the saved copy is used only when
 // there is no connection. Never stores Supabase data or other sites.
-const CACHE = 'relay-shell-v16';
+const CACHE = 'relay-shell-v17';
 const SHELL = ['/', '/index.html', '/style.css', '/script.js', '/ro.js', '/insp.js', '/est.js', '/tech.js', '/fleet.js', '/unit.js',
                '/inv.js', '/analytics.js', '/comms.js', '/roles.js', '/shop.js', '/ops.js', '/dispatch.js', '/r4.js', '/assist.js', '/landing.js', '/scan.js', '/r6.js', '/profit.js', '/loc.js', '/voice.js', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
