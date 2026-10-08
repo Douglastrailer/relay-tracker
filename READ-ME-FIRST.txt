@@ -1,3 +1,3 @@
-RelayFleet R9: mechanic voice commands
+RelayFleet: in-app PDF viewer
 
-Upload ALL 5 files to GitHub (Add file > Upload files). No database or function changes.
+Upload ALL 5 files to GitHub. No database or function changes.

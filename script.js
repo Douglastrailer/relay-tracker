@@ -1689,24 +1689,9 @@ function invoiceCardHtml(inv){
   </div>`;
 }
 
+// Opens the PDF in a sheet inside the app (pdfview.js) — works in the iPhone Home Screen app too.
 async function viewInvoicePdf(invoiceId){
-  const { data: { session: authSession } } = await sb.auth.getSession();
-  if(!authSession){ alert('Your session expired — please refresh and log in again.'); return; }
-  try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/get-invoice-pdf?invoiceId=${invoiceId}`, {
-      headers: { Authorization: `Bearer ${authSession.access_token}`, apikey: SUPABASE_KEY },
-    });
-    if(!res.ok){
-      const body = await res.json().catch(()=>({}));
-      alert('Could not open the PDF: ' + (body.error || res.statusText));
-      return;
-    }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-  } catch(e){
-    alert('Could not open the PDF: ' + e.message);
-  }
+  if(typeof viewInvoicePdfInApp === 'function') return viewInvoicePdfInApp(invoiceId);
 }
 
 async function refreshInvoices(){
