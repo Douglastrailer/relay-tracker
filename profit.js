@@ -13,7 +13,8 @@ async function refreshProfit(rg){
   let box = document.getElementById('profitBox');
   if(!box){ box = document.createElement('div'); box.id = 'profitBox'; box.className = 'section'; root.appendChild(box); }
   box.innerHTML = '<div class="section-head"><h2>Profitability</h2></div><p class="meta">Calculating…</p>';
-  const { data, error } = await sb.rpc('job_profit', { p_from: rg.from.toISOString(), p_to: rg.to.toISOString() });
+  const loc = typeof currentLocationId === 'function' ? currentLocationId() : null;
+  const { data, error } = await sb.rpc('job_profit', loc ? { p_from: rg.from.toISOString(), p_to: rg.to.toISOString(), p_location: loc } : { p_from: rg.from.toISOString(), p_to: rg.to.toISOString() });
   if(error){ box.innerHTML = `<div class="section-head"><h2>Profitability</h2></div><p class="form-error">${esc(error.message)}</p>`; return; }
   pfState.data = data;
   renderProfit();
@@ -38,6 +39,8 @@ function renderProfit(){
       ${tile('Labor cost', pfMoney(s.labor_cost), (s.worked_h || 0) + ' h worked · ' + (s.drive_h || 0) + ' h driving')}
       ${tile('Labor recovery', s.recovery_pct == null ? '—' : s.recovery_pct + '%', (s.billed_h || 0) + ' h billed of ' + (s.worked_h || 0) + ' h worked', s.recovery_pct != null && s.recovery_pct < 85 ? 'neg' : '')}
     </div>
+    ${(d.locations || []).length > 1 ? table('locations', 'By location', ['Location','Jobs','Revenue','Cost','Profit','Margin'],
+      d.locations.map(l => `<tr><td>${esc(l.name)}</td><td>${l.jobs}</td><td>${pfMoney(l.revenue)}</td><td>${pfMoney(l.cost)}</td><td><b>${pfMoney(l.profit)}</b></td><td class="${mcls(l.margin_pct)}">${pfPct(l.margin_pct)}</td></tr>`), '') : ''}
     ${table('customers', 'By customer', ['Customer','Jobs','Revenue','Cost','Profit','Margin'],
       (d.customers || []).map(c => `<tr><td>${esc(c.name)}</td><td>${c.jobs}</td><td>${pfMoney(c.revenue)}</td><td>${pfMoney(c.cost)}</td><td><b>${pfMoney(c.profit)}</b></td><td class="${mcls(c.margin_pct)}">${pfPct(c.margin_pct)}</td></tr>`), 'No invoiced work in this period.')}
     ${table('technicians', 'By technician', ['Technician','Jobs','Worked','Billed','Recovery','Labor revenue','Labor cost','Labor profit'],
@@ -50,7 +53,8 @@ function renderProfit(){
 }
 function downloadProfitCsv(key){
   const d = pfState.data || {};
-  const rows = key === 'customers' ? [['Customer','Jobs','Revenue','Cost','Profit','Margin %']].concat((d.customers || []).map(c => [c.name, c.jobs, c.revenue, c.cost, c.profit, c.margin_pct]))
+  const rows = key === 'locations' ? [['Location','Jobs','Revenue','Cost','Profit','Margin %']].concat((d.locations || []).map(l => [l.name, l.jobs, l.revenue, l.cost, l.profit, l.margin_pct]))
+    : key === 'customers' ? [['Customer','Jobs','Revenue','Cost','Profit','Margin %']].concat((d.customers || []).map(c => [c.name, c.jobs, c.revenue, c.cost, c.profit, c.margin_pct]))
     : key === 'technicians' ? [['Technician','Jobs','Worked h','Drive h','Billed h','Recovery %','Labor revenue','Labor cost','Labor profit']].concat((d.technicians || []).map(t => [t.name, t.jobs, t.worked_h, t.drive_h, t.billed_h, t.recovery_pct, t.labor_rev, t.labor_cost, t.labor_profit]))
     : [['Work order','Customer','Unit','Job','Revenue','Cost','Profit','Margin %','Parts cost unknown']].concat((d.least_profitable || []).map(j => [j.ro_number, j.customer, j.vehicle, j.complaint, j.revenue, j.cost, j.profit, j.margin_pct, j.parts_cost_unknown ? 'yes' : '']));
   downloadCsv('relay-profit-' + key + '.csv', rows);

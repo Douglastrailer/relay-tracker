@@ -323,7 +323,7 @@ async function fetchJobsForInvoiceLink(){
 // ever had and slicing it down in the browser.
 // Column list excludes only "created_by" — the one job column never
 // actually read anywhere in the app after being set on creation.
-const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, job_type, dest_lat, dest_lng, status, created_at, updated_at, org_id, fleet_profile_id, ro_number, customer_id, unit_id, priority, safety_issue, drivable, complaint, diagnosis, fault_codes, completed_at, requires_authorization, authorized_at, authorized_by_name, authorization_override_at, authorization_override_reason, odometer, warranty_months, warranty_miles, warranty_terms, warranty_claim_status, warranty_source_job_id, warranty_decided_at, warranty_decision_note, accepted_at, declined_at, decline_reason';
+const JOB_COLUMNS = 'id, customer, vehicle, mechanic_id, job_type, dest_lat, dest_lng, status, created_at, updated_at, org_id, fleet_profile_id, ro_number, customer_id, unit_id, priority, safety_issue, drivable, complaint, diagnosis, fault_codes, completed_at, requires_authorization, authorized_at, authorized_by_name, authorization_override_at, authorization_override_reason, odometer, warranty_months, warranty_miles, warranty_terms, warranty_claim_status, warranty_source_job_id, warranty_decided_at, warranty_decision_note, accepted_at, declined_at, decline_reason, location_id';
 async function fetchActiveJobs(scope){
   let q = sb.from('jobs').select(JOB_COLUMNS).not('status','in','(' + CLOSED_STATUSES.join(',') + ')').order('created_at', { ascending:true });
   // Scoping here is a query-planning aid, not the security boundary — RLS
@@ -333,7 +333,7 @@ async function fetchActiveJobs(scope){
   // to the planner on its own) and falls back to scanning every job on the
   // platform on every dashboard refresh — fine at a few thousand rows, a
   // real bottleneck once job history accumulates at real scale.
-  if(scope && scope.orgId) q = q.eq('org_id', scope.orgId);
+  if(scope && scope.orgId){ q = q.eq('org_id', scope.orgId); if(typeof locFilter === 'function') q = locFilter(q); }   // the location switcher (R8)
   else if(scope && scope.mechanicId) q = q.eq('mechanic_id', scope.mechanicId);
   else if(scope && scope.orgIds && scope.orgIds.length) q = q.in('org_id', scope.orgIds);
   const { data, error } = await q;
@@ -342,7 +342,7 @@ async function fetchActiveJobs(scope){
 }
 async function fetchCompletedJobs(limit, scope){
   let q = sb.from('jobs').select(JOB_COLUMNS).in('status', DONE_STATUSES).order('updated_at', { ascending:false }).limit(limit);
-  if(scope && scope.orgId) q = q.eq('org_id', scope.orgId);
+  if(scope && scope.orgId){ q = q.eq('org_id', scope.orgId); if(typeof locFilter === 'function') q = locFilter(q); }
   else if(scope && scope.mechanicId) q = q.eq('mechanic_id', scope.mechanicId);
   else if(scope && scope.orgIds && scope.orgIds.length) q = q.in('org_id', scope.orgIds);
   const { data, error } = await q;
@@ -2319,6 +2319,7 @@ function initShopView(){
   if(typeof initAssist === 'function') safeInit('initAssist', initAssist);
   if(typeof initImportUI === 'function') safeInit('initImportUI', initImportUI);
   if(typeof initProfitUI === 'function') safeInit('initProfitUI', initProfitUI);
+  if(typeof initLocations === 'function') safeInit('initLocations', initLocations);
   if(typeof renderSetupChecklist === 'function'){ safeInit('renderSetupChecklist', renderSetupChecklist); document.querySelectorAll('.dash-tab[data-target="shop-overview"]').forEach(t => t.addEventListener('click', renderSetupChecklist)); }
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
@@ -2352,6 +2353,7 @@ function initShopView(){
       drivable: drivableVal === 'yes' ? true : drivableVal === 'no' ? false : null
     };
     if(jobType === 'mobile'){ payload.dest_lat = chosenPin.lat; payload.dest_lng = chosenPin.lng; }
+    const locSel = document.getElementById('njShopLoc'); if(locSel && locSel.value) payload.location_id = Number(locSel.value);
 
     const { data, error } = await sb.from('jobs').insert([payload]).select();
     createBtn.disabled = false;

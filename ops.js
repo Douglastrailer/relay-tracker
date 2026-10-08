@@ -256,8 +256,8 @@ async function refreshShopFloor(){
   const box = document.getElementById('floorBoard');
   if(!box) return;
   const [bRes, jRes, mechs, runRes] = await Promise.all([
-    sb.from('shop_bays').select('id, name, position').eq('org_id', session.orgId).eq('active', true).order('position').order('name'),
-    sb.from('jobs').select('id, ro_number, customer, vehicle, complaint, status, job_type, mechanic_id, bay_id, dest_lat, dest_lng, priority').eq('org_id', session.orgId).not('status', 'in', '(' + CLOSED_STATUSES.join(',') + ')').limit(300),
+    (typeof locFilter === 'function' ? locFilter : (q => q))(sb.from('shop_bays').select('id, name, position').eq('org_id', session.orgId).eq('active', true)).order('position').order('name'),
+    (typeof locFilter === 'function' ? locFilter : (q => q))(sb.from('jobs').select('id, ro_number, customer, vehicle, complaint, status, job_type, mechanic_id, bay_id, dest_lat, dest_lng, priority').eq('org_id', session.orgId)).not('status', 'in', '(' + CLOSED_STATUSES.join(',') + ')').limit(300),
     fetchOrgMechanics(),
     sb.from('time_entries').select('job_id, mechanic_id, started_at, kind').eq('org_id', session.orgId).is('ended_at', null)
   ]);
@@ -303,7 +303,7 @@ async function renderBaySettings(){
   document.getElementById('bayAdd').onclick = async () => {
     const n = document.getElementById('bayName').value.trim();
     if(!n){ document.getElementById('bayErr').textContent = 'Enter a name.'; return; }
-    const { error } = await sb.from('shop_bays').insert([{ org_id: session.orgId, name: n, position: bays.length + 1 }]);
+    const { error } = await sb.from('shop_bays').insert([{ org_id: session.orgId, name: n, position: bays.length + 1, location_id: (typeof currentLocationId === 'function' && currentLocationId()) || undefined }]);
     if(error){ document.getElementById('bayErr').textContent = error.code === '23505' ? 'You already have a bay with that name.' : error.message; return; }
     renderBaySettings();
   };

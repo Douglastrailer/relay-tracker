@@ -1852,3 +1852,8 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
 .pf-note{ margin:8px 0; padding:10px 12px; border-radius:var(--r-md); background:var(--warn-soft); color:var(--warn); font-size:.9rem; }
 .pf-job{ cursor:pointer; } .pf-job:hover{ background:var(--accent-soft); }
 .tc-row{ align-items:center; } .tc-row input{ max-width:140px; min-height:40px; margin-left:auto; }
+
+/* R8 multi-location */
+.loc-switch select{ min-height:38px; padding:6px 10px; border:1px solid var(--line-strong); border-radius:var(--r-md); background:var(--panel-2); color:var(--ink); font:inherit; font-weight:600; max-width:200px; }
+.loc-row{ align-items:center; } .loc-row > div{ flex:1; }
+@media (max-width:900px){ .loc-switch select{ max-width:130px; font-size:.85rem; } }

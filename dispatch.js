@@ -19,7 +19,7 @@ async function refreshDispatch(){
   const box = document.getElementById('dispatchCalls');
   if(!box) return;
   const [jRes, mechs, reqRes] = await Promise.all([
-    sb.from('jobs').select(JOB_COLUMNS).eq('org_id', session.orgId).eq('job_type', 'mobile').not('status', 'in', '(' + CLOSED_STATUSES.join(',') + ')').order('created_at', { ascending:false }).limit(200),
+    (typeof locFilter === 'function' ? locFilter : (q => q))(sb.from('jobs').select(JOB_COLUMNS).eq('org_id', session.orgId)).eq('job_type', 'mobile').not('status', 'in', '(' + CLOSED_STATUSES.join(',') + ')').order('created_at', { ascending:false }).limit(200),
     fetchOrgMechanics(),
     sb.from('work_requests').select('id', { count:'exact', head:true }).eq('org_id', session.orgId).eq('status', 'pending').eq('job_type', 'mobile')
   ]);
