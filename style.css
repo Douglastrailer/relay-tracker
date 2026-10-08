@@ -1847,3 +1847,8 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
   body.in-app.nav-open{ overflow:hidden; overscroll-behavior:none; }      /* the page behind the open menu doesn't scroll */
   body.has-sidebar .dash-tabs{ top:var(--topbar-h); bottom:0; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
 }
+
+/* R7 profitability */
+.pf-note{ margin:8px 0; padding:10px 12px; border-radius:var(--r-md); background:var(--warn-soft); color:var(--warn); font-size:.9rem; }
+.pf-job{ cursor:pointer; } .pf-job:hover{ background:var(--accent-soft); }
+.tc-row{ align-items:center; } .tc-row input{ max-width:140px; min-height:40px; margin-left:auto; }

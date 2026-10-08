@@ -40,6 +40,7 @@ async function refreshAnalyticsV2(){
   if(error){ out.innerHTML = `<p class="form-error">${esc(error.message)}</p>`; return; }
   anState.data = data; anState.from = rg.from; anState.to = rg.to;
   renderAnalyticsV2();
+  if(typeof refreshProfit === 'function') refreshProfit(rg);
 }
 
 function renderAnalyticsV2(){

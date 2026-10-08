@@ -2318,6 +2318,7 @@ function initShopView(){
   if(typeof initQboUI === 'function') safeInit('initQboUI', initQboUI);
   if(typeof initAssist === 'function') safeInit('initAssist', initAssist);
   if(typeof initImportUI === 'function') safeInit('initImportUI', initImportUI);
+  if(typeof initProfitUI === 'function') safeInit('initProfitUI', initProfitUI);
   if(typeof renderSetupChecklist === 'function'){ safeInit('renderSetupChecklist', renderSetupChecklist); document.querySelectorAll('.dash-tab[data-target="shop-overview"]').forEach(t => t.addEventListener('click', renderSetupChecklist)); }
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
