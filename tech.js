@@ -74,6 +74,7 @@ async function renderWorkScreen(){
       ${job.job_type === 'mobile' && job.dest_lat ? `<a class="ghost-btn" href="https://www.google.com/maps/dir/?api=1&destination=${job.dest_lat},${job.dest_lng}" target="_blank" rel="noopener">Directions</a>` : ''}
     </div>`;
   body.querySelectorAll('.work-btn').forEach(b => b.onclick = () => doWorkAction(job, b.dataset.action, b));
+  if(typeof renderVoiceBar === 'function') renderVoiceBar(job, buttons);
   clearInterval(workTimer);
   if(runningHere) workTimer = setInterval(() => {
     const c = document.getElementById('workClock');
@@ -81,8 +82,8 @@ async function renderWorkScreen(){
     c.textContent = fmtClock((Date.now() - new Date(c.dataset.start)) / 1000);
   }, 1000);
 }
-async function doWorkAction(job, action, btn){
-  if(action === 'complete' && !confirm('Mark this job complete?')) return;
+async function doWorkAction(job, action, btn, opts){
+  if(action === 'complete' && !(opts && opts.confirmed) && !confirm('Mark this job complete?')) return;   // voice asks its own question first
   document.querySelectorAll('#workBody .work-btn').forEach(b => b.disabled = true);
   const { error } = await sb.rpc('job_action', { p_job: job.id, p_action: action });
   if(error){
