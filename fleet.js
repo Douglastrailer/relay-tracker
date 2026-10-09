@@ -14,7 +14,9 @@ function fleetApproveUrl(token){ return location.origin + '/approve.html?t=' + t
 function isOverdue(d){ return d.kind === 'invoice' && ['unpaid','sent'].includes(d.status) && d.due_date && new Date(d.due_date + 'T23:59:59') < new Date(); }
 
 function showFleetTab(name){
-  document.querySelectorAll('#fleetView .fleet-tab').forEach(b => { const on = b.dataset.ftab === name; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
+  document.querySelectorAll('#fleetView .fleet-tab').forEach(b => { const on = b.dataset.ftab === name; b.classList.toggle('active', on); if(on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    if(on){ const t = document.querySelector('#fleetView .page-header .page-title'); if(t) t.textContent = (b.querySelector('.nav-label') || b).textContent.trim(); } });   // the shared page title
+  document.body.classList.remove('nav-open');   // on phones, choosing a section closes the menu
   document.querySelectorAll('#fleetView .fleet-panel').forEach(p => p.classList.toggle('hidden', p.id !== 'fp-' + name));
   // Maps drawn while their tab was hidden need to re-measure.
   if(name === 'repairs' && typeof fleetMaps === 'object') Object.values(fleetMaps).forEach(e => { try { e.map.invalidateSize(); } catch(_){} });

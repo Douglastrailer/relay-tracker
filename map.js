@@ -51,8 +51,8 @@ const kmBetween = (a, b, c, d) => { const R = 6371, r = x => x * Math.PI / 180; 
 
 // ---------- fleet portal: Find shops ----------
 async function renderFleetShopMap(){
-  const box = document.getElementById('fp-shops'); if(!box) return;
-  box.innerHTML = `<div class="section-head"><h2>Find shops</h2><span class="meta">Truck and trailer repair shops on Relay across the US</span></div>
+  const box = document.getElementById('fp-findshops'); if(!box) return;
+  box.innerHTML = `<p class="meta fs-intro">Truck and trailer repair shops on Relay across the US. Tap a pin for details.</p>
     <div class="rec-toolbar"><input type="search" id="fsSearch" placeholder="Search by shop, city or state" aria-label="Search shops"><button type="button" class="ghost-btn" id="fsNear">Near me</button></div>
     <div class="shop-map" id="fleetShopMap"></div><div id="fsList" class="fs-list"><p class="meta">Loading shops…</p></div>`;
   let entries;
@@ -84,7 +84,7 @@ async function renderAdminShopMap(){
   drawShopMap('adminShopMap', entries, { request:false });
 }
 function initShopMaps(){
-  const ft = document.querySelector('#fleetView .fleet-tab[data-ftab="shops"]');
+  const ft = document.querySelector('#fleetView .fleet-tab[data-ftab="findshops"]');
   if(ft) ft.addEventListener('click', () => setTimeout(renderFleetShopMap, 0));
   const ov = document.getElementById('admin-overview');
   if(ov && !document.getElementById('adminShopMapBox')){

@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=50"/>
+<link rel="stylesheet" href="style.css?v=52"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -739,13 +739,16 @@
   <!-- ================= FLEET MANAGER ================= -->
   <div id="fleetView" class="hidden">
     <div class="hint-banner" id="fleetHint"></div>
-    <nav class="fleet-tabs" role="tablist" aria-label="Fleet portal">
-      <button type="button" class="fleet-tab active" data-ftab="dash" role="tab">Dashboard</button>
-      <button type="button" class="fleet-tab" data-ftab="repairs" role="tab">Repairs</button>
-      <button type="button" class="fleet-tab" data-ftab="units" role="tab">Units</button>
-      <button type="button" class="fleet-tab" data-ftab="history" role="tab">History</button>
-      <button type="button" class="fleet-tab" data-ftab="invoices" role="tab">Invoices</button>
-      <button type="button" class="fleet-tab" data-ftab="shops" role="tab">Shops</button>
+    <nav class="dash-tabs fleet-nav" aria-label="Fleet portal">
+      <div class="nav-group">Overview</div>
+      <button type="button" class="dash-tab fleet-tab active" data-ftab="dash" title="Dashboard" aria-current="page"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span class="nav-label">Dashboard</span></button>
+      <button type="button" class="dash-tab fleet-tab" data-ftab="repairs" title="Repairs"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="nav-label">Repairs</span></button>
+      <button type="button" class="dash-tab fleet-tab" data-ftab="units" title="Units"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="7" width="13" height="10" rx="1"/><path d="M14 10h4l3 3v4h-7"/><circle cx="5.5" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/></svg><span class="nav-label">Units</span></button>
+      <button type="button" class="dash-tab fleet-tab" data-ftab="history" title="History"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg><span class="nav-label">History</span></button>
+      <button type="button" class="dash-tab fleet-tab" data-ftab="invoices" title="Invoices"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></svg><span class="nav-label">Invoices</span></button>
+      <div class="nav-group">Shops</div>
+      <button type="button" class="dash-tab fleet-tab" data-ftab="shops" title="My shops"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg><span class="nav-label">My shops</span></button>
+      <button type="button" class="dash-tab fleet-tab" data-ftab="findshops" title="Find shops"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg><span class="nav-label">Find shops</span></button>
     </nav>
 
     <div class="fleet-panel" id="fp-dash">
@@ -765,6 +768,7 @@
       <div class="rec-list" id="fleetUnits"><div class="meta">Loading…</div></div>
     </div>
 
+    <div class="fleet-panel hidden" id="fp-findshops"></div>
     <div class="fleet-panel hidden" id="fp-history">
       <div class="section-head"><h2>Completed repairs</h2></div>
       <div id="fleetHistory"></div>
@@ -909,12 +913,12 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=59"></script>
+<script src="script.js?v=60"></script>
 <script src="ro.js?v=13"></script>
 <script src="insp.js?v=4"></script>
 <script src="est.js?v=9"></script>
 <script src="tech.js?v=7"></script>
-<script src="fleet.js?v=4"></script>
+<script src="fleet.js?v=5"></script>
 <script src="unit.js?v=4"></script>
 <script src="inv.js?v=3"></script>
 <script src="analytics.js?v=3"></script>
@@ -926,7 +930,7 @@
     <div id="custBody"></div>
   </div>
 </div>
-<script src="shop.js?v=4"></script>
+<script src="shop.js?v=5"></script>
 <script src="ops.js?v=3"></script>
 <script src="dispatch.js?v=4"></script>
 <button type="button" id="assistFab" class="assist-fab hidden" aria-label="Ask Relay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>Ask Relay</span></button>
@@ -950,9 +954,10 @@
 <script src="scan.js?v=1"></script>
 <script src="r6.js?v=1"></script>
 <script src="profit.js?v=2"></script>
-<script src="loc.js?v=1"></script>
+<script src="loc.js?v=2"></script>
 <script src="voice.js?v=3"></script>
 <script src="pdfview.js?v=1"></script>
+<script src="map.js?v=2"></script>
 <script src="landing.js?v=1"></script>
 <script src="pwa.js?v=1"></script>
 

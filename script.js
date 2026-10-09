@@ -1245,7 +1245,7 @@ function enterApp(){
   document.getElementById('editCompanyBtn').classList.toggle('hidden', session.role !== 'shop');
 
   document.body.classList.add('in-app');
-  if(session.role === 'shop' || session.role === 'admin'){
+  if(session.role === 'shop' || session.role === 'admin' || session.role === 'fleet'){   // fleet portal uses the same left menu
     document.body.classList.add('has-sidebar');
     document.getElementById('navToggle').classList.remove('hidden');
   }
@@ -2725,6 +2725,7 @@ function initAdminView(){
 }
 
 async function refreshAdminData(){
+  if(typeof renderAdminShopMap === 'function') renderAdminShopMap();
   const profiles = await fetchAllProfiles();
   const orgs = await fetchAllOrganizations();
   const mechanics = profiles.filter(p=>p.role==='mechanic');
