@@ -2725,6 +2725,7 @@ function initAdminView(){
 }
 
 async function refreshAdminData(){
+  if(typeof renderAdminShopMap === 'function') renderAdminShopMap();
   const profiles = await fetchAllProfiles();
   const orgs = await fetchAllOrganizations();
   const mechanics = profiles.filter(p=>p.role==='mechanic');
