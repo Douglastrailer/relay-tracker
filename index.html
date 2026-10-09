@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=51"/>
+<link rel="stylesheet" href="style.css?v=50"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -744,7 +744,6 @@
       <button type="button" class="fleet-tab" data-ftab="repairs" role="tab">Repairs</button>
       <button type="button" class="fleet-tab" data-ftab="units" role="tab">Units</button>
       <button type="button" class="fleet-tab" data-ftab="history" role="tab">History</button>
-      <button type="button" class="fleet-tab" data-ftab="shops" role="tab">Find shops</button>
       <button type="button" class="fleet-tab" data-ftab="invoices" role="tab">Invoices</button>
       <button type="button" class="fleet-tab" data-ftab="shops" role="tab">Shops</button>
     </nav>
@@ -766,7 +765,6 @@
       <div class="rec-list" id="fleetUnits"><div class="meta">Loading…</div></div>
     </div>
 
-    <div class="fleet-panel hidden" id="fp-shops"></div>
     <div class="fleet-panel hidden" id="fp-history">
       <div class="section-head"><h2>Completed repairs</h2></div>
       <div id="fleetHistory"></div>
@@ -928,7 +926,7 @@
     <div id="custBody"></div>
   </div>
 </div>
-<script src="shop.js?v=5"></script>
+<script src="shop.js?v=4"></script>
 <script src="ops.js?v=3"></script>
 <script src="dispatch.js?v=4"></script>
 <button type="button" id="assistFab" class="assist-fab hidden" aria-label="Ask Relay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>Ask Relay</span></button>
@@ -952,10 +950,9 @@
 <script src="scan.js?v=1"></script>
 <script src="r6.js?v=1"></script>
 <script src="profit.js?v=2"></script>
-<script src="loc.js?v=2"></script>
+<script src="loc.js?v=1"></script>
 <script src="voice.js?v=3"></script>
 <script src="pdfview.js?v=1"></script>
-<script src="map.js?v=1"></script>
 <script src="landing.js?v=1"></script>
 <script src="pwa.js?v=1"></script>
 

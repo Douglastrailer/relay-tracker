@@ -16,7 +16,6 @@ function goToPanel(target){
 
 // ---------------- Today ----------------
 async function renderTodayTiles(active, mechanics, liveCount){
-  if(typeof renderLocOverview === 'function') setTimeout(renderLocOverview, 0);
   const box = document.getElementById('todayTiles');
   if(!box) return;
   const d = document.getElementById('todayDate');
@@ -76,7 +75,7 @@ function woCardHtml(j, techName, m){
   if(m.estimate != null) facts.push(`<span><em>Estimate</em>${shopMoney0(m.estimate)}</span>`);
   return `<div class="job-card wo-card${j.safety_issue ? ' is-safety' : ''}${j.priority === 'urgent' || j.priority === 'high' ? ' is-prio' : ''}" data-job="${j.id}" data-jobtype="${esc(j.job_type)}" data-status="${esc(j.status)}" draggable="${j.status === 'invoiced' ? 'false' : 'true'}" tabindex="0" role="button" aria-label="Open ${esc(j.ro_number || 'work order')}">
       <div class="wo-card-top"><span class="ro-num">${esc(j.ro_number || '#' + j.id)}</span>${j.job_type === 'mobile' ? '<span class="wo-road" title="Roadside">ROAD</span>' : ''}${j.priority && j.priority !== 'normal' ? `<span class="prio-chip prio-${esc(j.priority)}">${esc(PRIORITY_LABELS[j.priority] || j.priority)}</span>` : ''}${j.warranty_claim_status === 'pending_review' ? '<span class="prio-chip prio-high">Warranty?</span>' : ''}</div>
-      <div class="wo-card-unit">${esc(j.vehicle || '')}${typeof locTag === 'function' ? locTag(j.location_id) : ''}</div>
+      <div class="wo-card-unit">${esc(j.vehicle || '')}</div>
       ${j.complaint ? `<div class="wo-card-svc">${esc(j.complaint.length > 70 ? j.complaint.slice(0, 68) + '…' : j.complaint)}</div>` : ''}
       <div class="wo-card-meta"><span>${esc(j.customer || '')}</span><span>${esc(techName || 'Unassigned')}${m.helpers ? ' +' + m.helpers : ''}</span></div>
       <div class="wo-card-foot">${jobStatusBadge(j.status)}${facts.length ? `<div class="wo-card-facts">${facts.join('')}</div>` : ''}</div>
@@ -115,7 +114,7 @@ function renderWorkOrdersList(active, history, mechanics, metrics){
       <div class="wo-row wo-thead" aria-hidden="true"><span>Work order</span><span>Customer · Unit</span><span>Service</span><span>Technician</span><span>Status</span><span>Updated</span></div>
       ${rows.map(j => `<div class="wo-row" data-job="${j.id}" tabindex="0" role="button" aria-label="Open ${esc(j.ro_number || 'work order')}">
         <span><span class="ro-num">${esc(j.ro_number || '#' + j.id)}</span>${j.job_type === 'mobile' ? ' <span class="wo-road">ROAD</span>' : ''}${j.priority === 'urgent' || j.priority === 'high' ? ` <span class="prio-chip prio-${esc(j.priority)}">${esc(PRIORITY_LABELS[j.priority])}</span>` : ''}</span>
-        <span><b>${esc(j.customer || '')}</b><span class="meta"> · ${esc(j.vehicle || '')}</span>${typeof locTag === 'function' ? locTag(j.location_id) : ''}</span>
+        <span><b>${esc(j.customer || '')}</b><span class="meta"> · ${esc(j.vehicle || '')}</span></span>
         <span class="wo-svc">${esc(j.complaint || '—')}</span>
         <span>${esc(name(j.mechanic_id))}</span>
         <span>${jobStatusBadge(j.status)}</span>
