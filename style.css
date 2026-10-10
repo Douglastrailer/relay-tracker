@@ -1953,3 +1953,27 @@ body.pdf-open{ overflow:hidden; }
 /* Fleet portal on the same left menu as the shop */
 body.has-sidebar #fleetView{ max-width:1440px; }
 .fs-intro{ margin:0 0 10px; }
+
+/* Form sheets (New work order, Request service): over the page, everything behind blurred */
+.form-overlay{ position:fixed; inset:0; z-index:2900; display:flex; align-items:center; justify-content:center; padding:24px;
+  background:rgba(15,19,24,0); -webkit-backdrop-filter:blur(0px); backdrop-filter:blur(0px); transition:background .2s, backdrop-filter .2s, -webkit-backdrop-filter .2s; }
+.form-overlay.open{ background:rgba(15,19,24,.45); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+.form-card{ width:min(760px, 100%); max-height:92vh; display:flex; flex-direction:column; background:var(--bg, var(--panel)); border-radius:16px; box-shadow:var(--shadow-pop); overflow:hidden;
+  transform:translateY(24px); opacity:0; transition:transform .22s ease-out, opacity .22s; }
+.form-overlay.open .form-card{ transform:none; opacity:1; }
+.form-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 12px 12px 18px; border-bottom:1px solid var(--line); background:var(--panel); }
+.form-head b{ font-size:1.08rem; }
+.form-body{ overflow:auto; -webkit-overflow-scrolling:touch; padding:14px; overscroll-behavior:contain; }
+.form-body .wo-create, .form-body .card{ margin:0; } .form-body .wo-create .card, .form-body > .card{ box-shadow:none; border:none; padding:6px; }
+.form-body #requestFormCard, .form-body #requestSuccessCard, .form-body #requestInvalidCard{ max-width:none; margin:0; box-shadow:none; border:none; }
+body.sheet-open{ overflow:hidden; }
+@media (max-width:700px){
+  .form-overlay{ padding:0; align-items:flex-end; }
+  .form-card{ max-height:calc(100% - 44px - env(safe-area-inset-top, 0px)); height:calc(100% - 44px - env(safe-area-inset-top, 0px)); border-radius:16px 16px 0 0; transform:translateY(100%); }
+  .form-overlay.open .form-card{ transform:none; }
+  .form-body{ padding:10px 10px calc(16px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce){ .form-card, .form-overlay{ transition:none; } }
+
+/* sheet-hide-title: the sheet already says "New work order" */
+.form-body #woCreateBox h3{ display:none; }

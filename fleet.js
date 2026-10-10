@@ -134,7 +134,7 @@ function renderFleetShopActions(){
   const box = document.getElementById('fleetShopActions');
   if(!box) return;
   box.innerHTML = fleetPortal.orgs.length ? fleetPortal.orgs.map(o => `<div class="fleet-doc"><div class="rec-main"><b>${esc(o.name)}</b></div>
-      <div class="fleet-doc-side"><a class="attn-btn" href="${esc(location.origin + '/?request=' + o.id)}" target="_blank" rel="noopener">Request service</a></div></div>`).join('')
+      <div class="fleet-doc-side"><button type="button" class="attn-btn" data-reqorg="${esc(o.id)}" data-reqname="${esc(o.name || '')}">Request service</button></div></div>`).join('')
     : '<div class="empty-note">Join a shop with its invite code to request service.</div>';
 }
 

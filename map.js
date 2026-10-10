@@ -32,7 +32,7 @@ function shopCardHtml(e, opts){
       ${e.phone ? `<a class="ghost-btn" href="tel:${esc(String(e.phone).replace(/[^\d+]/g, ''))}">Call</a>` : ''}
       ${e.email ? `<a class="ghost-btn" href="mailto:${esc(e.email)}">Email</a>` : ''}
       <a class="ghost-btn" href="${shopDirections(e)}" target="_blank" rel="noopener">Directions</a>
-      ${opts && opts.request ? `<a class="ghost-btn primary" href="/?request=${encodeURIComponent(e.org_id)}" target="_blank" rel="noopener">Request service</a>` : ''}
+      ${opts && opts.request ? `<button type="button" class="ghost-btn primary" data-reqorg="${esc(e.org_id)}" data-reqname="${esc(e.company || '')}">Request service</button>` : ''}
     </div>${e.phone || e.email ? `<div class="meta shop-pop-contact">${esc([e.phone, e.email].filter(Boolean).join(' · '))}</div>` : ''}</div>`;
 }
 function drawShopMap(elId, entries, opts){

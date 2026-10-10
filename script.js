@@ -651,6 +651,7 @@ function setReqTypeUI(type){
 // on a phone during a breakdown is better served by "type it, tap the
 // right suggestion" than dragging a pin on a small screen.
 function initReqAddressAutocomplete(){
+  if(initReqAddressAutocomplete.done) return; initReqAddressAutocomplete.done = true;   // attach once
   const input = document.getElementById('reqAddressInput');
   const suggestBox = document.getElementById('reqAddressSuggestions');
   const hint = document.getElementById('reqAddressHint');
@@ -2309,6 +2310,7 @@ function initShopView(){
   if(typeof initImportUI === 'function') safeInit('initImportUI', initImportUI);
   if(typeof initProfitUI === 'function') safeInit('initProfitUI', initProfitUI);
   if(typeof initLocations === 'function') safeInit('initLocations', initLocations);
+  if(typeof initWoSheet === 'function') safeInit('initWoSheet', initWoSheet);
   if(typeof renderSetupChecklist === 'function'){ safeInit('renderSetupChecklist', renderSetupChecklist); document.querySelectorAll('.dash-tab[data-target="shop-overview"]').forEach(t => t.addEventListener('click', renderSetupChecklist)); }
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
@@ -2370,6 +2372,8 @@ function initShopView(){
     setJobTypeUI('mobile');
     refreshShopData();
     populateCompanyList();
+    const cb = document.getElementById('woCreateBox'); if(cb) cb.classList.add('hidden');   // closes the sheet
+    const nb = document.getElementById('woNewBtn'); if(nb) nb.textContent = '+ New work order';
   };
 }
 
