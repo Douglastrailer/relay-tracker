@@ -2017,3 +2017,15 @@ body.modal-open #assistFab, body.sheet-open #assistFab, body.pdf-open #assistFab
 
 .uh-vin{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin:10px 0; padding:12px 14px; border:1px solid var(--line); border-radius:var(--r-lg); background:var(--panel); }
 .uh-vin b{ display:block; font-size:1.02rem; }
+
+/* Switching from another system */
+.mig-cta{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:10px 0 4px; padding:12px 14px; border-radius:var(--r-lg); background:var(--accent-soft); }
+.mig-cta > div{ display:flex; flex-direction:column; }
+.mig-box{ display:flex; flex-direction:column; gap:12px; }
+.mig-drop{ display:flex; flex-direction:column; align-items:center; gap:4px; padding:22px; border:2px dashed var(--line-strong); border-radius:var(--r-lg); cursor:pointer; text-align:center; }
+.mig-drop.over, .mig-drop:hover{ border-color:var(--accent); background:var(--accent-soft); } .mig-drop span{ color:var(--ink-soft); font-size:.88rem; }
+.mig-files{ display:flex; flex-direction:column; gap:8px; }
+.mig-file{ padding:10px 12px; border:1px solid var(--line); border-radius:var(--r-lg); background:var(--panel); } .mig-file.skip{ opacity:.7; }
+.mig-file-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; } .mig-file-head > div{ display:flex; flex-direction:column; }
+.mig-file-head select{ min-height:40px; } .mig-file details{ margin-top:6px; } .mig-file summary{ cursor:pointer; color:var(--accent); font-weight:700; }
+.mig-result{ padding:12px; border-radius:var(--r-lg); background:var(--ok-soft); } .mig-line{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:4px 0; }

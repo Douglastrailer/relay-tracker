@@ -65,6 +65,7 @@ function renderImportCard(){
   box.innerHTML = `<div class="card qbo-card">
     <h3>Import from a spreadsheet</h3>
     <p class="meta">Bring in your existing customers, trucks and trailers, or parts list from a CSV or Excel file. Every row is checked; problems are listed by row number.</p>
+    <div class="mig-cta"><div><b>Switching from Fullbay, Shopmonkey or another system?</b><span class="meta">Add all your exported files at once — Relay sorts them out.</span></div><button type="button" id="migStart">Bring everything over</button></div>
     <div class="rec-toolbar"><select id="impKind" aria-label="What to import">${Object.entries(IMPORT_LABEL).map(([k, l]) => `<option value="${k}" ${st && st.kind === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
       <button type="button" class="ghost-btn" id="impTemplate">Download a template</button>
       <label class="ghost-btn imp-file">Choose file…<input type="file" id="impFile" accept=".csv,.xlsx,.xls,text/csv" hidden></label></div>
