@@ -2003,3 +2003,14 @@ body.modal-open{ overflow:hidden; }
 @media (prefers-reduced-motion: reduce){ .modal-overlay:not(.hidden), .modal-overlay:not(.hidden) > .modal-card{ animation:none !important; } }
 /* the Ask Relay button steps back while a window, form sheet or PDF is open */
 body.modal-open #assistFab, body.sheet-open #assistFab, body.pdf-open #assistFab{ display:none; }
+
+/* R11 — scanning, VIN, fitment */
+.scan-box{ display:flex; flex-direction:column; gap:10px; }
+.scan-cam{ width:100%; min-height:240px; border-radius:var(--r-md); overflow:hidden; background:#0E2A31; }
+.scan-cam video{ width:100% !important; height:auto !important; display:block; }
+.scan-manual{ display:flex; gap:8px; } .scan-manual input{ flex:1; min-height:44px; }
+.vin-row{ display:flex; gap:6px; } .vin-row input{ flex:1; min-width:0; } .vin-row .ghost-btn{ min-height:40px; padding:4px 12px; }
+.vin-msg{ margin:4px 0 0; font-size:.85rem; color:var(--ink-soft); } .vin-msg.ok{ color:var(--ok); } .vin-msg.warn{ color:var(--warn); }
+.pp-fit{ margin:6px 0 0; }
+.fit{ display:inline-flex; flex-wrap:wrap; gap:6px; align-items:baseline; padding:6px 10px; border-radius:var(--r-md); font-size:.88rem; }
+.fit-fits{ background:var(--ok-soft); color:var(--ok); } .fit-mismatch{ background:var(--warn-soft); color:var(--warn); } .fit-unknown{ background:var(--panel-2); color:var(--ink-soft); }

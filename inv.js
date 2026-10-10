@@ -12,7 +12,7 @@ const PO_STATUS = { draft:'Draft', ordered:'Ordered', partial:'Partly received',
 
 async function loadInventoryData(){
   const [items, oh, lv, locs, vendors, pos] = await Promise.all([
-    sb.from('inventory_items').select('id, name, description, unit_price, part_number, vendor_id, cost, min_qty, track_stock, category, active, brand, core_charge, cross_ref').eq('org_id', session.orgId).eq('active', true).order('name').limit(2000),
+    sb.from('inventory_items').select('id, name, description, unit_price, part_number, vendor_id, cost, min_qty, track_stock, category, active, brand, core_charge, cross_ref, barcode, fitment').eq('org_id', session.orgId).eq('active', true).order('name').limit(2000),
     sb.from('stock_on_hand').select('item_id, on_hand, low').eq('org_id', session.orgId).limit(2000),
     sb.from('stock_levels').select('item_id, location_id, qty, bin').eq('org_id', session.orgId).limit(5000),
     sb.from('stock_locations').select('id, name, kind, mechanic_id, active').eq('org_id', session.orgId).order('kind').order('name'),
@@ -62,6 +62,7 @@ function renderParts(){
       <input type="search" id="invSearch" placeholder="Search name, part #, brand, cross-reference, vendor" aria-label="Search parts">
       <label class="rec-check"><input type="checkbox" id="invLowOnly"> Low stock only</label>
       <button type="button" class="ghost-btn" id="invReorder">Reorder low stock</button>
+      <button type="button" class="ghost-btn" id="invScanCode">Scan part</button>
       <button type="button" class="ghost-btn" id="invScan">Scan vendor invoice</button>
       <button type="button" id="invAdd">Add part or service</button>
     </div><div id="invList" class="rec-list"></div>`;
@@ -99,6 +100,7 @@ function renderParts(){
   document.getElementById('invLowOnly').onchange = draw;
   document.getElementById('invAdd').onclick = () => openItemForm(null);
   const scanBtn = document.getElementById('invScan'); if(scanBtn) scanBtn.onclick = () => startInvoiceScan();
+  const codeBtn = document.getElementById('invScanCode'); if(codeBtn){ if(typeof inventoryScan === 'function') codeBtn.onclick = () => inventoryScan(); else codeBtn.remove(); }
   document.getElementById('invReorder').onclick = reorderLowStock;
   draw();
 }
@@ -117,6 +119,8 @@ function openItemForm(id){
       <div class="field"><label>Brand</label><input id="ifBrand" maxlength="60" value="${v('brand')}" placeholder="e.g. Haldex"></div>
       <div class="field"><label>Core charge ($)</label><input id="ifCore" type="number" min="0" step="0.01" value="${v('core_charge')}" placeholder="0.00"></div>
       <div class="field rec-span"><label>Cross-reference numbers</label><input id="ifXref" maxlength="300" value="${v('cross_ref')}" placeholder="Other part numbers for the same part, separated by commas"></div>
+      <div class="field"><label>Barcode</label><div class="vin-row"><input id="ifBarcode" maxlength="80" class="mono" value="${v('barcode')}" placeholder="Scan or type"><button type="button" class="ghost-btn" id="ifBarcodeScan">Scan</button></div></div>
+      <div class="field rec-span"><label>Fits (optional)</label><input id="ifFitment" maxlength="500" value="${v('fitment')}" placeholder="Makes, models or engines it fits — e.g. Freightliner Cascadia; Detroit DD15"></div>
       <div class="field rec-span"><label>Description</label><input id="ifDesc" maxlength="300" value="${v('description')}"></div>
       <label class="rec-check rec-span"><input type="checkbox" id="ifTrack" ${!i || i.track_stock ? 'checked' : ''}> Track stock for this part (leave unticked for services like "Shop supplies")</label>
       <div class="field"><label>Minimum on hand (low-stock alert)</label><input id="ifMin" type="number" min="0" step="1" value="${i ? Number(i.min_qty) : 0}"></div>
@@ -130,10 +134,11 @@ function openItemForm(id){
     const row = { name, unit_price: price, cost, min_qty: Math.max(0, min), part_number: document.getElementById('ifPn').value.trim() || null,
       category: document.getElementById('ifCat').value.trim() || null, vendor_id: Number(document.getElementById('ifVendor').value) || null,
       description: document.getElementById('ifDesc').value.trim() || null, track_stock: document.getElementById('ifTrack').checked,
-      brand: document.getElementById('ifBrand').value.trim() || null, cross_ref: document.getElementById('ifXref').value.trim() || null,
+      brand: document.getElementById('ifBrand').value.trim() || null, cross_ref: document.getElementById('ifXref').value.trim() || null, barcode: (document.getElementById('ifBarcode').value || '').trim() || null, fitment: (document.getElementById('ifFitment').value || '').trim() || null,
       core_charge: document.getElementById('ifCore').value === '' ? null : parseFloat(document.getElementById('ifCore').value) };
     if(row.core_charge != null && !(row.core_charge >= 0)){ invErr('Core charge cannot be negative.'); return; }
     const res = i ? await sb.from('inventory_items').update(row).eq('id', i.id) : await sb.from('inventory_items').insert([{ ...row, org_id: session.orgId, created_by: session.id }]);
+    if(res.error && res.error.code === '23505' && /barcode/.test(res.error.message || '')){ invErr('That barcode is already used by another part.'); return; }
     if(res.error){ invErr(res.error.code === '23505' ? 'That part number is already in your list.' : res.error.message); return; }
     recordsToast(i ? 'Saved' : 'Added'); refreshInventoryV2(); if(typeof populateInventoryPicker === 'function') populateInventoryPicker();
   };
@@ -323,7 +328,7 @@ async function loadRoParts(job, opts){
   if(!opts.canWork){ box.classList.add('hidden'); return; }
   const [jp, items, locs] = await Promise.all([
     sb.from('job_parts').select('id, item_id, location_id, qty, returned_qty, unit_price, created_at').eq('job_id', job.id).order('created_at'),
-    sb.from('inventory_items').select('id, name, part_number, unit_price, track_stock').eq('org_id', job.org_id).eq('active', true).order('name').limit(2000),
+    sb.from('inventory_items').select('id, name, part_number, unit_price, track_stock, barcode, cross_ref').eq('org_id', job.org_id).eq('active', true).order('name').limit(2000),
     sb.from('stock_locations').select('id, name, kind, mechanic_id').eq('org_id', job.org_id).eq('active', true)
   ]);
   const its = items.data || [];
@@ -342,9 +347,25 @@ async function loadRoParts(job, opts){
       <input id="ppSearch" list="ppList" placeholder="Part name or number" aria-label="Part"><datalist id="ppList">${its.map(i => `<option value="${esc(i.name + (i.part_number ? ' (' + i.part_number + ')' : ''))}"></option>`).join('')}</datalist>
       <input id="ppQty" type="number" min="1" step="1" value="1" aria-label="Quantity" style="max-width:80px">
       <select id="ppLoc" aria-label="Taken from">${myLocs.map(l => `<option value="${l.id}" ${own && l.id === own.id ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}</select>
-      <button type="button" id="ppAdd">Add part</button></div><p class="form-error" id="ppErr"></p>` : ''}`;
+      <button type="button" class="ghost-btn" id="ppScan">Scan</button><button type="button" id="ppAdd">Add part</button></div><p class="pp-fit" id="ppFit"></p><p class="form-error" id="ppErr"></p>` : ''}`;
+  // R11: find the chosen part, show whether it fits this unit
+  const pick = () => { const txt = (document.getElementById('ppSearch') || {}).value; if(!txt) return null; const t = txt.trim().toLowerCase();
+    return its.find(i => (i.name + (i.part_number ? ' (' + i.part_number + ')' : '')).toLowerCase() === t) || (typeof findPartByCode === 'function' ? findPartByCode(its, txt) : null) || its.find(i => i.name.toLowerCase() === t) || null; };
+  let lastFit = null;
+  const showFit = async () => { const it = pick(); const box = document.getElementById('ppFit'); if(!box) return; lastFit = null; box.innerHTML = '';
+    if(!it) return; if(typeof fitmentFor !== 'function') return; lastFit = { id: it.id, f: await fitmentFor(it.id, job.unit_id) }; box.innerHTML = fitmentHtml(lastFit.f); };
+  const ps = document.getElementById('ppSearch'); if(ps) ps.addEventListener('change', showFit);
+  const sc = document.getElementById('ppScan');
+  if(sc && typeof openScanner !== 'function') sc.remove();   // scanning arrives with parts.js; adding parts never depends on it
+  else if(sc) sc.onclick = () => openScanner('Scan a part', (code) => {
+    const it = findPartByCode(its, code);
+    if(!it){ document.getElementById('ppErr').textContent = 'No part with code ' + code + ' — link the barcode to a part in Inventory → Scan part.'; return; }
+    ps.value = it.name + (it.part_number ? ' (' + it.part_number + ')' : ''); showFit();
+  });
   const add = document.getElementById('ppAdd');
   if(add) add.onclick = async () => {
+    { const it0 = pick(); if(it0 && typeof fitmentFor === 'function'){ const f = lastFit && lastFit.id === it0.id ? lastFit.f : await fitmentFor(it0.id, job.unit_id);
+        if(f && f.verdict === 'mismatch' && !confirm("This part doesn't match this unit:\n" + (f.reason || '') + "\n\nAdd it anyway?")) return; } }
     const txt = document.getElementById('ppSearch').value.trim().toLowerCase();
     const it = its.find(i => (i.name + (i.part_number ? ' (' + i.part_number + ')' : '')).toLowerCase() === txt) || its.find(i => i.part_number && i.part_number.toLowerCase() === txt) || its.find(i => i.name.toLowerCase() === txt);
     const err = document.getElementById('ppErr'); err.textContent = '';

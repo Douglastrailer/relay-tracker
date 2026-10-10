@@ -32,7 +32,7 @@ async function fetchCustomers(){
 }
 async function fetchUnits(){
   const { data, error } = await sb.from('units')
-    .select('id, customer_id, unit_number, vin, year, make, model, plate, plate_state, unit_type, trailer_type, odometer, engine_hours, notes, active, created_at')
+    .select('id, customer_id, unit_number, vin, year, make, model, engine, plate, plate_state, unit_type, trailer_type, odometer, engine_hours, notes, active, created_at')
     .eq('org_id', session.orgId).order('unit_number').limit(2000);
   if(error){ console.error('fetchUnits', error); return []; }
   return data || [];
@@ -182,11 +182,12 @@ function openUnitForm(id){
         <div class="field"><label>Unit number *</label><input id="ufNumber" maxlength="60" value="${val('unit_number')}" placeholder="e.g. 7790"></div>
         <div class="field"><label>Type</label><select id="ufType">${Object.keys(UNIT_TYPE_LABELS).map(k => `<option value="${k}" ${(u ? u.unit_type : 'trailer') === k ? 'selected' : ''}>${UNIT_TYPE_LABELS[k]}</option>`).join('')}</select></div>
         <div class="field rec-span"><label>Customer</label><select id="ufCustomer"><option value="">No customer</option>${recordsCustomers.filter(c => c.active || (u && c.id === u.customer_id)).map(c => `<option value="${c.id}" ${u && u.customer_id === c.id ? 'selected' : ''}>${esc(c.company_name)}</option>`).join('')}</select></div>
-        <div class="field"><label>VIN</label><input id="ufVin" maxlength="17" class="mono" value="${val('vin')}" placeholder="17 characters"></div>
+        <div class="field rec-span"><label>VIN</label><div class="vin-row"><input id="ufVin" maxlength="18" class="mono" value="${val('vin')}" placeholder="17 characters" autocapitalize="characters"><button type="button" class="ghost-btn" id="ufVinScan">Scan</button><button type="button" class="ghost-btn" id="ufVinDecode">Decode</button></div><p class="vin-msg" id="ufVinMsg"></p></div>
         <div class="field"><label>Trailer type</label><input id="ufTrailerType" maxlength="60" value="${val('trailer_type')}" placeholder="e.g. Dry van, Reefer, Flatbed"></div>
         <div class="field"><label>Year</label><input id="ufYear" type="number" min="1950" max="2100" value="${val('year')}"></div>
         <div class="field"><label>Make</label><input id="ufMake" maxlength="60" value="${val('make')}"></div>
         <div class="field"><label>Model</label><input id="ufModel" maxlength="60" value="${val('model')}"></div>
+        <div class="field"><label>Engine</label><input id="ufEngine" maxlength="80" value="${val('engine')}" placeholder="e.g. Detroit DD15"></div>
         <div class="field"><label>Plate</label><input id="ufPlate" maxlength="20" value="${val('plate')}"></div>
         <div class="field"><label>Plate state</label><input id="ufPlateState" maxlength="20" value="${val('plate_state')}"></div>
         <div class="field"><label>Odometer (miles)</label><input id="ufOdo" type="number" min="0" value="${val('odometer')}"></div>
@@ -209,7 +210,8 @@ async function saveUnit(existing){
   const err = document.getElementById('ufError'); err.textContent = '';
   const number = nullIfBlank(document.getElementById('ufNumber').value);
   if(!number){ err.textContent = 'Unit number is required.'; return; }
-  const vin = nullIfBlank(document.getElementById('ufVin').value);
+  const vinRaw = nullIfBlank(document.getElementById('ufVin').value);
+  const vin = vinRaw ? (typeof cleanVin === 'function' ? cleanVin(vinRaw) : vinRaw) : null;   // no spaces/dashes; drops the extra leading "I" some VIN barcodes add
   if(vin && vin.length !== 17 && !confirm('A VIN is normally exactly 17 characters. Save "' + vin + '" anyway?')) return;
   const row = {
     unit_number: number,
@@ -220,6 +222,7 @@ async function saveUnit(existing){
     year: intOrNull(document.getElementById('ufYear').value),
     make: nullIfBlank(document.getElementById('ufMake').value),
     model: nullIfBlank(document.getElementById('ufModel').value),
+    engine: nullIfBlank((document.getElementById('ufEngine') || {}).value || ''),
     plate: nullIfBlank(document.getElementById('ufPlate').value),
     plate_state: nullIfBlank(document.getElementById('ufPlateState').value),
     odometer: intOrNull(document.getElementById('ufOdo').value),
@@ -280,7 +283,7 @@ async function openRepairOrder(jobId){
 
   const [cust, unit, hist, invs, audit] = await Promise.all([
     job.customer_id ? sb.from('customers').select('company_name, contact_name, phone, email, payment_terms').eq('id', job.customer_id).maybeSingle() : Promise.resolve({ data:null }),
-    job.unit_id ? sb.from('units').select('unit_number, unit_type, vin, year, make, model, trailer_type, plate, plate_state, odometer').eq('id', job.unit_id).maybeSingle() : Promise.resolve({ data:null }),
+    job.unit_id ? sb.from('units').select('unit_number, unit_type, vin, year, make, model, engine, trailer_type, plate, plate_state, odometer').eq('id', job.unit_id).maybeSingle() : Promise.resolve({ data:null }),
     sb.from('job_status_history').select('from_status, to_status, changed_by, changed_at').eq('job_id', jobId).order('changed_at', { ascending:true }).limit(200),
     Promise.resolve({ data:[] }),   // estimates and invoices are loaded by est.js
     isShop ? sb.from('audit_log').select('action, details, actor_id, created_at').eq('entity', 'job').eq('entity_id', String(jobId)).order('created_at', { ascending:true }).limit(200) : Promise.resolve({ data:[] })

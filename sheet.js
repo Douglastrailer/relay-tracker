@@ -21,7 +21,8 @@ function openFormSheet(title, nodes, onClose){
   if(formSheet) closeFormSheet(true);
   const o = sheetEl(), body = document.getElementById('formSheetBody');
   document.getElementById('formSheetTitle').textContent = title;
-  const moved = nodes.filter(Boolean).map(node => { const marker = document.createComment('sheet-home'); node.parentNode.insertBefore(marker, node); body.appendChild(node); return { node, marker }; });
+  // existing forms are moved in and put back on close; new content (e.g. the scanner) has no home and is just removed
+  const moved = nodes.filter(Boolean).map(node => { let marker = null; if(node.parentNode){ marker = document.createComment('sheet-home'); node.parentNode.insertBefore(marker, node); } body.appendChild(node); return { node, marker }; });
   formSheet = { nodes: moved, onClose };
   o.classList.remove('hidden'); requestAnimationFrame(() => o.classList.add('open'));
   document.body.classList.add('sheet-open');
@@ -33,7 +34,7 @@ function openFormSheet(title, nodes, onClose){
 function closeFormSheet(silent){
   if(!formSheet) return;
   const s = formSheet; formSheet = null;
-  s.nodes.forEach(({ node, marker }) => { marker.parentNode.insertBefore(node, marker); marker.remove(); });
+  s.nodes.forEach(({ node, marker }) => { if(marker && marker.parentNode){ marker.parentNode.insertBefore(node, marker); marker.remove(); } else node.remove(); });
   const o = document.getElementById('formSheet'); o.classList.add('hidden'); o.classList.remove('open');
   document.body.classList.remove('sheet-open');
   if(typeof s.onClose === 'function') s.onClose(silent);
