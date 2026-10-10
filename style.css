@@ -9,9 +9,9 @@
     --accent:#0D5C6E; --accent-2:#137A91; --accent-soft:#E4F0F2;
     --live:#D9480F; --pending:#B7791F; --done:#15803D; --info:#2563EB; --danger:#C62828;
     --bg-rgb:243,245,247; --navy:#0E2A31; --navy-2:#153942;
-    --font-display:'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
-    --font-body:'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
-    --font-mono:'IBM Plex Mono', ui-monospace, 'Courier New', monospace;
+    --font-display:'Inter', -apple-system, 'Segoe UI', sans-serif;
+    --font-body:'Inter', -apple-system, 'Segoe UI', sans-serif;
+    --font-mono:'JetBrains Mono', ui-monospace, 'Courier New', monospace;
     --r-sm:4px; --r-md:6px; --r-lg:8px;
     --shadow-pop:0 8px 24px rgba(20,26,33,0.12);
     --topbar-h:56px; --sidebar-w:232px;
@@ -732,7 +732,7 @@ body{ background-image:none; }
 
 /* ================= Landing page (public home) =================
    Scoped to .lp so none of it reaches the app. Uses the same tokens as
-   the app (petrol accent, navy, IBM Plex Sans); status colors appear only
+   the app (petrol accent, navy, Inter); status colors appear only
    inside the product preview, where they mean what they mean in the app. */
 .lp{ --lp-gap:112px; color:var(--ink); }
 .lp h1, .lp h2, .lp h3{ font-family:var(--font-display); color:var(--ink); }
@@ -1689,7 +1689,7 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
    Landing page (lx-) — "the shop system that also runs the road"
    ============================================================ */
 .lx{ --lx-night:#0E2A31; --lx-night-2:#153942; --lx-blue:#0D5C6E; --lx-amber:#F5A524; --lx-green:#12B76A; --lx-steel:#EEF1F6;
-  --lx-display:'Archivo', 'IBM Plex Sans', system-ui, sans-serif; font-family:'IBM Plex Sans', system-ui, sans-serif; color:var(--ink); }
+  --lx-display:'Instrument Serif', 'Inter', system-ui, sans-serif; font-family:'Inter', system-ui, sans-serif; color:var(--ink); }
 .lx h1, .lx h2, .lx h3{ font-family:var(--lx-display); font-stretch:110%; letter-spacing:-.01em; color:var(--ink); }
 .lx-hero{ display:grid; grid-template-columns:minmax(0, 5fr) minmax(0, 7fr); gap:48px; align-items:center; max-width:1240px; margin:0 auto; padding:64px 28px 72px; }
 .lx-hero h1{ font-size:clamp(2.2rem, 4.4vw, 3.6rem); line-height:1.04; font-weight:800; margin:0 0 20px; }
@@ -1712,7 +1712,7 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
 .lx-route{ fill:none; stroke:var(--lx-amber); stroke-width:3; stroke-dasharray:6 7; stroke-linecap:round; opacity:.85; vector-effect:non-scaling-stroke; }
 .lx-driving .lx-route{ animation:lxDash 1s linear infinite; }
 @keyframes lxDash{ to{ stroke-dashoffset:-13; } }
-.lx-maplabel{ position:absolute; color:#8FB7C0; font:600 12px 'IBM Plex Mono', monospace; pointer-events:none; }
+.lx-maplabel{ position:absolute; color:#8FB7C0; font:600 12px 'JetBrains Mono', monospace; pointer-events:none; }
 .lx-roads path[fill="none"]{ vector-effect:non-scaling-stroke; }
 .lx-pin{ position:absolute; width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%; }
 .lx-pin-shop{ background:#137A91; border:3px solid #0B2228; box-shadow:0 0 0 2px #137A91; }
@@ -1725,20 +1725,20 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
 .lx-eta{ position:absolute; left:14px; top:14px; display:flex; align-items:baseline; gap:6px; padding:8px 12px; border-radius:8px; background:rgba(14,42,49,.92); border:1px solid #24515C; color:#fff;
   opacity:0; transform:translateY(-6px); transition:opacity .3s, transform .3s; }
 .lx-eta.show{ opacity:1; transform:none; }
-.lx-eta b{ font:700 1.6rem 'IBM Plex Mono', monospace; color:var(--lx-amber); min-width:1.4ch; }
+.lx-eta b{ font:700 1.6rem 'JetBrains Mono', monospace; color:var(--lx-amber); min-width:1.4ch; }
 .lx-eta.arrived b{ color:var(--lx-green); }
 .lx-eta span{ font-size:.85rem; color:#B5D3D9; }
 
 /* the work order beside it */
 .lx-wo{ background:#fff; border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:8px; color:#101828; font-size:.92rem; }
 .lx-wo-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
-.lx-wo-num{ font:700 .85rem 'IBM Plex Mono', monospace; color:var(--lx-blue); }
+.lx-wo-num{ font:700 .85rem 'JetBrains Mono', monospace; color:var(--lx-blue); }
 .lx-chip{ font-size:.78rem; font-weight:700; padding:3px 9px; border-radius:999px; background:#EEF1F6; color:#344054; transition:background .3s, color .3s; }
 .lx-chip[data-s="enroute"]{ background:#FEF0C7; color:#B54708; }
 .lx-chip[data-s="onsite"], .lx-chip[data-s="repairing"]{ background:#E4F0F2; color:#0D5C6E; }
 .lx-chip[data-s="done"]{ background:#DCFAE6; color:#067647; }
 .lx-wo-unit{ font-family:var(--lx-display); font-stretch:110%; font-weight:800; font-size:1.15rem; }
-.lx-wo-unit span{ display:block; font-family:'IBM Plex Sans', sans-serif; font-weight:500; font-size:.85rem; color:#475467; }
+.lx-wo-unit span{ display:block; font-family:'Inter', sans-serif; font-weight:500; font-size:.85rem; color:#475467; }
 .lx-wo-svc{ color:#475467; }
 .lx-wo-tech{ display:flex; align-items:center; gap:8px; font-weight:600; padding:8px 0; border-top:1px solid #EAECF0; border-bottom:1px solid #EAECF0; }
 .lx-wo-tech em{ margin-left:auto; font-style:normal; font-size:.78rem; color:#98A2B3; }
@@ -1758,7 +1758,7 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
 .lx-sub{ color:var(--ink-soft); margin:0 0 34px; font-size:1.05rem; }
 .lx-steps{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); counter-reset:lx; border-top:3px solid var(--ink); }
 .lx-steps li{ counter-increment:lx; padding:16px 18px 0 0; display:flex; flex-direction:column; gap:6px; position:relative; }
-.lx-steps li::before{ content:counter(lx); position:absolute; top:-15px; left:0; width:26px; height:26px; border-radius:50%; background:var(--panel); border:3px solid var(--ink); font:700 .75rem 'IBM Plex Mono', monospace; display:flex; align-items:center; justify-content:center; color:var(--ink); }
+.lx-steps li::before{ content:counter(lx); position:absolute; top:-15px; left:0; width:26px; height:26px; border-radius:50%; background:var(--panel); border:3px solid var(--ink); font:700 .75rem 'JetBrains Mono', monospace; display:flex; align-items:center; justify-content:center; color:var(--ink); }
 .lx-steps li:last-child::before{ background:var(--lx-green); border-color:var(--lx-green); color:#fff; }
 .lx-steps b{ font-family:var(--lx-display); font-stretch:110%; font-size:1.08rem; margin-top:18px; }
 .lx-steps span{ color:var(--ink-soft); font-size:.93rem; line-height:1.5; }
@@ -1939,7 +1939,7 @@ body.pdf-open{ overflow:hidden; }
 .shop-pin-wrap{ background:none; border:none; }
 .shop-pin{ width:44px; height:44px; border-radius:50%; background:#fff; border:3px solid #0D5C6E; box-shadow:0 3px 10px rgba(0,0,0,.3); overflow:hidden; display:flex; align-items:center; justify-content:center; }
 .shop-pin img{ width:100%; height:100%; object-fit:contain; background:#fff; }
-.shop-pin span{ font:800 15px/1 'IBM Plex Sans', sans-serif; color:#0D5C6E; }
+.shop-pin span{ font:800 15px/1 'Inter', sans-serif; color:#0D5C6E; }
 .shop-pin-tip{ width:0; height:0; margin:-2px auto 0; border-left:7px solid transparent; border-right:7px solid transparent; border-top:9px solid #0D5C6E; }
 .is-hidden .shop-pin{ border-color:#98A2B3; opacity:.7; } .is-hidden .shop-pin-tip{ border-top-color:#98A2B3; }
 .shop-pop{ display:flex; flex-direction:column; gap:8px; min-width:220px; }
@@ -2059,3 +2059,32 @@ body.modal-open #assistFab, body.sheet-open #assistFab, body.pdf-open #assistFab
 .lx-plan p{ margin:0; color:var(--ink-soft); line-height:1.5; } .lx-plan ul{ margin:0; padding-left:18px; color:var(--ink-soft); line-height:1.7; }
 
 .admin-billing input, .admin-billing select{ min-height:36px; padding:4px 6px; border:1px solid var(--line-strong); border-radius:var(--r-md); background:var(--panel-2); color:var(--ink); font:inherit; }
+
+/* ---------- Fonts (like resend.com): Inter for text, Instrument Serif for landing headlines ---------- */
+body{ font-family:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-feature-settings:'cv11', 'ss01'; letter-spacing:-0.006em; }
+.lx h1, .lx h2{ font-family:var(--lx-display); font-weight:400 !important; font-stretch:normal; letter-spacing:-0.01em; }
+.lx h1{ font-size:clamp(2.6rem, 5.2vw, 4.4rem) !important; line-height:1.02 !important; }
+.lx h2{ font-size:clamp(2rem, 3.4vw, 2.8rem) !important; }
+.lx h3, .lx-steps b, .lx-wo-unit{ font-family:'Inter', system-ui, sans-serif !important; font-stretch:normal !important; letter-spacing:-0.01em; }
+/* ---------- Professional header: Contact · Sign in · [Get started] on the right ---------- */
+.pro-nav{ margin-left:auto; display:flex; align-items:center; gap:4px; background:none !important; border:none !important; padding:0 !important; box-shadow:none !important; }
+.pro-nav .nav-home-hidden{ display:none !important; }
+.pro-nav .nav-text{ background:none; border:none; padding:8px 12px; border-radius:8px; font:inherit; font-weight:600; font-size:.95rem; color:var(--ink-soft); cursor:pointer; }
+.pro-nav .nav-text:hover, .pro-nav .nav-text.active{ color:var(--ink); background:var(--panel-2); }
+.pro-nav .nav-cta{ margin-left:6px; padding:9px 16px; border:none; border-radius:8px; background:var(--accent); color:#fff; font:inherit; font-weight:700; font-size:.95rem; cursor:pointer; }
+.pro-nav .nav-cta:hover{ filter:brightness(1.08); }
+@media (max-width:640px){ .pro-nav .nav-contact{ display:none; } .pro-nav .nav-text, .pro-nav .nav-cta{ padding:8px 10px; font-size:.9rem; } }
+/* ---------- FAQ ---------- */
+.lx-faq{ max-width:860px; margin:0 auto; padding:72px 28px; border-top:1px solid var(--line); }
+.lx-faq-list{ margin-top:24px; border-top:1px solid var(--line); }
+.lx-q{ border-bottom:1px solid var(--line); }
+.lx-q summary{ list-style:none; cursor:pointer; padding:18px 36px 18px 0; position:relative; font-weight:600; font-size:1.05rem; }
+.lx-q summary::-webkit-details-marker{ display:none; }
+.lx-q summary::after{ content:'+'; position:absolute; right:4px; top:50%; transform:translateY(-50%); font-size:1.4rem; font-weight:400; color:var(--ink-soft); transition:transform .2s; }
+.lx-q[open] summary::after{ transform:translateY(-50%) rotate(45deg); }
+.lx-q p{ margin:0 0 18px; color:var(--ink-soft); line-height:1.65; max-width:62ch; }
+.lx-faq-more{ margin-top:18px; color:var(--ink-soft); } .lx-link{ background:none; border:none; padding:0; color:var(--accent); font:inherit; font-weight:600; cursor:pointer; text-decoration:underline; }
+/* public pages: keep Contact · Sign in · Get started grouped on the right, next to the theme toggle */
+body:not(.in-app) .topbar-inner{ justify-content:flex-start; }
+body:not(.in-app) .pro-nav{ margin-left:auto; margin-right:10px; }
+body:not(.in-app) .topbar-right-group{ margin-left:0; }

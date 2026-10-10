@@ -765,6 +765,8 @@ function showPublicView(which){
 navHome.onclick = ()=> showPublicView('home');
 navContact.onclick = ()=> showPublicView('contact');
 navSignin.onclick = ()=> { showPublicView('signin'); showAuthForm('login'); };
+{ const ns = document.getElementById('navStart'); if(ns) ns.onclick = () => { showPublicView('signin'); showAuthForm('signup'); }; }
+{ const fc = document.getElementById('faqContact'); if(fc) fc.onclick = () => { showPublicView('contact'); window.scrollTo(0, 0); }; }
 document.getElementById('brandHome').onclick = ()=>{ if(!appEntered) showPublicView('home'); };
 document.getElementById('landingLogin').onclick = ()=> { showPublicView('signin'); showAuthForm('login'); };
 document.getElementById('landingSignup').onclick = ()=> { showPublicView('signin'); showAuthForm('signup'); };
@@ -2750,6 +2752,7 @@ function initAdminView(){
 
 async function refreshAdminData(){
   if(typeof renderAdminShopMap === 'function') renderAdminShopMap();
+  if(typeof initPlansUI === 'function') initPlansUI();   // Billing section (it only ran for shops before)
   if(typeof renderAdminPlans === 'function') renderAdminPlans();
   const profiles = await fetchAllProfiles();
   const orgs = await fetchAllOrganizations();

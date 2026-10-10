@@ -1,3 +1,4 @@
-RelayFleet website - complete set (adds: Switching from another system)
+RelayFleet website - complete set
+(new header, fonts, FAQ, no pricing on the landing page, admin Billing fixed)
 
-Upload ALL files (select all) to GitHub, Commit. No database changes.
+Upload ALL files (select all) to GitHub, Commit. No database changes (0030 must be run for Billing).

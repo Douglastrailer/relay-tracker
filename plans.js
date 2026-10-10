@@ -95,4 +95,3 @@ function initPlansUI(){
     renderAdminPlans();
   }
 }
-renderLandingPricing();

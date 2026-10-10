@@ -12,9 +12,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=60"/>
+<link rel="stylesheet" href="style.css?v=61"/>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap');
 </style>
 </head>
 <body>
@@ -26,10 +26,11 @@
       <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12h11M15 12l-3.5-3.5M15 12l-3.5 3.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="19" cy="12" r="2" fill="#fff"/></svg></div>
       <div class="brand-text"><b>Relay</b><span>Shop &amp; road service</span></div>
     </div>
-    <nav class="public-nav" id="publicNav">
-      <button class="nav-link active" id="navHome">Home</button>
-      <button class="nav-link" id="navSignin">Sign in</button>
-      <button class="nav-link" id="navContact">Contact</button>
+    <nav class="public-nav pro-nav" id="publicNav" aria-label="Site">
+      <button class="nav-link nav-home-hidden active" id="navHome" tabindex="-1" aria-hidden="true">Home</button>
+      <button class="nav-text nav-contact" id="navContact">Contact</button>
+      <button class="nav-text" id="navSignin">Sign in</button>
+      <button class="nav-cta" id="navStart">Get started</button>
     </nav>
     <div class="gsearch hidden" id="gSearchWrap" role="search">
       <svg class="gsearch-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -181,10 +182,21 @@
       </dl>
     </section>
 
-    <section class="lx-pricing" id="lxPricing" aria-labelledby="lxPriceH">
-      <h2 id="lxPriceH">Simple pricing. Every feature included.</h2>
-      <p class="lx-sub">One plan. Unlimited users — your office, every mechanic, and your fleet customers. 14-day free trial.</p>
-      <div class="lx-plans" id="lxPricingGrid"></div>
+    <section class="lx-faq" aria-labelledby="lxFaqH">
+      <h2 id="lxFaqH">Questions shops ask</h2>
+      <div class="lx-faq-list">
+        <details class="lx-q"><summary>What is Relay?</summary><p>Relay is shop and road service software for truck and trailer repair. Every repair lives on one work order — from the call or request, through dispatch, the mechanic on site, the estimate and the customer's approval, to the invoice and payment — and your office, your mechanics and your fleet customers all see the same job, live.</p></details>
+        <details class="lx-q"><summary>Who is it for?</summary><p>Truck and trailer repair shops, mobile mechanics and roadside service businesses — from a two-mechanic shop with no dispatcher to companies running several locations.</p></details>
+        <details class="lx-q"><summary>Do mechanics need special devices?</summary><p>No. Mechanics use Relay on their own phones (iPhone or Android). They accept road calls, navigate, run timers, add parts and photos, and can use voice commands. Relay can be installed on the home screen like an app — no app store needed.</p></details>
+        <details class="lx-q"><summary>How does live tracking work?</summary><p>When a mechanic is on a road call and sharing location, the office sees them on the dispatch map and the fleet customer sees the ETA. Mechanics control when they share, and location is only visible to their own shop and the customer on that job.</p></details>
+        <details class="lx-q"><summary>Can our fleet customers use it?</summary><p>Yes. Fleet customers get their own portal: they request service, follow the mechanic's ETA, approve estimates, see photos and invoices, and look up every unit's repair history.</p></details>
+        <details class="lx-q"><summary>We use Fullbay, Shopmonkey or spreadsheets today. Can we bring our data?</summary><p>Yes. Export your customers, vehicles and parts as CSV or Excel files and add them all at once — Relay recognises each file, matches the columns, and imports everything in the right order. Nothing is duplicated.</p></details>
+        <details class="lx-q"><summary>Does it work with QuickBooks?</summary><p>Relay exports your customers, invoices, payments, products and vendors in the format QuickBooks Online imports.</p></details>
+        <details class="lx-q"><summary>Can we run more than one location?</summary><p>Yes. Add each location with its own address, bays, stock and mechanics, and see every location side by side on one dashboard.</p></details>
+        <details class="lx-q"><summary>Is our data private?</summary><p>Each shop's data is kept separate and is only visible to that shop's team, with access by role (owner, office staff, mechanic) — and to fleet customers only for their own vehicles and jobs.</p></details>
+        <details class="lx-q"><summary>How do we get started?</summary><p>Set up your company in a few minutes, invite your mechanics with your shop code, and add or import your customers. You can try Relay free for 14 days.</p></details>
+      </div>
+      <p class="lx-faq-more">Something else? <button type="button" class="lx-link" id="faqContact">Contact us</button></p>
     </section>
 
     <section class="lx-cta">
@@ -920,7 +932,7 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=63"></script>
+<script src="script.js?v=64"></script>
 <script src="ro.js?v=15"></script>
 <script src="insp.js?v=4"></script>
 <script src="est.js?v=10"></script>
@@ -969,7 +981,7 @@
 <script src="parts.js?v=2"></script>
 <script src="migrate.js?v=1"></script>
 <script src="natasha.js?v=1"></script>
-<script src="plans.js?v=2"></script>
+<script src="plans.js?v=3"></script>
 <script src="landing.js?v=1"></script>
 <script src="pwa.js?v=1"></script>
 
