@@ -265,7 +265,7 @@ async function voiceAnswer(intent, job){
     return voiceSay(`This job is ${VOICE_STATUS[job.status] || job.status}.${can.length ? ' You can ' + can.join(' or ') + '.' : ''}`, 'ok');
   }
 }
-// Anything else: ask Relay's assistant (read-only for mechanics) and read the answer out loud.
+// Anything else: ask Natasha, the assistant (read-only for mechanics), and read the answer out loud.
 async function voiceAskRelay(text, job){
   const said = document.getElementById('voiceSaid'); if(said) said.textContent = 'Thinking…';
   try {
@@ -274,7 +274,7 @@ async function voiceAskRelay(text, job){
     if(error || !data || data.error || !data.reply) return voiceSay("Sorry, I couldn't get an answer for that. Say help to hear what I can do.", 'error');
     const clean = String(data.reply).replace(/\*\*/g, '').replace(/\bWO-0*(\d+)/g, 'work order $1').replace(/[#`_]/g, '').replace(/\s*\n+\s*[-•]?\s*/g, '. ').slice(0, 600);
     return voiceSay(clean, 'ok');
-  } catch(_){ return voiceSay("Sorry, I couldn't reach Relay right now.", 'error'); }
+  } catch(_){ return voiceSay("Sorry, I couldn't reach Natasha right now.", 'error'); }
 }
 
 document.addEventListener('pointerdown', function voiceFirstTouch(e){

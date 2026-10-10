@@ -40,7 +40,7 @@ function closeFormSheet(silent){
 }
 
 // ---------- shop: New work order ----------
-// Every way of opening the form (the button, Ask Relay, a customer profile,
+// Every way of opening the form (the button, Natasha, a customer profile,
 // the setup checklist) un-hides #woCreateBox — so watch that one box.
 function initWoSheet(){
   const box = document.getElementById('woCreateBox');

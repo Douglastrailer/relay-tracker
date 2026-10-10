@@ -1,5 +1,5 @@
 // ============================================================
-// RelayFleet — Redesign R4b: "Ask Relay" assistant panel.
+// RelayFleet — Redesign R4b: the assistant panel ("Natasha", formerly "Ask Relay").
 // Questions go to the assistant Edge Function, which looks things up
 // through the person's own login. Proposed changes come back here and
 // only happen after the person confirms, through the app's normal paths.
