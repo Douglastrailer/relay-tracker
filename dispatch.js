@@ -98,7 +98,7 @@ function drawDispatchMap(){
   mechs.forEach(m => { const l = locs[m.id]; if(!l || Date.now() - l.updatedAt > 10 * 60000) return;
     dispatchLayer.addLayer(L.marker([l.lat, l.lng], { icon: pinIcon('mech') }).bindPopup(esc(m.name))); pts.push([l.lat, l.lng]); });
   const sel = calls.find(c => c.id === dispatchSel), sl = sel && locs[sel.mechanic_id];
-  if(sel && sel.dest_lat && sl) dispatchLayer.addLayer(L.polyline([[sl.lat, sl.lng], [sel.dest_lat, sel.dest_lng]], { color:'#1E4DD8', weight:3, dashArray:'6 6' }));
+  if(sel && sel.dest_lat && sl) dispatchLayer.addLayer(L.polyline([[sl.lat, sl.lng], [sel.dest_lat, sel.dest_lng]], { color:'#0D5C6E', weight:3, dashArray:'6 6' }));
   if(pts.length) try { dispatchMap.fitBounds(pts, { padding:[40, 40], maxZoom:12 }); } catch(_){}
   setTimeout(() => { try { dispatchMap.invalidateSize(); } catch(_){} }, 50);
 }

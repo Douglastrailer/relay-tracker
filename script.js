@@ -1224,10 +1224,24 @@ function setupRealtimeSync(){
     .on('postgres_changes', Object.assign({ event: '*', schema: 'public', table: 'jobs' },
         // Only this shop's jobs (or this fleet's) — not every change in the system.
         session.role === 'fleet' ? { filter: 'fleet_profile_id=eq.' + session.id }
-        : session.orgId ? { filter: 'org_id=eq.' + session.orgId } : {}), refreshCurrentView)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, handleLocationPing)
-    .subscribe();
+        : session.orgId ? { filter: 'org_id=eq.' + session.orgId } : {}), refreshCurrentView);
+  // Mechanic positions (audit fix, 0028): shop staff and mechanics get only their own shop's;
+  // the platform admin gets all; fleets get their joined shops' (below) — never the whole platform.
+  if(session.role === 'admin') realtimeChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, handleLocationPing);
+  else if(session.role !== 'fleet' && session.orgId) realtimeChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'locations', filter: 'org_id=eq.' + session.orgId }, handleLocationPing);
+  realtimeChannel.subscribe();
+  // Fleets: mechanics of the shops they've joined (looked up once).
+  if(session.role === 'fleet'){
+    sb.from('fleet_shop_links').select('org_id').eq('fleet_id', session.id).then(({ data }) => {
+      const ids = (data || []).map(r => r.org_id).filter(Boolean);
+      if(!ids.length || fleetLocChannel) return;
+      fleetLocChannel = sb.channel('relay-fleet-locations')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'locations', filter: 'org_id=in.(' + ids.slice(0, 100).join(',') + ')' }, handleLocationPing)
+        .subscribe();
+    });
+  }
 }
+let fleetLocChannel = null;
 
 function enterApp(){
   if(appEntered) return;
