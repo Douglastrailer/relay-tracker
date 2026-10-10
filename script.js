@@ -2325,6 +2325,8 @@ function initShopView(){
   if(typeof initProfitUI === 'function') safeInit('initProfitUI', initProfitUI);
   if(typeof initLocations === 'function') safeInit('initLocations', initLocations);
   if(typeof initWoSheet === 'function') safeInit('initWoSheet', initWoSheet);
+  if(typeof initNatasha === 'function') safeInit('initNatasha', initNatasha);
+  if(typeof initPlansUI === 'function') safeInit('initPlansUI', initPlansUI);
   if(typeof renderSetupChecklist === 'function'){ safeInit('renderSetupChecklist', renderSetupChecklist); document.querySelectorAll('.dash-tab[data-target="shop-overview"]').forEach(t => t.addEventListener('click', renderSetupChecklist)); }
   safeInit('renderAnnouncementBanner', renderAnnouncementBanner);
   safeInit('initNewBadges', initNewBadges);
@@ -2748,6 +2750,7 @@ function initAdminView(){
 
 async function refreshAdminData(){
   if(typeof renderAdminShopMap === 'function') renderAdminShopMap();
+  if(typeof renderAdminPlans === 'function') renderAdminPlans();
   const profiles = await fetchAllProfiles();
   const orgs = await fetchAllOrganizations();
   const mechanics = profiles.filter(p=>p.role==='mechanic');

@@ -66,7 +66,7 @@ async function loadRoEstimates(job, opts){
   };
 }
 
-async function newEstimateForJob(job){
+async function newEstimateForJob(job, opts){   // opts.open === false: create the draft and return its id (Natasha)
   const [custRes, orgRes] = await Promise.all([
     job.customer_id ? sb.from('customers').select('company_name, email, billing_email, billing_address, payment_terms, tax_exempt').eq('id', job.customer_id).maybeSingle() : Promise.resolve({ data:null }),
     sb.from('organizations').select('default_tax_rate').eq('id', session.orgId).maybeSingle()
@@ -79,8 +79,10 @@ async function newEstimateForJob(job){
     payment_terms: c.payment_terms || 'due_on_receipt',
     tax_rate: c.tax_exempt ? 0 : Number((orgRes.data || {}).default_tax_rate || 0)
   }]).select('id').single();
-  if(error){ alert('Could not start an estimate: ' + error.message); return; }
+  if(error){ alert('Could not start an estimate: ' + error.message); return null; }
+  if(opts && opts.open === false) return data.id;
   openEstimateEditor(data.id, true);
+  return data.id;
 }
 
 // ---------------- Editor ----------------

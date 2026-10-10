@@ -322,6 +322,7 @@ async function openRepairOrder(jobId){
         ${isShop ? `<button type="button" class="ghost-btn" id="woActUpdate">Send update</button>` : ''}
         ${(isShop || isAssignedMech) && !closed && job.status !== 'complete' ? `<button type="button" class="ghost-btn" id="woActComplete">Complete job</button>` : ''}
         ${billing && !closed && !['complete'].includes(job.status) ? `<button type="button" class="ghost-btn" id="woActEstimate">Create estimate</button>` : ''}
+        ${billing && !closed && !['complete'].includes(job.status) ? `<button type="button" class="ghost-btn nat-draft" id="woActDraft" title="Natasha drafts it from the complaint and diagnosis, using your parts and labor rate">Draft with Natasha</button>` : ''}
         ${billing && ['complete','invoiced','paid'].includes(job.status) ? `<button type="button" class="wo-act-primary" id="woActInvoice">${job.status === 'complete' ? 'Create invoice' : 'Open invoice'}</button>` : ''}
         ${isShop ? `<button type="button" class="text-btn danger" id="woActDelete">Delete</button>` : ''}
       </div>
@@ -536,6 +537,7 @@ function wireWoActions(job, opts){
     openRepairOrder(job.id); if(typeof refreshCurrentView === 'function') refreshCurrentView();
   });
   on('woActEstimate', () => { showWoTab('billing'); if(typeof newEstimateForJob === 'function') newEstimateForJob(job); });
+  window.__woJob = job;   // for "Draft with Natasha"
   on('woActInvoice', () => { if(typeof generateInvoiceFromWork === 'function') generateInvoiceFromWork(job); });
   on('woActDelete', async () => {
     if(!confirm(`Delete ${job.ro_number || 'this work order'}? This cannot be undone.`)) return;
