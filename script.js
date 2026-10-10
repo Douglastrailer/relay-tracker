@@ -2345,6 +2345,9 @@ function initShopView(){
     createBtn.disabled = true;
     const unitTypeSel = document.getElementById('njUnitType');
     const rec = await resolveCustomerAndUnit(customer, vehicle, unitTypeSel ? unitTypeSel.value : 'trailer');
+    // VIN from the form: saved to the unit (blanks only); never blocks creating the work order
+    const vinIn = document.getElementById('njVin');
+    if(vinIn && vinIn.value.trim() && rec && rec.unitId && typeof applyVinToUnit === 'function') await applyVinToUnit(rec.unitId, vinIn.value, window.njVinDecoded);
     if(rec.error){ createBtn.disabled = false; alert(rec.error); return; }
     const drivableVal = (document.getElementById('njDrivable') || {}).value;
     const fleetSel = document.getElementById('njFleet');
@@ -2378,6 +2381,7 @@ function initShopView(){
       if(typeof refreshWorkRequests === 'function') refreshWorkRequests();
     }
 
+    { const vi = document.getElementById('njVin'); if(vi) vi.value = ''; const vm = document.getElementById('njVinMsg'); if(vm) vm.textContent = ''; window.njVinDecoded = null; }
     document.getElementById('njCustomer').value = ''; document.getElementById('njVehicle').value = ''; document.getElementById('njIssue').value = ''; addressInput.value = '';
     ['njPriority','njDrivable'].forEach(id => { const el = document.getElementById(id); if(el) el.selectedIndex = 0; });
     const safetyBox = document.getElementById('njSafety'); if(safetyBox) safetyBox.checked = false;

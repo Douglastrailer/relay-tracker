@@ -122,3 +122,68 @@ async function inventoryScan(){
     node.querySelector('#scanNew').onclick = () => { closeFormSheet(); if(typeof openItemForm === 'function'){ openItemForm(null); setTimeout(() => { const b = document.getElementById('ifBarcode'); if(b) b.value = code; }, 30); } };
   });
 }
+
+// ---------------- VIN lookup elsewhere (R11b): New work order + unit history ----------------
+// One shared lookup: clean, check, decode. Never throws.
+async function lookupVin(raw){
+  const vin = cleanVin(raw); const problem = vinProblem(vin);
+  if(vin.length !== 17) return { vin, problem, decoded:null };
+  try { const d = await decodeVin(vin); return { vin, problem, decoded: (d.make || d.year) ? d : null, unknown: !(d.make || d.year) }; }
+  catch(_){ return { vin, problem, decoded:null, offline:true }; }
+}
+function vinSummary(d){ return [d.year, d.make, d.model].filter(Boolean).join(' ') + (d.engine ? ' · ' + d.engine : '') + (d.type ? ' · ' + (d.type === 'trailer' ? 'Trailer' : 'Truck') : ''); }
+// New work order form
+async function njVinFill(raw){
+  const msg = document.getElementById('njVinMsg'), inp = document.getElementById('njVin');
+  const set = (t, cls) => { if(msg){ msg.textContent = t; msg.className = 'vin-msg ' + (cls || ''); } };
+  window.njVinDecoded = null;
+  set('Looking up the VIN…');
+  const r = await lookupVin(raw); if(inp) inp.value = r.vin;
+  if(r.vin.length !== 17){ set(r.problem, 'warn'); return; }
+  if(r.decoded){
+    window.njVinDecoded = { vin: r.vin, ...r.decoded };
+    const ty = document.getElementById('njUnitType'); if(ty && r.decoded.type && [...ty.options].some(o => o.value === r.decoded.type)) ty.value = r.decoded.type;
+    set(vinSummary(r.decoded) + ' — saved to the unit when you create the work order.' + (r.problem ? ' (' + r.problem + ')' : ''), r.problem ? 'warn' : 'ok');
+  } else set(r.offline ? "Couldn't reach the VIN service — the VIN will still be saved." : (r.problem || "The VIN service doesn't recognise this VIN — it will still be saved."), 'warn');
+}
+// After "Create": put the VIN and decoded details on the unit — filling blanks only, never overwriting.
+async function applyVinToUnit(unitId, raw, decoded){
+  try {
+    const vin = cleanVin(raw); if(!unitId || vin.length < 11) return;
+    const { data: u } = await sb.from('units').select('vin, year, make, model, engine').eq('id', unitId).maybeSingle();
+    if(!u) return;
+    const d = decoded && decoded.vin === vin ? decoded : null;
+    const patch = {};
+    if(!u.vin) patch.vin = vin.slice(0, 17);
+    if(d){ if(!u.year && d.year) patch.year = d.year; if(!u.make && d.make) patch.make = d.make; if(!u.model && d.model) patch.model = d.model; if(!u.engine && d.engine) patch.engine = d.engine; }
+    if(Object.keys(patch).length) await sb.from('units').update(patch).eq('id', unitId);
+  } catch(_){ /* a VIN problem must never block the work order */ }
+}
+// Unit history: decode and save to the unit (an explicit action, so it updates the unit)
+async function uhVinLookup(unitId){
+  const box = document.getElementById('uhVinBox'); if(!box) return;
+  const { data: u } = await sb.from('units').select('id, vin, unit_type').eq('id', unitId).maybeSingle();
+  const show = async (raw) => {
+    box.classList.remove('hidden'); box.innerHTML = '<p class="meta">Looking up the VIN…</p>';
+    const r = await lookupVin(raw);
+    if(r.vin.length !== 17){ box.innerHTML = `<p class="vin-msg warn">${esc(r.problem)}</p>`; return; }
+    if(!r.decoded){ box.innerHTML = `<p class="vin-msg warn">${esc(r.offline ? "Couldn't reach the VIN service right now." : (r.problem || "The VIN service doesn't recognise this VIN."))}</p>`; return; }
+    box.innerHTML = `<div class="uh-vin"><div><span class="meta">VIN <span class="mono">${esc(r.vin)}</span></span><b>${esc(vinSummary(r.decoded))}</b>${r.problem ? `<p class="vin-msg warn">${esc(r.problem)}</p>` : ''}</div>
+      <div class="job-actions"><button type="button" id="uhVinSave">Save to unit</button><button type="button" class="ghost-btn" id="uhVinClose">Close</button></div></div>`;
+    document.getElementById('uhVinClose').onclick = () => { box.classList.add('hidden'); box.innerHTML = ''; };
+    document.getElementById('uhVinSave').onclick = async () => {
+      const d = r.decoded; const patch = { vin: r.vin, year: d.year || null, make: d.make || null, model: d.model || null, engine: d.engine || null };
+      if(d.type) patch.unit_type = d.type;
+      const { error } = await sb.from('units').update(patch).eq('id', unitId);
+      if(error){ box.insertAdjacentHTML('beforeend', `<p class="form-error">${esc(error.message)}</p>`); return; }
+      recordsToast('Unit updated from its VIN'); if(typeof openUnitHistory === 'function') openUnitHistory(unitId);
+    };
+  };
+  if(u && u.vin) show(u.vin);
+  else openScanner('Scan the VIN', (code) => show(code), { vin:true });
+}
+document.addEventListener('click', (e) => {
+  if(e.target.closest('#njVinScan')) openScanner('Scan the VIN', (code) => njVinFill(code), { vin:true });
+  if(e.target.closest('#njVinDecode')) njVinFill((document.getElementById('njVin') || {}).value);
+  const uh = e.target.closest('#uhVin'); if(uh) uhVinLookup(Number(uh.dataset.unit));
+});

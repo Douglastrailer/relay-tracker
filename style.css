@@ -2014,3 +2014,6 @@ body.modal-open #assistFab, body.sheet-open #assistFab, body.pdf-open #assistFab
 .pp-fit{ margin:6px 0 0; }
 .fit{ display:inline-flex; flex-wrap:wrap; gap:6px; align-items:baseline; padding:6px 10px; border-radius:var(--r-md); font-size:.88rem; }
 .fit-fits{ background:var(--ok-soft); color:var(--ok); } .fit-mismatch{ background:var(--warn-soft); color:var(--warn); } .fit-unknown{ background:var(--panel-2); color:var(--ink-soft); }
+
+.uh-vin{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin:10px 0; padding:12px 14px; border:1px solid var(--line); border-radius:var(--r-lg); background:var(--panel); }
+.uh-vin b{ display:block; font-size:1.02rem; }

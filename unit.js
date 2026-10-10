@@ -84,8 +84,9 @@ function renderUnitHistory(){
     <div class="ro-head"><div>
       <div class="ro-head-num">${esc(UNIT_TYPE_NAME[u.unit_type] || 'Unit').toUpperCase()} ${esc(u.unit_number)}</div>
       <h2>${esc(customer || 'No customer')}${u.trailer_type ? ' · ' + esc(u.trailer_type) : ''}</h2>
-      <div class="meta">${[[u.year, u.make, u.model].filter(Boolean).join(' '), u.vin ? 'VIN ' + u.vin : '', u.plate ? 'Plate ' + u.plate + (u.plate_state ? ' ' + u.plate_state : '') : '', u.odometer != null ? Number(u.odometer).toLocaleString() + ' mi' : ''].filter(Boolean).map(esc).join(' · ') || 'No details yet'}</div>
-    </div><div class="uh-head-side">${open ? jobStatusBadge(open.status) : '<span class="rec-tag">No open repair</span>'}${isShop ? '<button type="button" class="ghost-btn" id="uhEdit">Edit unit</button>' : ''}</div></div>
+      <div class="meta">${[[u.year, u.make, u.model].filter(Boolean).join(' ') + (u.engine ? ' · ' + u.engine : ''), u.vin ? 'VIN ' + u.vin : '', u.plate ? 'Plate ' + u.plate + (u.plate_state ? ' ' + u.plate_state : '') : '', u.odometer != null ? Number(u.odometer).toLocaleString() + ' mi' : ''].filter(Boolean).map(esc).join(' · ') || 'No details yet'}</div>
+    </div><div class="uh-head-side">${open ? jobStatusBadge(open.status) : '<span class="rec-tag">No open repair</span>'}${isShop ? `<button type="button" class="ghost-btn" id="uhVin" data-unit="${u.id}">${u.vin ? 'VIN details' : 'Add VIN'}</button>` : ''}${isShop ? '<button type="button" class="ghost-btn" id="uhEdit">Edit unit</button>' : ''}</div></div>
+    <div id="uhVinBox" class="hidden"></div>
 
     <div class="time-stats uh-costs">
       <div><span>This month</span><b>${unitMoney(sum.month_cost)}</b></div>
