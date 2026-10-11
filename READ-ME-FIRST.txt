@@ -1,4 +1,3 @@
-RelayFleet website - complete set
-(new header, fonts, FAQ, no pricing on the landing page, admin Billing fixed)
+RelayFleet website - complete set (new split-screen sign-in page)
 
-Upload ALL files (select all) to GitHub, Commit. No database changes (0030 must be run for Billing).
+Upload ALL files (select all) to GitHub, Commit. No database changes.

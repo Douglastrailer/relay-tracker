@@ -785,9 +785,20 @@ function showAuthForm(which){
   if(which === 'login'){ loginForm.classList.remove('hidden'); tabLogin.classList.add('active'); }
   if(which === 'signup'){ signupForm.classList.remove('hidden'); tabSignup.classList.add('active'); }
   if(which === 'complete'){ completeProfileForm.classList.remove('hidden'); }
+  const T = { login:['Welcome back', 'Sign in to your shop, your road calls or your fleet.'], signup:['Set up your company', 'Create your account — it takes a few minutes. Mechanics and fleets join with your shop\'s code.'], complete:['Finish setting up', 'A few details and you\'re in.'] }[which];
+  const tt = document.getElementById('authTitle'), ts = document.getElementById('authSub');
+  if(T && tt){ tt.textContent = T[0]; if(ts) ts.textContent = T[1]; }
 }
 tabLogin.onclick = ()=> showAuthForm('login');
 tabSignup.onclick = ()=> showAuthForm('signup');
+{ const toS = document.getElementById('authToSignup'), toL = document.getElementById('authToLogin');
+  if(toS) toS.onclick = () => showAuthForm('signup'); if(toL) toL.onclick = () => showAuthForm('login'); }
+document.addEventListener('click', (e) => {   // show / hide password
+  const b = e.target.closest && e.target.closest('.pw-eye'); if(!b) return;
+  const inp = document.getElementById(b.dataset.pw); if(!inp) return;
+  const show = inp.type === 'password'; inp.type = show ? 'text' : 'password';
+  b.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); b.classList.toggle('on', show);
+});
 
 function updateRoleFields(prefix){
   const role = document.getElementById(prefix+'Role').value;

@@ -12,9 +12,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=61"/>
+<link rel="stylesheet" href="style.css?v=64"/>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
 </head>
 <body>
@@ -279,14 +279,11 @@
 
   <!-- ================= AUTH ================= -->
   <div id="authView" class="hidden">
-    <div class="auth-wrap">
-      <div class="auth-hero">
-        <span class="auth-eyebrow">RELAY · LIVE TRACKING</span>
-        <h1>Know where your team is.<br>Every job, every mile.</h1>
-        <p>Real GPS, real accounts, one shared view for mechanics, shop owners, and the fleets they serve.</p>
-      </div>
-
+    <div class="auth-split">
+     <div class="auth-side">
       <div class="auth-card">
+        <h1 class="auth-title" id="authTitle">Welcome back</h1>
+        <p class="auth-sub" id="authSub">Sign in to your shop, your road calls or your fleet.</p>
         <div class="auth-tabs">
           <button id="tabLogin" class="active">Log in</button>
           <button id="tabSignup">Create account</button>
@@ -294,9 +291,10 @@
 
         <div id="loginForm">
           <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="username"></div>
-          <div class="field"><label>Password</label><input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"></div>
+          <div class="field"><label>Password</label><div class="pw-wrap"><input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"><button type="button" class="pw-eye" data-pw="loginPass" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
           <button class="auth-submit" id="loginSubmit">Log in</button>
-          <button class="text-btn" id="forgotPassBtn" style="margin-top:10px;">Forgot password?</button>
+          <button class="text-btn auth-forgot" id="forgotPassBtn">Forgot password?</button>
+          <div class="auth-switch"><span>New to Relay?</span><button type="button" class="auth-outline" id="authToSignup">Set up your company</button></div>
         </div>
 
         <div id="signupForm" class="hidden">
@@ -322,8 +320,9 @@
             <label>Your company name</label>
             <input type="text" id="suCompany" placeholder="e.g. Amazon, FedEx">
           </div>
-          <div class="field"><label>Choose a password</label><input type="password" id="suPass" placeholder="At least 8 characters"></div>
+          <div class="field"><label>Choose a password</label><div class="pw-wrap"><input type="password" id="suPass" placeholder="At least 8 characters" autocomplete="new-password"><button type="button" class="pw-eye" data-pw="suPass" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
           <button class="auth-submit" id="signupSubmit">Create account</button>
+          <p class="auth-switch-line">Already have an account? <button type="button" class="text-btn" id="authToLogin">Sign in</button></p>
         </div>
 
         <!-- Shown when a logged-in user has no profile row yet (e.g. after email confirmation) -->
@@ -354,8 +353,25 @@
         </div>
 
         <div class="auth-error" id="authError"></div>
-        <p class="auth-note">Your account is protected with encrypted passwords, and password resets are sent by email.</p>
+        <p class="auth-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>Your shop's data is private to your team. Passwords are encrypted, and resets are sent by email.</p>
       </div>
+     </div>
+     <aside class="auth-showcase" aria-hidden="true">
+      <div class="auth-brand"><span class="auth-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 12h12M12 6l6 6-6 6"/><circle cx="20.5" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></span><span>Relay</span></div>
+      <p class="auth-promise">The shop system that also runs the road — one work order from the call to the paid invoice.</p>
+      <div class="auth-window">
+        <div class="auth-window-bar"><i></i><i></i><i></i><span>Relay — Dashboard</span></div>
+        <div class="auth-window-body">
+          <svg class="auth-routes" viewBox="0 0 600 380" preserveAspectRatio="none"><path d="M-10 300 C 120 280, 180 200, 300 210 S 470 120, 620 90"/><path d="M60 -10 C 90 120, 170 170, 190 390"/><path d="M380 -10 C 360 120, 430 230, 460 390"/><path d="M-10 120 C 140 140, 260 60, 620 160"/></svg>
+          <div class="kpi-grid">
+            <div class="kpi"><b>OPEN WORK ORDERS</b><span class="kpi-sub">Today</span><strong>14</strong><em class="up">↑ 3 since yesterday</em><svg viewBox="0 0 120 34"><polyline points="2,26 26,22 50,24 74,15 98,17 118,8"/></svg></div>
+            <div class="kpi"><b>ROAD CALLS</b><span class="kpi-sub">Live now</span><strong>3</strong><em class="up">Mike · 6 min away</em><svg viewBox="0 0 120 34"><polyline points="2,20 26,24 50,14 74,18 98,10 118,12"/></svg></div>
+            <div class="kpi"><b>REVENUE</b><span class="kpi-sub">Today</span><strong>$4,860</strong><em class="up">↑ 12% vs last week</em><svg viewBox="0 0 120 34" class="green"><polyline points="2,28 26,24 50,25 74,16 98,12 118,6"/></svg></div>
+            <div class="kpi"><b>AWAITING APPROVAL</b><span class="kpi-sub">Estimates</span><strong>2</strong><em class="warn">$3,410 waiting</em><svg viewBox="0 0 120 34" class="amber"><polyline points="2,14 26,18 50,12 74,20 98,16 118,22"/></svg></div>
+          </div>
+        </div>
+      </div>
+     </aside>
     </div>
   </div>
 
@@ -932,7 +948,7 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=64"></script>
+<script src="script.js?v=65"></script>
 <script src="ro.js?v=15"></script>
 <script src="insp.js?v=4"></script>
 <script src="est.js?v=10"></script>

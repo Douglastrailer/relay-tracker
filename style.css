@@ -9,9 +9,9 @@
     --accent:#0D5C6E; --accent-2:#137A91; --accent-soft:#E4F0F2;
     --live:#D9480F; --pending:#B7791F; --done:#15803D; --info:#2563EB; --danger:#C62828;
     --bg-rgb:243,245,247; --navy:#0E2A31; --navy-2:#153942;
-    --font-display:'Inter', -apple-system, 'Segoe UI', sans-serif;
-    --font-body:'Inter', -apple-system, 'Segoe UI', sans-serif;
-    --font-mono:'JetBrains Mono', ui-monospace, 'Courier New', monospace;
+    --font-display:'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
+    --font-body:'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
+    --font-mono:'IBM Plex Mono', ui-monospace, 'Courier New', monospace;
     --r-sm:4px; --r-md:6px; --r-lg:8px;
     --shadow-pop:0 8px 24px rgba(20,26,33,0.12);
     --topbar-h:56px; --sidebar-w:232px;
@@ -732,7 +732,7 @@ body{ background-image:none; }
 
 /* ================= Landing page (public home) =================
    Scoped to .lp so none of it reaches the app. Uses the same tokens as
-   the app (petrol accent, navy, Inter); status colors appear only
+   the app (petrol accent, navy, IBM Plex Sans); status colors appear only
    inside the product preview, where they mean what they mean in the app. */
 .lp{ --lp-gap:112px; color:var(--ink); }
 .lp h1, .lp h2, .lp h3{ font-family:var(--font-display); color:var(--ink); }
@@ -1689,7 +1689,7 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
    Landing page (lx-) — "the shop system that also runs the road"
    ============================================================ */
 .lx{ --lx-night:#0E2A31; --lx-night-2:#153942; --lx-blue:#0D5C6E; --lx-amber:#F5A524; --lx-green:#12B76A; --lx-steel:#EEF1F6;
-  --lx-display:'Instrument Serif', 'Inter', system-ui, sans-serif; font-family:'Inter', system-ui, sans-serif; color:var(--ink); }
+  --lx-display:'Archivo', 'IBM Plex Sans', system-ui, sans-serif; font-family:'IBM Plex Sans', system-ui, sans-serif; color:var(--ink); }
 .lx h1, .lx h2, .lx h3{ font-family:var(--lx-display); font-stretch:110%; letter-spacing:-.01em; color:var(--ink); }
 .lx-hero{ display:grid; grid-template-columns:minmax(0, 5fr) minmax(0, 7fr); gap:48px; align-items:center; max-width:1240px; margin:0 auto; padding:64px 28px 72px; }
 .lx-hero h1{ font-size:clamp(2.2rem, 4.4vw, 3.6rem); line-height:1.04; font-weight:800; margin:0 0 20px; }
@@ -1712,7 +1712,7 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
 .lx-route{ fill:none; stroke:var(--lx-amber); stroke-width:3; stroke-dasharray:6 7; stroke-linecap:round; opacity:.85; vector-effect:non-scaling-stroke; }
 .lx-driving .lx-route{ animation:lxDash 1s linear infinite; }
 @keyframes lxDash{ to{ stroke-dashoffset:-13; } }
-.lx-maplabel{ position:absolute; color:#8FB7C0; font:600 12px 'JetBrains Mono', monospace; pointer-events:none; }
+.lx-maplabel{ position:absolute; color:#8FB7C0; font:600 12px 'IBM Plex Mono', monospace; pointer-events:none; }
 .lx-roads path[fill="none"]{ vector-effect:non-scaling-stroke; }
 .lx-pin{ position:absolute; width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%; }
 .lx-pin-shop{ background:#137A91; border:3px solid #0B2228; box-shadow:0 0 0 2px #137A91; }
@@ -1725,20 +1725,20 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
 .lx-eta{ position:absolute; left:14px; top:14px; display:flex; align-items:baseline; gap:6px; padding:8px 12px; border-radius:8px; background:rgba(14,42,49,.92); border:1px solid #24515C; color:#fff;
   opacity:0; transform:translateY(-6px); transition:opacity .3s, transform .3s; }
 .lx-eta.show{ opacity:1; transform:none; }
-.lx-eta b{ font:700 1.6rem 'JetBrains Mono', monospace; color:var(--lx-amber); min-width:1.4ch; }
+.lx-eta b{ font:700 1.6rem 'IBM Plex Mono', monospace; color:var(--lx-amber); min-width:1.4ch; }
 .lx-eta.arrived b{ color:var(--lx-green); }
 .lx-eta span{ font-size:.85rem; color:#B5D3D9; }
 
 /* the work order beside it */
 .lx-wo{ background:#fff; border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:8px; color:#101828; font-size:.92rem; }
 .lx-wo-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
-.lx-wo-num{ font:700 .85rem 'JetBrains Mono', monospace; color:var(--lx-blue); }
+.lx-wo-num{ font:700 .85rem 'IBM Plex Mono', monospace; color:var(--lx-blue); }
 .lx-chip{ font-size:.78rem; font-weight:700; padding:3px 9px; border-radius:999px; background:#EEF1F6; color:#344054; transition:background .3s, color .3s; }
 .lx-chip[data-s="enroute"]{ background:#FEF0C7; color:#B54708; }
 .lx-chip[data-s="onsite"], .lx-chip[data-s="repairing"]{ background:#E4F0F2; color:#0D5C6E; }
 .lx-chip[data-s="done"]{ background:#DCFAE6; color:#067647; }
 .lx-wo-unit{ font-family:var(--lx-display); font-stretch:110%; font-weight:800; font-size:1.15rem; }
-.lx-wo-unit span{ display:block; font-family:'Inter', sans-serif; font-weight:500; font-size:.85rem; color:#475467; }
+.lx-wo-unit span{ display:block; font-family:'IBM Plex Sans', sans-serif; font-weight:500; font-size:.85rem; color:#475467; }
 .lx-wo-svc{ color:#475467; }
 .lx-wo-tech{ display:flex; align-items:center; gap:8px; font-weight:600; padding:8px 0; border-top:1px solid #EAECF0; border-bottom:1px solid #EAECF0; }
 .lx-wo-tech em{ margin-left:auto; font-style:normal; font-size:.78rem; color:#98A2B3; }
@@ -1758,7 +1758,7 @@ body.tv-mode .assist-fab, body.tv-mode .assist-panel{ display:none !important; }
 .lx-sub{ color:var(--ink-soft); margin:0 0 34px; font-size:1.05rem; }
 .lx-steps{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); counter-reset:lx; border-top:3px solid var(--ink); }
 .lx-steps li{ counter-increment:lx; padding:16px 18px 0 0; display:flex; flex-direction:column; gap:6px; position:relative; }
-.lx-steps li::before{ content:counter(lx); position:absolute; top:-15px; left:0; width:26px; height:26px; border-radius:50%; background:var(--panel); border:3px solid var(--ink); font:700 .75rem 'JetBrains Mono', monospace; display:flex; align-items:center; justify-content:center; color:var(--ink); }
+.lx-steps li::before{ content:counter(lx); position:absolute; top:-15px; left:0; width:26px; height:26px; border-radius:50%; background:var(--panel); border:3px solid var(--ink); font:700 .75rem 'IBM Plex Mono', monospace; display:flex; align-items:center; justify-content:center; color:var(--ink); }
 .lx-steps li:last-child::before{ background:var(--lx-green); border-color:var(--lx-green); color:#fff; }
 .lx-steps b{ font-family:var(--lx-display); font-stretch:110%; font-size:1.08rem; margin-top:18px; }
 .lx-steps span{ color:var(--ink-soft); font-size:.93rem; line-height:1.5; }
@@ -1939,7 +1939,7 @@ body.pdf-open{ overflow:hidden; }
 .shop-pin-wrap{ background:none; border:none; }
 .shop-pin{ width:44px; height:44px; border-radius:50%; background:#fff; border:3px solid #0D5C6E; box-shadow:0 3px 10px rgba(0,0,0,.3); overflow:hidden; display:flex; align-items:center; justify-content:center; }
 .shop-pin img{ width:100%; height:100%; object-fit:contain; background:#fff; }
-.shop-pin span{ font:800 15px/1 'Inter', sans-serif; color:#0D5C6E; }
+.shop-pin span{ font:800 15px/1 'IBM Plex Sans', sans-serif; color:#0D5C6E; }
 .shop-pin-tip{ width:0; height:0; margin:-2px auto 0; border-left:7px solid transparent; border-right:7px solid transparent; border-top:9px solid #0D5C6E; }
 .is-hidden .shop-pin{ border-color:#98A2B3; opacity:.7; } .is-hidden .shop-pin-tip{ border-top-color:#98A2B3; }
 .shop-pop{ display:flex; flex-direction:column; gap:8px; min-width:220px; }
@@ -2060,12 +2060,6 @@ body.modal-open #assistFab, body.sheet-open #assistFab, body.pdf-open #assistFab
 
 .admin-billing input, .admin-billing select{ min-height:36px; padding:4px 6px; border:1px solid var(--line-strong); border-radius:var(--r-md); background:var(--panel-2); color:var(--ink); font:inherit; }
 
-/* ---------- Fonts (like resend.com): Inter for text, Instrument Serif for landing headlines ---------- */
-body{ font-family:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-feature-settings:'cv11', 'ss01'; letter-spacing:-0.006em; }
-.lx h1, .lx h2{ font-family:var(--lx-display); font-weight:400 !important; font-stretch:normal; letter-spacing:-0.01em; }
-.lx h1{ font-size:clamp(2.6rem, 5.2vw, 4.4rem) !important; line-height:1.02 !important; }
-.lx h2{ font-size:clamp(2rem, 3.4vw, 2.8rem) !important; }
-.lx h3, .lx-steps b, .lx-wo-unit{ font-family:'Inter', system-ui, sans-serif !important; font-stretch:normal !important; letter-spacing:-0.01em; }
 /* ---------- Professional header: Contact · Sign in · [Get started] on the right ---------- */
 .pro-nav{ margin-left:auto; display:flex; align-items:center; gap:4px; background:none !important; border:none !important; padding:0 !important; box-shadow:none !important; }
 .pro-nav .nav-home-hidden{ display:none !important; }
@@ -2088,3 +2082,58 @@ body{ font-family:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-se
 body:not(.in-app) .topbar-inner{ justify-content:flex-start; }
 body:not(.in-app) .pro-nav{ margin-left:auto; margin-right:10px; }
 body:not(.in-app) .topbar-right-group{ margin-left:0; }
+
+/* ============================================================
+   Sign in / Set up your company — split screen: the form on the left,
+   Relay's promise and a product preview on the right.
+   ============================================================ */
+.auth-split{ display:grid; grid-template-columns:minmax(380px, 520px) 1fr; gap:48px; align-items:center; max-width:1440px; margin:0 auto; padding:32px 32px 48px; min-height:calc(100vh - var(--topbar-h, 56px)); }
+.auth-side .auth-card{ max-width:none; margin:0; padding:36px 36px 28px; border-radius:16px; background:var(--panel); border:1px solid var(--line); box-shadow:0 1px 2px rgba(14,42,49,.05), 0 12px 32px -18px rgba(14,42,49,.25); }
+.auth-title{ margin:0 0 6px; font-size:2rem; font-weight:700; color:var(--navy, #0E2A31); text-align:center; letter-spacing:-.01em; }
+[data-theme="dark"] .auth-title{ color:var(--ink); }
+.auth-sub{ margin:0 0 22px; text-align:center; color:var(--ink-soft); }
+.auth-side .auth-tabs{ display:none; }                         /* replaced by "New to Relay?" / "Already have an account?" */
+.auth-side .field input, .auth-side .field select{ min-height:48px; }
+.pw-wrap{ position:relative; } .pw-wrap input{ width:100%; padding-right:46px !important; }
+.pw-eye{ position:absolute; right:6px; top:50%; transform:translateY(-50%); width:36px; height:36px; border:none; background:none; color:var(--ink-faint); cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+.pw-eye svg{ width:20px; height:20px; } .pw-eye:hover, .pw-eye.on{ color:var(--accent); }
+.auth-forgot{ display:block; margin:10px 0 0 auto !important; font-weight:600; color:var(--accent); }
+.auth-side .auth-submit{ min-height:50px; font-size:1.02rem; border-radius:10px; background:var(--accent); }
+.auth-switch{ margin-top:26px; padding-top:22px; border-top:1px solid var(--line); display:flex; flex-direction:column; align-items:center; gap:10px; }
+.auth-switch span{ color:var(--ink-soft); font-weight:600; }
+.auth-outline{ width:100%; min-height:48px; border:1.5px solid var(--line-strong); border-radius:10px; background:transparent; color:var(--ink); font:inherit; font-weight:700; cursor:pointer; }
+.auth-outline:hover{ border-color:var(--accent); color:var(--accent); }
+.auth-switch-line{ margin:16px 0 0; text-align:center; color:var(--ink-soft); }
+.auth-side .auth-note{ display:flex; gap:8px; align-items:flex-start; margin-top:22px; color:var(--ink-soft); font-size:.86rem; line-height:1.5; }
+.auth-side .auth-note svg{ flex:none; width:18px; height:18px; color:var(--accent); margin-top:1px; }
+/* the showcase */
+.auth-showcase{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.auth-brand{ display:flex; align-items:center; gap:12px; font-weight:800; font-size:2.6rem; letter-spacing:-.02em; color:var(--navy, #0E2A31); }
+[data-theme="dark"] .auth-brand{ color:var(--ink); }
+.auth-mark{ width:52px; height:52px; border-radius:12px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; } .auth-mark svg{ width:30px; height:30px; }
+.auth-promise{ margin:0 0 10px; font-size:1.35rem; line-height:1.4; color:var(--ink); max-width:34ch; }
+.auth-window{ border-radius:14px; overflow:hidden; box-shadow:0 30px 60px -28px rgba(14,42,49,.55); border:1px solid rgba(14,42,49,.12); }
+.auth-window-bar{ display:flex; align-items:center; gap:7px; padding:10px 14px; background:#E8ECEF; color:#41525A; font-size:.82rem; font-weight:600; }
+.auth-window-bar i{ width:11px; height:11px; border-radius:50%; background:#F04438; } .auth-window-bar i:nth-child(2){ background:#F5A524; } .auth-window-bar i:nth-child(3){ background:#12B76A; }
+.auth-window-bar span{ margin-left:10px; }
+.auth-window-body{ position:relative; padding:34px; background:radial-gradient(120% 90% at 85% 15%, #1B4652 0%, #0E2A31 55%, #0A2025 100%); }
+.auth-routes{ position:absolute; inset:0; width:100%; height:100%; } .auth-routes path{ fill:none; stroke:rgba(127,208,224,.22); stroke-width:1.5; stroke-dasharray:4 7; vector-effect:non-scaling-stroke; }
+.kpi-grid{ position:relative; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; max-width:640px; margin-left:auto; }
+.kpi{ background:#F3F5F7; border-radius:12px; padding:14px 16px 10px; display:flex; flex-direction:column; color:#0E2A31; }
+.kpi b{ font-size:.78rem; letter-spacing:.04em; } .kpi-sub{ font-size:.8rem; color:#5B6B72; }
+.kpi strong{ font-size:1.9rem; font-weight:800; margin-top:6px; letter-spacing:-.01em; }
+.kpi em{ font-style:normal; font-size:.76rem; font-weight:600; } .kpi em.up{ color:#0D7A4E; } .kpi em.warn{ color:#B54708; }
+.kpi svg{ width:100%; height:34px; margin-top:6px; } .kpi polyline{ fill:none; stroke:#137A91; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+.kpi svg.green polyline{ stroke:#12B76A; } .kpi svg.amber polyline{ stroke:#F5A524; }
+@media (max-width:980px){ .auth-split{ grid-template-columns:1fr; max-width:560px; padding:20px 16px 36px; min-height:0; } .auth-showcase{ display:none; } .auth-side .auth-card{ padding:28px 22px 22px; } .auth-title{ font-size:1.7rem; } }
+/* "Forgot password?" right under the password, above the button (as on QuickManage) */
+#loginForm:not(.hidden){ display:flex; flex-direction:column; }
+#loginForm > *{ order:3; } #loginForm > .field{ order:1; }
+#loginForm > .auth-forgot{ order:2; align-self:flex-end; margin:-6px 0 14px !important; }
+#loginForm > .auth-switch{ order:4; }
+/* phones: keep the public header on one row */
+@media (max-width:640px){
+  body:not(.in-app) .brand-text span{ display:none; }
+  body:not(.in-app) .topbar-inner{ flex-wrap:nowrap; padding:8px 12px; gap:6px; }
+  body:not(.in-app) .pro-nav{ margin-right:2px; gap:2px; }
+}
