@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=64"/>
+<link rel="stylesheet" href="style.css?v=67"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -28,6 +28,9 @@
     </div>
     <nav class="public-nav pro-nav" id="publicNav" aria-label="Site">
       <button class="nav-link nav-home-hidden active" id="navHome" tabindex="-1" aria-hidden="true">Home</button>
+      <button class="nav-text nav-anchor" data-goto="lxFeatures">Features</button>
+      <button class="nav-text nav-anchor" data-goto="lxSwitch">Switching</button>
+      <button class="nav-text nav-anchor" data-goto="lxFaq">FAQ</button>
       <button class="nav-text nav-contact" id="navContact">Contact</button>
       <button class="nav-text" id="navSignin">Sign in</button>
       <button class="nav-cta" id="navStart">Get started</button>
@@ -98,13 +101,15 @@
   <div id="homeView" class="lx">
     <section class="lx-hero">
       <div class="lx-hero-copy">
-        <h1>The shop system that also runs the road.</h1>
-        <p class="lx-lede">Relay keeps every truck and trailer repair on one work order — from the call, to the mechanic on the shoulder, to the paid invoice. Your office, your mechanics and your fleet customers all see the same job, live.</p>
+        <span class="lx-pill"><i></i>Shop + road service · Live GPS · Voice</span>
+        <h1>Run the shop and the road from one work order.</h1>
+        <p class="lx-lede">Relay connects your office, your mechanics and your fleet customers on the same job — from the call, to the mechanic on the shoulder, to the paid invoice. Live, on every phone.</p>
         <div class="lx-actions">
-          <button class="lx-btn lx-btn-primary" id="landingSignup">Set up your company</button>
-          <button class="lx-btn lx-btn-quiet" id="landingLogin">Sign in</button>
+          <button class="lx-btn lx-btn-primary" id="landingSignup">Get started</button>
+          <button class="lx-btn lx-btn-quiet" data-goto="lxFeatures">Explore features</button>
+          <button class="hidden" id="landingLogin" tabindex="-1" aria-hidden="true">Sign in</button>
         </div>
-        <p class="lx-note">Built for truck and trailer repair shops with in-shop bays and road service.</p>
+        <dl class="lx-stats"><div><dt>1 work order</dt><dd>from the call to the paid invoice</dd></div><div><dt>Live</dt><dd>mechanic GPS and ETA for your customers</dd></div><div><dt>Every phone</dt><dd>office, mechanics and fleets — no special devices</dd></div></dl>
       </div>
 
       <div class="lx-scene" id="lxScene" aria-label="A roadside repair, from dispatch to invoice" role="img">
@@ -139,50 +144,57 @@
       </div>
     </section>
 
-    <section class="lx-flow" aria-labelledby="lxFlowH">
-      <h2 id="lxFlowH">One work order, start to paid.</h2>
-      <p class="lx-sub">Nobody re-types anything. Each step builds on the one before it.</p>
-      <ol class="lx-steps">
-        <li><b>Request</b><span>A customer sends your request link, or you open a work order yourself.</span></li>
-        <li><b>Estimate</b><span>Diagnosis, labor and parts — sent for approval with one click.</span></li>
-        <li><b>Approval</b><span>The customer approves on their phone. You see it instantly.</span></li>
-        <li><b>Repair</b><span>Timers, parts and photos from the mechanic's phone, in the bay or on the road.</span></li>
-        <li><b>Invoice</b><span>Built from the approved estimate and the real work. Sent as a PDF.</span></li>
-        <li><b>Paid</b><span>Record payments, full or partial. The history stays with the unit.</span></li>
-      </ol>
-    </section>
-
-    <section class="lx-people" aria-labelledby="lxPeopleH">
-      <h2 id="lxPeopleH">Everyone gets the view they need.</h2>
-      <div class="lx-cols">
-        <article>
-          <h3>The office</h3>
-          <p>A shop board from new to invoiced, dispatch with live mechanic locations, estimates, invoices, inventory and purchase orders. Exports for QuickBooks Online.</p>
-        </article>
-        <article>
-          <h3>Mechanics</h3>
-          <p>Their jobs on their phone. Accept a road call, navigate, run the timer, add parts and photos, clock in and out. Nothing they don't need.</p>
-        </article>
-        <article>
-          <h3>Fleet customers</h3>
-          <p>Where the mechanic is and when they'll arrive. Estimates to approve, invoices, and every unit's repair history — without calling to ask.</p>
-        </article>
+    <section class="lx-feat" id="lxFeatures" aria-labelledby="lxFeatH">
+      <span class="lx-kicker">Features</span>
+      <h2 id="lxFeatH">Everything a truck shop needs. Built for the road too.</h2>
+      <p class="lx-sub">From the moment a request comes in to the second the truck rolls out — one job, one record, everyone in sync.</p>
+      <div class="lx-row">
+        <div class="lx-row-copy"><span class="lx-tag">Work orders</span><h3>The shop board</h3><p>Every job from new to invoiced on one board. Drag a card to move it; open it for everything about the job — diagnosis, estimate, labor, parts, photos, messages and history.</p>
+          <ul class="lx-checks"><li>Drag-and-drop stages from estimate to invoiced</li><li>Live technician on every card</li><li>Waiting for approval or parts stands out</li></ul></div>
+        <div class="lx-row-visual" aria-hidden="true"><div class="mk mk-board"><div class="mk-col"><b>Estimate <i>2</i></b><div class="mk-card"><span class="mk-wo">WO-0479</span><strong>Trailer 8820</strong><small>Roof leak · Sierra Freight</small><em class="c-amber">Awaiting approval</em></div><div class="mk-card"><span class="mk-wo">WO-0481</span><strong>Truck 1203</strong><small>PM service B</small></div></div><div class="mk-col"><b>In progress <i>3</i></b><div class="mk-card hot"><span class="mk-wo">WO-0482</span><strong>Truck T-55</strong><small>Blown steer tire · ROAD</small><em class="c-teal">Mike · on site</em></div><div class="mk-card"><span class="mk-wo">WO-0477</span><strong>Reefer R-200</strong><small>Not holding temp</small><em class="c-teal">Carlos · 1:45</em></div></div><div class="mk-col"><b>Waiting parts <i>1</i></b><div class="mk-card"><span class="mk-wo">WO-0474</span><strong>Truck X-1</strong><small>Brake chamber 30/30</small><em class="c-amber">PO-1847 ordered</em></div></div></div></div>
+      </div>
+      <div class="lx-row rev">
+        <div class="lx-row-copy"><span class="lx-tag">Roadside</span><h3>Dispatch with live GPS and ETA</h3><p>See every road call and every mechanic on one map. Assign the nearest available mechanic; they accept on their phone, and you and your customer watch the ETA count down.</p>
+          <ul class="lx-checks"><li>Mechanics ranked by distance and availability</li><li>Accept or decline from the phone, with a reason</li><li>Your fleet customer sees the ETA — fewer “where is he?” calls</li></ul></div>
+        <div class="lx-row-visual" aria-hidden="true"><div class="mk mk-dispatch"><div class="mk-map"><svg viewBox="0 0 320 200" preserveAspectRatio="none"><path class="mk-road" d="M-5 170 C 70 160, 110 110, 170 104 S 260 60, 330 40"/><path class="mk-road thin" d="M70 -5 C 80 70, 120 110, 128 210"/><path class="mk-path" d="M40 172 C 80 166, 110 118, 170 104 S 245 72, 268 58"/></svg><span class="mk-pin shop" style="left:12%;top:86%"></span><span class="mk-pin truck" style="left:84%;top:29%"></span><span class="mk-pin mech" style="left:52%;top:52%"></span><span class="mk-eta"><b>6</b> min away</span></div><div class="mk-list"><div><b>T-55 · Blown steer tire</b><small>I-10 exit 72 · Mike Torres</small><em class="c-teal">En route · accepted</em></div><div><b>IE-31 · Reefer won't start</b><small>Fontana · waiting for a mechanic</small><em class="c-amber">Assign → Carlos (4.2 mi)</em></div></div></div></div>
+      </div>
+      <div class="lx-row">
+        <div class="lx-row-copy"><span class="lx-tag">Natasha · Voice</span><h3>Hands-free in the bay</h3><p>Mechanics tap the mic and talk: start repair, add parts, leave a note, ask what's wrong with the truck. Natasha answers out loud, and the office gets a daily briefing of what needs attention.</p>
+          <ul class="lx-checks"><li>Voice commands that follow the same rules as the buttons</li><li>Asks before completing jobs or adding parts</li><li>Daily briefing: parts, approvals, invoicing, overdue</li></ul></div>
+        <div class="lx-row-visual" aria-hidden="true"><div class="mk mk-chat"><div class="mk-bubble me"><span class="mk-mic"></span>“Start repair”</div><div class="mk-bubble bot">Repair started — timer running. ✓</div><div class="mk-bubble me"><span class="mk-mic"></span>“Add two brake drums”</div><div class="mk-bubble bot">Add 2 Brake drum 16.5 x 7, part BD-3600A? <span class="mk-yes">Yes</span></div><div class="mk-brief"><b>Natasha · Today</b><div>3 jobs waiting for parts</div><div>2 estimates unanswered for over a day</div><div>4 completed jobs to invoice · $5,310</div></div></div></div>
+      </div>
+      <div class="lx-row rev">
+        <div class="lx-row-copy"><span class="lx-tag">Parts</span><h3>Scan vendor invoices into stock</h3><p>Take a photo or drop a PDF of a FleetPride or dealer invoice. Relay reads every line, matches it to your parts, and you review before anything goes into stock.</p>
+          <ul class="lx-checks"><li>Lines matched by part number or cross-reference</li><li>New parts and vendors created for you</li><li>The same invoice twice is caught</li></ul></div>
+        <div class="lx-row-visual" aria-hidden="true"><div class="mk mk-bill"><div class="mk-bill-head"><b>FleetPride Ontario</b><span class="mk-ok">Read in 12 s</span></div><small>Invoice INV-881 · Oct 5</small><div class="mk-line"><span>BD-3600A Brake drum <i>✓ matched</i></span><b>4 × $86.50</b></div><div class="mk-line"><span>SA-55 Slack adjuster <i class="new">new part</i></span><b>2 × $41.00</b></div><div class="mk-line skip"><span>Core deposit <i>not stock</i></span><b>2 × $25.00</b></div><div class="mk-bill-foot"><span>2 lines into Main shop</span><b class="mk-ok">Received ✓</b></div></div></div>
+      </div>
+      <div class="lx-row">
+        <div class="lx-row-copy"><span class="lx-tag">Parts</span><h3>Barcode scanning and VIN fitment</h3><p>Scan a part with the phone camera to find it instantly. Scan or type a VIN to fill in year, make, model and engine. Relay warns before a part that doesn't match the truck goes on the job.</p>
+          <ul class="lx-checks"><li>Barcode, part number and cross-reference lookup</li><li>VIN decode with check-digit validation</li><li>Fitment from your notes and your shop's history</li></ul></div>
+        <div class="lx-row-visual" aria-hidden="true"><div class="mk mk-scan"><div class="mk-viewfinder"><div class="mk-barcode"></div><span class="mk-laser"></span></div><div class="mk-scan-res"><strong>Brake drum 16.5 x 7</strong><small>BD-3600A · Gunite · cross-ref WEB 66864F</small><div class="mk-fit">✓ Fits — used on 6 other Kenworth T680s</div><div class="mk-stock">In stock: <b>6</b> · Main shop</div></div></div></div>
+      </div>
+      <div class="lx-row rev">
+        <div class="lx-row-copy"><span class="lx-tag">Fleet portal</span><h3>Your customers, in the loop</h3><p>Fleet customers request service, follow the mechanic's ETA, approve estimates, see photos and invoices, and look up every unit's repair history — without calling you.</p>
+          <ul class="lx-checks"><li>Service requests straight into your queue</li><li>Estimate approval from any phone</li><li>Every unit's history in one place</li></ul></div>
+        <div class="lx-row-visual" aria-hidden="true"><div class="mk mk-phone"><div class="mk-phone-top">ABC Logistics · Fleet portal</div><div class="mk-pcard"><small>Truck T-55 · WO-0482</small><strong>Mike is 6 min away</strong><div class="mk-progress"><span style="width:72%"></span></div><small>Blown steer tire · I-10 exit 72</small></div><div class="mk-pcard"><small>Estimate EST-0012 · Trailer 7790</small><strong>$924.73</strong><small>Replace drums and shoes, axle 1</small><div class="mk-pbtns"><span class="mk-approve">Approve</span><span class="mk-decline">Decline</span></div></div></div></div>
       </div>
     </section>
 
-    <section class="lx-more" aria-labelledby="lxMoreH">
-      <h2 id="lxMoreH">And the rest of the shop.</h2>
-      <dl class="lx-list">
-        <div><dt>Shop floor screen</dt><dd>Bays, technicians and road calls on a TV in the shop.</dd></div>
-        <div><dt>Digital inspections</dt><dd>Pass, attention or critical, with photos the customer can see.</dd></div>
-        <div><dt>Parts and inventory</dt><dd>Stock by location, low-stock alerts, core charges, vendors.</dd></div>
-        <div><dt>Time and attendance</dt><dd>Clock in and out, billable hours and efficiency per technician.</dd></div>
-        <div><dt>Alerts</dt><dd>Approvals, arrivals and new requests — on the phone, even with Relay closed.</dd></div>
-        <div><dt>Natasha, your assistant</dt><dd>"Which jobs are waiting for parts?" Answers from your own shop's data.</dd></div>
-      </dl>
+    <section class="lx-built" aria-labelledby="lxBuiltH">
+      <span class="lx-kicker">And more</span>
+      <h2 id="lxBuiltH">Everything else, built in.</h2>
+      <p class="lx-sub">No add-ons. Unlimited users — your office, every mechanic, and your fleet customers.</p>
+      <div class="lx-built-grid"><div class="lx-built-card"><h3>Estimates &amp; approvals</h3><p>Customers approve from a link on their phone — or you record a phone approval.</p></div><div class="lx-built-card"><h3>Digital inspections</h3><p>Pass, monitor or repair, with photos and recommended work the customer can see.</p></div><div class="lx-built-card"><h3>Invoices, payments &amp; PDFs</h3><p>Turn approved estimates into invoices, record full or partial payments, send PDFs.</p></div><div class="lx-built-card"><h3>Inventory &amp; purchase orders</h3><p>Stock by location, low-stock alerts, vendors, POs with partial receiving.</p></div><div class="lx-built-card"><h3>Core charges &amp; cross-references</h3><p>Cores added to invoices automatically; find parts by any cross-reference number.</p></div><div class="lx-built-card"><h3>Time clock &amp; attendance</h3><p>Clock in and out, labor and drive timers, efficiency per technician.</p></div><div class="lx-built-card"><h3>Profitability reports</h3><p>Profit by job, customer, technician and location; parts margin and labor recovery.</p></div><div class="lx-built-card"><h3>QuickBooks Online export</h3><p>Customers, invoices, payments, products and vendors, ready to import.</p></div><div class="lx-built-card"><h3>Multiple locations</h3><p>Every yard side by side on one dashboard, each with its own mechanics and stock.</p></div><div class="lx-built-card"><h3>Shop floor TV</h3><p>Bays, technicians and road calls on a screen in the shop.</p></div><div class="lx-built-card"><h3>Push alerts</h3><p>Approvals, arrivals and new requests on the phone — even with Relay closed.</p></div><div class="lx-built-card"><h3>Find shops map</h3><p>Fleet customers find your locations on the Relay map and request service.</p></div></div>
     </section>
 
-    <section class="lx-faq" aria-labelledby="lxFaqH">
+    <section class="lx-switch" id="lxSwitch" aria-labelledby="lxSwitchH">
+      <div><h2 id="lxSwitchH">Switching from another system?</h2>
+        <p>Export your customers, vehicles and parts, drop all the files into Relay, and it recognises each one and brings everything over in the right order. Need a hand? Send us your files.</p>
+        <div class="lx-chips"><span>Fullbay</span><span>Shopmonkey</span><span>Tekmetric</span><span>Mitchell 1</span><span>Spreadsheets</span><span>Any other system</span></div></div>
+      <div class="lx-switch-actions"><button class="lx-btn lx-btn-light" data-start>Get started</button><button class="lx-btn lx-btn-ghost-light" data-contact>Talk to us</button></div>
+    </section>
+
+    <section class="lx-faq" id="lxFaq" aria-labelledby="lxFaqH">
       <h2 id="lxFaqH">Questions shops ask</h2>
       <div class="lx-faq-list">
         <details class="lx-q"><summary>What is Relay?</summary><p>Relay is shop and road service software for truck and trailer repair. Every repair lives on one work order — from the call or request, through dispatch, the mechanic on site, the estimate and the customer's approval, to the invoice and payment — and your office, your mechanics and your fleet customers all see the same job, live.</p></details>
@@ -200,9 +212,16 @@
     </section>
 
     <section class="lx-cta">
-      <h2>Put your next road call on Relay.</h2>
-      <button class="lx-btn lx-btn-light" id="landingSignup2">Set up your company</button>
+      <h2>Run the shop and the road together.</h2>
+      <p>Set up your company in a few minutes and try Relay free for 14 days.</p>
+      <div class="lx-actions center"><button class="lx-btn lx-btn-light" id="landingSignup2">Get started</button><button class="lx-btn lx-btn-ghost-light" data-contact>Contact us</button></div>
     </section>
+    <div class="lx-for"><span>Built for</span><b>Heavy-duty truck repair</b><b>Trailer repair</b><b>Mobile mechanics</b><b>Roadside service</b><b>Fleet maintenance</b><b>Multi-location shops</b></div>
+    <footer class="lx-footer">
+      <div class="lx-foot-brand"><b>Relay</b><span>Shop &amp; road service — the shop system that also runs the road.</span></div>
+      <div><h4>Product</h4><button data-goto="lxFeatures">Features</button><button data-goto="lxSwitch">Switching</button><button data-goto="lxFaq">FAQ</button></div>
+      <div><h4>Company</h4><button data-contact>Contact</button><button data-signin>Sign in</button><a href="mailto:support@relayfleet.us">support@relayfleet.us</a></div>
+    </footer>
   </div>
 
   <!-- ================= CONTACT ================= -->
@@ -948,7 +967,7 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=65"></script>
+<script src="script.js?v=66"></script>
 <script src="ro.js?v=15"></script>
 <script src="insp.js?v=4"></script>
 <script src="est.js?v=10"></script>

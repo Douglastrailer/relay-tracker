@@ -771,6 +771,16 @@ document.getElementById('brandHome').onclick = ()=>{ if(!appEntered) showPublicV
 document.getElementById('landingLogin').onclick = ()=> { showPublicView('signin'); showAuthForm('login'); };
 document.getElementById('landingSignup').onclick = ()=> { showPublicView('signin'); showAuthForm('signup'); };
 document.getElementById('landingSignup2').onclick = ()=> { showPublicView('signin'); showAuthForm('signup'); };
+// Landing page links: section anchors (from any public page), Get started, Contact, Sign in
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-goto], [data-start], [data-contact], [data-signin]'); if(!t || (session && session.id)) return;
+  if(t.hasAttribute('data-start')){ showPublicView('signin'); showAuthForm('signup'); window.scrollTo(0, 0); return; }
+  if(t.hasAttribute('data-contact')){ showPublicView('contact'); window.scrollTo(0, 0); return; }
+  if(t.hasAttribute('data-signin')){ showPublicView('signin'); showAuthForm('login'); window.scrollTo(0, 0); return; }
+  showPublicView('home');
+  const target = document.getElementById(t.dataset.goto);
+  if(target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
+});
 
 // ================= auth ui wiring =================
 const tabLogin = document.getElementById('tabLogin'), tabSignup = document.getElementById('tabSignup');
