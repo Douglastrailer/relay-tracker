@@ -1190,8 +1190,9 @@ document.querySelectorAll('.dash-tabs').forEach(wireDashTabs);
   };
   if(backdrop) backdrop.onclick = ()=> setNavOpen(false);
   document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && document.body.classList.contains('nav-open')) setNavOpen(false); });
+  // Help & support now opens the in-app training guide (training.js); support is inside it.
   document.querySelectorAll('.nav-help').forEach(btn=>{
-    btn.onclick = ()=>{ setNavOpen(false); document.getElementById('contactUsBtn').click(); };
+    btn.onclick = ()=>{ setNavOpen(false); if(typeof openTraining === 'function') openTraining(); };
   });
 })();
 

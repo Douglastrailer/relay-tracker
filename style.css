@@ -2236,3 +2236,17 @@ body:not(.in-app) .topbar-right-group{ margin-left:0; }
 .lx-footer{ color:var(--ink); font-size:.95rem; }
 .lx-foot-brand b{ font-family:var(--lx-display) !important; color:var(--ink); }
 .lx-faq > h2{ text-align:center; }
+
+/* In-app training */
+.tr-box{ display:flex; flex-direction:column; gap:12px; }
+.tr-intro{ margin:0; }
+.tr-search{ min-height:44px; padding:8px 12px; border:1px solid var(--line-strong); border-radius:var(--r-md); background:var(--panel-2); color:var(--ink); font:inherit; }
+.tr-sec{ margin:16px 0 4px; font-size:.8rem; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); }
+.tr-item{ border-bottom:1px solid var(--line); }
+.tr-item summary{ cursor:pointer; padding:12px 26px 12px 0; font-weight:600; list-style:none; position:relative; }
+.tr-item summary::-webkit-details-marker{ display:none; }
+.tr-item summary::after{ content:'+'; position:absolute; right:4px; top:50%; transform:translateY(-50%); font-size:1.25rem; color:var(--ink-soft); }
+.tr-item[open] summary::after{ content:'–'; }
+.tr-item ol{ margin:0 0 14px; padding-left:22px; line-height:1.6; }
+.tr-item li{ margin:4px 0; }
+.tr-foot{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
