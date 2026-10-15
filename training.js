@@ -11,10 +11,10 @@ const TRAINING = [
    { q:'Turn on alerts', roles:['shop','mechanic'], steps:['Open Relay from its home-screen icon.','Go to **Settings** → **Notifications**.','Tap **Turn on alerts on this phone**, then **Allow**.'] },
    { q:'Bring in your customers, trucks and parts', roles:['shop'], steps:['Export your data from your old system as CSV or Excel.','Click **More** → **Integrations** → **Import from a spreadsheet**.','Click **Bring everything over**, add the files, then **Import**.'] } ]},
  { id:'office', title:'Office', roles:['shop'], items:[
-   { q:'Create a work order', steps:['Click **Work orders** → **+ New work order**.','Choose the customer, the unit and the problem.','Click **Create job**.'] },
+   { q:'Create a work order', steps:['Click **Work orders** → **+ New work order**.','Choose the customer, the unit and the problem. Priority and VIN are under **More details**.','Click **Create work order**.'] },
    { q:'Assign a mechanic', steps:['Open the work order.','Choose a mechanic in **Assign mechanic**.','The mechanic gets an alert on their phone.'] },
    { q:'Work order tabs', steps:['**Overview** shows status and details.','**Diagnosis**, **Labor**, **Parts**, **Photos** and **History** hold the job\'s work.','**Estimate & invoice** holds the money.'] },
-   { q:'Use the shop board', steps:['Click **Work orders** and use the board view.','Drag a card to the next column to change its status.','Click a card to open it.'] },
+   { q:'Use the shop board', steps:['Open the **Dashboard** and scroll to **Shop board**.','Drag a card to the next column to change its status. Tap **Undo** if you made a mistake.','Click a card to open it.'] },
    { q:'Service requests from customers', steps:['A new request appears as **new** in Relay, with an alert.','Open it and check the details.','Click **Convert to work order**.'] },
    { q:'Ask Natasha', steps:['Click **Ask Natasha** at the bottom right.','Read today\'s briefing, or type a question.','Tap a work order number in her answer to open it.'] } ]},
  { id:'dispatch', title:'Road calls and dispatch', roles:['shop'], items:[
@@ -68,13 +68,14 @@ function trainingHtml(query){
   });
   return out || `<p class="meta">Nothing matches "${esc(query)}". Try a shorter word.</p>`;
 }
-function openTraining(){
+function openTraining(query){
   const node = document.createElement('div'); node.className = 'tr-box';
   node.innerHTML = `<p class="meta tr-intro">Short steps for the things you do every day. Tap a question to open it.</p>
     <input type="search" class="tr-search" id="trSearch" placeholder="Search, e.g. invoice, parts, phone" aria-label="Search training">
-    <div id="trList">${trainingHtml('')}</div>
+    <div id="trList">${trainingHtml(query || '')}</div>
     <div class="tr-foot"><span class="meta">Still stuck?</span><button type="button" class="ghost-btn" id="trContact">Contact support</button></div>`;
   openFormSheet('Training', [node], () => node.remove());
+  if(query){ node.querySelector('#trSearch').value = query; }
   node.querySelector('#trSearch').addEventListener('input', (e) => { node.querySelector('#trList').innerHTML = trainingHtml(e.target.value); });
   node.querySelector('#trContact').onclick = () => { closeFormSheet(); const c = document.getElementById('contactUsBtn'); if(c) c.click(); };
 }

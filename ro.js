@@ -15,6 +15,16 @@ function fmtDate(d){ return d ? new Date(d).toLocaleDateString(undefined, { mont
 function fmtDateTime(d){ return d ? new Date(d).toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : ''; }
 function nullIfBlank(v){ v = (v == null ? '' : String(v)).trim(); return v === '' ? null : v; }
 function intOrNull(v){ v = nullIfBlank(v); if(v === null) return null; const n = parseInt(v, 10); return Number.isFinite(n) ? n : null; }
+// A toast with Undo for a few seconds — friendlier than "are you sure?".
+function undoToast(msg, undo){
+  let t = document.getElementById('undoToast');
+  if(!t){ t = document.createElement('div'); t.id = 'undoToast'; t.className = 'records-toast undo-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.innerHTML = '<span></span><button type="button" class="undo-btn">Undo</button>';
+  t.querySelector('span').textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 7000);
+  t.querySelector('.undo-btn').onclick = async () => { t.classList.remove('show'); clearTimeout(t._h);
+    try { const err = await undo(); if(err) alert("Couldn't undo: " + err); else recordsToast('Undone'); } catch(e){ alert("Couldn't undo: " + (e.message || e)); } };
+}
 function recordsToast(msg){
   let t = document.getElementById('recordsToast');
   if(!t){ t = document.createElement('div'); t.id = 'recordsToast'; t.className = 'records-toast'; document.body.appendChild(t); }
@@ -54,7 +64,7 @@ function renderCustomersList(){
     (!q || [c.company_name, c.contact_name, c.phone, c.email].some(v => v && v.toLowerCase().includes(q))));
   document.getElementById('customersCount').textContent = rows.length + (rows.length === 1 ? ' customer' : ' customers');
   if(rows.length === 0){
-    box.innerHTML = `<div class="empty-note">${recordsCustomers.length ? 'No customers match your search.' : 'No customers yet. They are added automatically when you create a job, or add one here.'}</div>`;
+    box.innerHTML = `<div class="empty-note">${recordsCustomers.length ? 'No customers match your search.' : '<b>No customers yet.</b> <span class="empty-acts"><button type="button" class="ghost-btn" data-click="addCustomerBtn">Add customer</button><button type="button" class="ghost-btn" data-import>Import</button></span> They are added automatically when you create a job, or add one here.'}</div>`;
     return;
   }
   box.innerHTML = rows.map(c => {
@@ -159,7 +169,7 @@ function renderUnitsList(){
         || (typeof unitSearchExtraIds !== 'undefined' && unitSearchExtraIds.includes(u.id))));
   document.getElementById('unitsCount').textContent = rows.length + (rows.length === 1 ? ' unit' : ' units');
   if(rows.length === 0){
-    box.innerHTML = `<div class="empty-note">${recordsUnits.length ? 'No units match your search.' : 'No units yet. They are added automatically when you create a job, or add one here.'}</div>`;
+    box.innerHTML = `<div class="empty-note">${recordsUnits.length ? 'No units match your search.' : '<b>No units yet.</b> <span class="empty-acts"><button type="button" class="ghost-btn" data-click="addUnitBtn">Add unit</button><button type="button" class="ghost-btn" data-import>Import</button></span> They are added automatically when you create a job, or add one here.'}</div>`;
     return;
   }
   box.innerHTML = rows.map(u => `<button type="button" class="rec-row${u.active ? '' : ' is-inactive'}" data-unit="${u.id}">
@@ -324,7 +334,7 @@ async function openRepairOrder(jobId){
         ${billing && !closed && !['complete'].includes(job.status) ? `<button type="button" class="ghost-btn" id="woActEstimate">Create estimate</button>` : ''}
         ${billing && !closed && !['complete'].includes(job.status) ? `<button type="button" class="ghost-btn nat-draft" id="woActDraft" title="Natasha drafts it from the complaint and diagnosis, using your parts and labor rate">Draft with Natasha</button>` : ''}
         ${billing && ['complete','invoiced','paid'].includes(job.status) ? `<button type="button" class="wo-act-primary" id="woActInvoice">${job.status === 'complete' ? 'Create invoice' : 'Open invoice'}</button>` : ''}
-        ${isShop ? `<button type="button" class="text-btn danger" id="woActDelete">Delete</button>` : ''}
+        ${isShop ? `<details class="row-more wo-more"><summary aria-label="More work order actions">More</summary><div class="row-menu"><button type="button" class="text-btn danger" id="woActDelete">Delete work order</button></div></details>` : ''}
       </div>
     </div>
     <div class="wo-summary" id="woSummary"></div>
@@ -455,7 +465,13 @@ async function roUpdateStatus(job){
   const { error } = await sb.from('jobs').update({ status, updated_at: new Date().toISOString() }).eq('id', job.id);
   btn.disabled = false;
   if(error){ alert('Could not update the status: ' + error.message); return; }
-  recordsToast('Status updated to ' + statusLabel(status));
+  { const prev = job.status, id = job.id;
+    undoToast('Status updated to ' + statusLabel(status), async () => {
+      const { error: e } = await sb.from('jobs').update({ status: prev, updated_at: new Date().toISOString() }).eq('id', id);
+      if(e) return e.message;
+      if(typeof openRepairOrder === 'function' && document.getElementById('roModal') && !document.getElementById('roModal').classList.contains('hidden')) await openRepairOrder(id);
+      if(typeof refreshCurrentView === 'function') refreshCurrentView();
+    }); }
   if(typeof notifyKick === 'function') notifyKick();
   if(status === 'complete' && typeof showCompleteToast === 'function' && session.role === 'mechanic') showCompleteToast(job);
   await openRepairOrder(job.id);

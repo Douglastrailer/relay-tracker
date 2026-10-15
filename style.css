@@ -2250,3 +2250,23 @@ body:not(.in-app) .topbar-right-group{ margin-left:0; }
 .tr-item ol{ margin:0 0 14px; padding-left:22px; line-height:1.6; }
 .tr-item li{ margin:4px 0; }
 .tr-foot{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+
+/* ---------- Friendlier screens ---------- */
+.loc-chip{ display:inline-flex !important; align-items:center; gap:10px; width:auto !important; padding:4px 6px 4px 12px !important; border-radius:999px !important; font-size:.85rem; margin-bottom:12px; }
+.row-more{ position:relative; display:inline-block; }
+.row-more > summary{ list-style:none; cursor:pointer; padding:4px 8px; border-radius:8px; color:var(--ink-soft); font-weight:600; font-size:.9rem; }
+.row-more > summary::-webkit-details-marker{ display:none; }
+.row-more > summary::after{ content:' ▾'; font-size:.75rem; }
+.row-more[open] > summary{ background:var(--panel-2); color:var(--ink); }
+.row-menu{ position:absolute; right:0; top:calc(100% + 4px); z-index:30; min-width:160px; display:flex; flex-direction:column; align-items:stretch; padding:6px; border:1px solid var(--line); border-radius:10px; background:var(--panel); box-shadow:var(--shadow-pop, 0 10px 30px rgba(0,0,0,.15)); }
+.row-menu .text-btn{ text-align:left; padding:8px 10px; border-radius:6px; } .row-menu .text-btn:hover{ background:var(--panel-2); }
+.nj-more{ margin:4px 0 14px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; }
+.nj-more > summary{ cursor:pointer; font-weight:700; } .nj-more > summary .meta{ font-weight:400; margin-left:6px; }
+.nj-more[open] > summary{ margin-bottom:10px; }
+.empty-acts{ display:inline-flex; gap:8px; margin:0 8px; vertical-align:middle; } .empty-note b{ margin-right:4px; }
+.disp-help{ margin:10px 4px 0; line-height:1.5; }
+.ux-tip{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:0 0 14px; padding:12px 14px; border-radius:12px; background:var(--accent-soft); border:1px solid var(--line); }
+.ux-tip p{ margin:0; flex:1; min-width:220px; } .ux-tip-acts{ display:flex; gap:8px; align-items:center; }
+.undo-toast{ display:flex; align-items:center; gap:14px; } .undo-btn{ background:none; border:none; color:#7FD0E0; font:inherit; font-weight:700; cursor:pointer; padding:2px 4px; }
+#boardToggle{ margin-left:auto; }
+@media (max-width:760px){ .inv-actions .row-menu{ left:0; right:auto; } }

@@ -31,7 +31,7 @@ function renderLocFocusBar(){
     first.parentElement.insertBefore(Object.assign(document.createElement('div'), { id:'locFocusBar', className:'loc-focus-bar' }), first);
     bar = document.getElementById('locFocusBar');
   }
-  bar.innerHTML = `<span>Showing <b>${esc(shopLocName(id))}</b> only</span><button type="button" class="text-btn" id="locFocusAll">Show all locations</button>`;
+  bar.innerHTML = `<span class="loc-chip-text">Location: <b>${esc(shopLocName(id))}</b></span><button type="button" class="text-btn" id="locFocusAll">Show all</button>`; bar.classList.add('loc-chip');
   document.getElementById('locFocusAll').onclick = () => setLocFocus(null);
 }
 function locTag(id){

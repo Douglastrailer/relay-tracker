@@ -209,6 +209,12 @@ function collectEditor(){
     const l = estCurrent.lines[Number(r.dataset.i)];
     l.item_type = r.querySelector('.el-type').value;
     l.description = r.querySelector('.el-desc').value;
+    // a typed line that names one of your parts is a Part, not "Other"
+    if(l.item_type === 'other' && estCurrent.priceList && l.description){
+      const d0 = l.description.trim().toLowerCase();
+      const hit = estCurrent.priceList.find(p => p.name && (d0 === p.name.trim().toLowerCase() || (p.part_number && d0.includes(String(p.part_number).toLowerCase()))));
+      if(hit && (hit.track_stock || hit.part_number)) l.item_type = 'part';
+    }
     l.quantity = Number(r.querySelector('.el-qty').value);
     l.unit_price = Number(r.querySelector('.el-price').value);
     l.taxable = r.querySelector('.el-taxable').checked;

@@ -81,9 +81,10 @@ function renderParts(){
         <div class="inv-nums"><span><em>Price</em>${invMoney(i.unit_price)}</span>${i.cost != null ? `<span><em>Cost</em>${invMoney(i.cost)}</span>` : ''}
           ${i.track_stock ? `<span><em>On hand</em><b class="${Number(oh.on_hand) < 0 ? 'neg' : ''}">${qtyFmt(oh.on_hand)}</b></span><span><em>Min</em>${qtyFmt(i.min_qty)}</span>${oh.low ? '<span class="badge overdue"><span class="bd"></span>Low</span>' : ''}` : ''}</div>
         <div class="inv-actions"><button type="button" class="text-btn" data-edit="${i.id}">Edit</button>
+          <details class="row-more"><summary aria-label="More actions for ${esc(i.name)}">More</summary><div class="row-menu">
           ${i.track_stock ? `<button type="button" class="text-btn" data-count="${i.id}">Count</button><button type="button" class="text-btn" data-move="${i.id}">Move</button><button type="button" class="text-btn" data-hist="${i.id}">History</button>` : ''}
-          <button type="button" class="text-btn danger" data-del="${i.id}">Remove</button></div></div>`;
-    }).join('') : `<div class="empty-note">${invState.items.length ? 'Nothing matches.' : 'No parts or services yet. Add your common parts and services to price estimates faster and track stock.'}</div>`;
+          <button type="button" class="text-btn danger" data-del="${i.id}">Remove</button></div></details></div></div>`;
+    }).join('') : `<div class="empty-note">${invState.items.length ? 'Nothing matches.' : '<b>No parts yet.</b> <span class="empty-acts"><button type="button" class="ghost-btn" data-click="invAdd">Add part or service</button><button type="button" class="ghost-btn" data-import>Import</button></span> Add your common parts and services to price estimates faster and track stock.'}</div>`;
     const L = document.getElementById('invList');
     L.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openItemForm(Number(b.dataset.edit)));
     L.querySelectorAll('[data-count]').forEach(b => b.onclick = () => openCountForm(Number(b.dataset.count)));

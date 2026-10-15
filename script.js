@@ -151,6 +151,11 @@ function wireKanbanDragDrop(board){
       if(error){ alert('Could not move the job: ' + error.message); return; }
       if(typeof notifyKick === 'function') notifyKick();
       refreshShopData();
+      { const id = draggedJobId, prev = currentStatus;
+        if(typeof undoToast === 'function') undoToast('Moved to ' + statusLabel(targetStatus), async () => {
+          const { error: e } = await sb.from('jobs').update({ status: prev, updated_at: new Date().toISOString() }).eq('id', id);
+          if(e) return e.message; refreshShopData();
+        }); }
     });
   });
 }
@@ -2058,7 +2063,6 @@ function initBillingUI(){
 // Still genuinely a client-side, low-stakes "have they seen this" flag,
 // not real app state — worst case on a new device, they see it again.
 const ANNOUNCEMENTS = [
-  { id: 'redesign-2026-10', text: 'New look: work orders are now the center of Relay. Estimates & invoices, Reports and Settings are under More. Press Ctrl+K to search everything.' },
 ];
 
 function announcementsStorageKey(){ return 'dismissedAnnouncements_' + session.id; }

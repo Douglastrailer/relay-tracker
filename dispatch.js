@@ -66,6 +66,7 @@ function renderDispatchSide(){
         <div class="meta">${mi != null ? mi.toFixed(1) + ' mi away · ETA ' + dEta(mi) : live(m.id) ? 'Live' : 'Location not shared'} · ${load[m.id] || 0} open job${(load[m.id] || 0) === 1 ? '' : 's'}${(m.skills || []).length ? ' · ' + esc(m.skills.slice(0, 3).join(', ')) : ''}</div></div>
       ${call ? (call.mechanic_id === m.id && !call.declined_at ? '<span class="rec-tag">Assigned</span>' : `<button type="button" class="ghost-btn" data-assign="${m.id}">${call.mechanic_id === m.id ? 'Assign again' : 'Assign'}</button>`) : ''}
     </div>`).join('') || '<p class="meta">No active mechanics.</p>'}
+    ${rows.some(({ m }) => !live(m.id)) ? '<p class="meta disp-help"><b>Location not shared</b> means that mechanic\'s phone isn\'t sending GPS right now. It turns on when they tap <b>On my way</b> in Relay.</p>' : ''}
     ${call ? `<div class="job-actions"><button type="button" class="ghost-btn" id="dispOpen">Open work order</button></div>` : ''}`;
   side.querySelectorAll('[data-assign]').forEach(b => b.onclick = async () => {
     const m = mechs.find(x => x.id === b.dataset.assign);
