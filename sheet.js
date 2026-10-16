@@ -71,6 +71,7 @@ async function openFleetRequest(orgId, shopName){
   const cards = ['requestFormCard', 'requestSuccessCard', 'requestInvalidCard'].map(id => document.getElementById(id));
   if(!cards[0]) return;
   cards[0].classList.remove('hidden'); cards[1].classList.add('hidden'); cards[2].classList.add('hidden');
+  const pf = document.getElementById('reqPhotosField'), pi = document.getElementById('reqPhotos'); if(pf){ pf.classList.remove('hidden'); if(pi) pi.value = ''; }   // photos: signed-in fleet customers only
   const err = document.getElementById('requestError'); if(err) err.textContent = '';
   openFormSheet(shopName ? 'Request service from ' + shopName : 'Request service', cards, () => {
     // after a sent request, start fresh next time

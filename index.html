@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=72"/>
+<link rel="stylesheet" href="style.css?v=75"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -57,6 +57,7 @@
             <button id="editCompanyBtn" class="hidden">Edit company name</button>
             <button id="changePassBtn">Change password</button>
             <button id="contactUsBtn">Contact us</button>
+            <div class="menu-lang hidden" id="menuLang"><label for="langSelect">Language</label><select id="langSelect" data-no-i18n></select></div>
             <button id="logoutBtn">Log out</button>
           </div>
         </div>
@@ -206,14 +207,14 @@
         <details class="lx-q"><summary>Does it work with QuickBooks?</summary><p>Relay exports your customers, invoices, payments, products and vendors in the format QuickBooks Online imports.</p></details>
         <details class="lx-q"><summary>Can we run more than one location?</summary><p>Yes. Add each location with its own address, bays, stock and mechanics, and see every location side by side on one dashboard.</p></details>
         <details class="lx-q"><summary>Is our data private?</summary><p>Each shop's data is kept separate and is only visible to that shop's team, with access by role (owner, office staff, mechanic) — and to fleet customers only for their own vehicles and jobs.</p></details>
-        <details class="lx-q"><summary>How do we get started?</summary><p>Set up your company in a few minutes, invite your mechanics with your shop code, and add or import your customers. You can try Relay free for 14 days.</p></details>
+        <details class="lx-q"><summary>How do we get started?</summary><p>Set up your company in a few minutes, invite your mechanics with your shop code, and add or import your customers.</p></details>
       </div>
       <p class="lx-faq-more">Something else? <button type="button" class="lx-link" id="faqContact">Contact us</button></p>
     </section>
 
     <section class="lx-cta">
       <h2>Run the shop and the road together.</h2>
-      <p>Set up your company in a few minutes and try Relay free for 14 days.</p>
+      <p>Set up your company in a few minutes.</p>
       <div class="lx-actions center"><button class="lx-btn lx-btn-light" id="landingSignup2">Get started</button><button class="lx-btn lx-btn-ghost-light" data-contact>Contact us</button></div>
     </section>
     <div class="lx-for"><span>Built for</span><b>Heavy-duty truck repair</b><b>Trailer repair</b><b>Mobile mechanics</b><b>Roadside service</b><b>Fleet maintenance</b><b>Multi-location shops</b></div>
@@ -277,6 +278,12 @@
       <div class="field hidden" id="reqEtaField">
         <label for="reqEta">When can you bring it in?</label>
         <input type="text" id="reqEta" placeholder="e.g. Tomorrow around 9am">
+      </div>
+
+      <div class="field" id="reqPhotosField">
+        <label for="reqPhotos">Photos (optional, up to 5)</label>
+        <input type="file" id="reqPhotos" accept="image/*" multiple>
+        <p class="meta">Photos help the shop see what is wrong before anyone drives out.</p>
       </div>
 
       <p class="auth-error" id="requestError"></p>
@@ -969,7 +976,7 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=69"></script>
+<script src="script.js?v=72"></script>
 <script src="ro.js?v=16"></script>
 <script src="insp.js?v=4"></script>
 <script src="est.js?v=11"></script>
@@ -1014,13 +1021,14 @@
 <script src="voice.js?v=4"></script>
 <script src="pdfview.js?v=1"></script>
 <script src="map.js?v=4"></script>
-<script src="sheet.js?v=3"></script>
+<script src="sheet.js?v=4"></script>
 <script src="parts.js?v=2"></script>
 <script src="migrate.js?v=1"></script>
-<script src="training.js?v=3"></script>
+<script src="training.js?v=4"></script>
 <script src="ux.js?v=3"></script>
+<script src="lang.js?v=1"></script>
 <script src="natasha.js?v=1"></script>
-<script src="plans.js?v=3"></script>
+<script src="plans.js?v=4"></script>
 <script src="landing.js?v=1"></script>
 <script src="pwa.js?v=1"></script>
 

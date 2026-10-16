@@ -1,11 +1,11 @@
 // ============================================================
-// RelayFleet — one plan: $320/month, unlimited users, 14-day free trial.
+// RelayFleet — one plan: $320/month, unlimited users. No free trial.
 // Billing is manual for now: the platform admin sets each shop's status in
 // the admin panel (set_org_billing). The database (0030) decides whether a
 // shop may start new work; this file only shows the status.
 // ============================================================
-const RELAY_PLAN = { name:'Relay', price:320, trialDays:14, contact:'support@relayfleet.us' };
-const BILLING_LABEL = { trial:'Free trial', active:'Active', past_due:'Payment past due', cancelled:'Cancelled', comp:'Complimentary' };
+const RELAY_PLAN = { name:'Relay', price:320, contact:'support@relayfleet.us' };
+const BILLING_LABEL = { trial:'Onboarding', active:'Active', past_due:'Payment past due', cancelled:'Cancelled', comp:'Complimentary' };
 function trialDaysLeft(o){ if(!o || !o.trial_ends_at) return null; return Math.ceil((new Date(o.trial_ends_at).getTime() - Date.now()) / 864e5); }
 const fmtDay = d => d ? new Date(String(d).length <= 10 ? d + 'T12:00:00' : d).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' }) : '';
 // Mirrors org_in_good_standing() in the database, for messages only.
@@ -15,7 +15,7 @@ function billingState(o){
   const graceEnd = o.paid_through ? new Date(new Date(o.paid_through + 'T12:00:00').getTime() + 7 * 864e5) : null;
   switch(o.billing_status){
     case 'comp': return { ok:true, text:'Complimentary' };
-    case 'trial': { const d = trialDaysLeft(o); return d == null || d > 0 ? { ok:true, trial:true, days:d } : { ok:false, text:'Your free trial has ended.' }; }
+    case 'trial': { const d = trialDaysLeft(o); return d == null || d > 0 ? { ok:true, trial:true, days:d } : { ok:false, text:'Your onboarding period has ended.' }; }
     case 'active': return !graceEnd || graceEnd >= today ? { ok:true, text:'Active' + (o.paid_through ? ' · paid through ' + fmtDay(o.paid_through) : '') } : { ok:false, text:'Your Relay payment is past due.' };
     case 'past_due': return graceEnd && graceEnd >= today ? { ok:true, due:true, text:'Payment is past due — please pay by ' + fmtDay(graceEnd) + ' to keep creating new work.' } : { ok:false, text:'Your Relay payment is past due.' };
     default: return { ok:false, text:'Your Relay plan is cancelled.' };
@@ -23,23 +23,13 @@ function billingState(o){
 }
 function contactRelayHref(subject){ return 'mailto:' + RELAY_PLAN.contact + '?subject=' + encodeURIComponent(subject + (session && session.orgName ? ' — ' + session.orgName : '')); }
 
-// ---------- landing page ----------
-function renderLandingPricing(){
-  const box = document.getElementById('lxPricingGrid'); if(!box) return;
-  box.innerHTML = `<div class="lx-plan featured"><div class="lx-plan-head"><b>${RELAY_PLAN.name}</b><span class="lx-price">$${RELAY_PLAN.price}<em>/month</em></span></div>
-    <ul><li><b>Unlimited users</b> — office staff, every mechanic, and your fleet customers</li><li>Work orders, dispatch with live GPS and ETA, estimates and approvals, invoices and payments</li>
-    <li>Inventory with barcode scanning, VIN decode, inspections, time clock, reports and profitability</li><li>Multiple locations, the fleet portal, and Natasha, your assistant</li></ul>
-    <button type="button" class="lx-btn lx-btn-primary" id="landingSignup3">Start your ${RELAY_PLAN.trialDays}-day free trial</button><p class="lx-note">No card needed to start.</p></div>`;
-  const b = document.getElementById('landingSignup3'); const s = document.getElementById('landingSignup');
-  if(b) b.onclick = () => { if(s) s.click(); };
-}
 // ---------- shop: Settings → Plan & billing ----------
 async function renderPlanBox(){
   const box = document.getElementById('planBox'); if(!box || !session || session.role !== 'shop') return;
   const { data: org } = await sb.from('organizations').select('billing_status, trial_ends_at, paid_through').eq('id', session.orgId).maybeSingle();
   if(!org) return;
   const st = billingState(org), d = trialDaysLeft(org);
-  const line = org.billing_status === 'trial' && st.ok ? (d == null ? 'Free trial — starts when your shop is approved' : `Free trial · ${d} day${d === 1 ? '' : 's'} left (ends ${fmtDay(org.trial_ends_at)})`) : (st.text || BILLING_LABEL[org.billing_status]);
+  const line = org.billing_status === 'trial' && st.ok ? (d == null ? 'Getting started — Relay will confirm your plan with you' : `Onboarding · ${d} day${d === 1 ? '' : 's'} left (until ${fmtDay(org.trial_ends_at)})`) : (st.text || BILLING_LABEL[org.billing_status]);
   box.innerHTML = `<div class="section-head" style="margin-top:22px;"><h2>Plan &amp; billing</h2></div><div class="card new-job-form plan-card" style="max-width:640px;">
     <div class="plan-now"><div><span class="meta">Your plan</span><b>${RELAY_PLAN.name} · $${RELAY_PLAN.price}/month · unlimited users</b><span class="${st.ok ? 'meta' : 'neg'}">${esc(line)}</span></div>
       <a class="ghost-btn" href="${contactRelayHref(org.billing_status === 'trial' ? 'Subscribe to Relay' : 'Relay billing question')}">${org.billing_status === 'trial' ? 'Subscribe' : 'Contact Relay'}</a></div>
@@ -52,7 +42,7 @@ async function renderTrialBanner(){
   const { data: org } = await sb.from('organizations').select('billing_status, trial_ends_at, paid_through').eq('id', session.orgId).maybeSingle();
   let b = document.getElementById('trialBanner'); const st = billingState(org);
   let text = '', cls = '';
-  if(org && st.trial && st.days != null && st.days <= 7) text = `Your free trial ends in ${st.days} day${st.days === 1 ? '' : 's'}. Keep everything running for $${RELAY_PLAN.price}/month, unlimited users.`;
+  if(org && st.trial && st.days != null && st.days <= 7) text = `Your onboarding period ends in ${st.days} day${st.days === 1 ? '' : 's'}. Keep everything running for $${RELAY_PLAN.price}/month, unlimited users.`;
   else if(st.due){ text = st.text; cls = 'warn'; }
   else if(!st.ok){ text = st.text + ' New work orders, estimates and invoices are paused — your data is safe.'; cls = 'stop'; }
   if(!text){ if(b) b.remove(); return; }
@@ -67,7 +57,7 @@ async function renderAdminPlans(){
   const orgs = data || [];
   const n = s => orgs.filter(o => o.billing_status === s).length;
   const dateIn = v => v ? String(v).slice(0, 10) : '';
-  box.innerHTML = `<div class="section-head"><h2>Billing</h2><span class="meta">$${RELAY_PLAN.price}/month per shop · ${n('active')} active · ${n('trial')} on trial · ${n('past_due')} past due · ${n('comp')} complimentary</span></div>
+  box.innerHTML = `<div class="section-head"><h2>Billing</h2><span class="meta">$${RELAY_PLAN.price}/month per shop · ${n('active')} active · ${n('trial')} onboarding · ${n('past_due')} past due · ${n('comp')} complimentary</span></div>
     <div class="an-scroll"><table class="an-table admin-billing"><thead><tr><th>Shop</th><th>Status</th><th>Trial ends</th><th>Paid through</th><th>Note</th><th></th></tr></thead><tbody>
     ${orgs.map(o => { const st = billingState(o); return `<tr data-org="${o.id}"><td><b>${esc(o.name || '—')}</b>${o.status !== 'approved' ? ` <span class="rec-tag">${esc(o.status || '')}</span>` : ''}${!st.ok ? ' <span class="rec-tag warn">paused</span>' : ''}</td>
       <td><select data-f="status">${Object.entries(BILLING_LABEL).map(([k, l]) => `<option value="${k}" ${o.billing_status === k ? 'selected' : ''}>${l}</option>`).join('')}</select></td>

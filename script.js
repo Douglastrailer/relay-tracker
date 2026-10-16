@@ -161,6 +161,11 @@ function wireKanbanDragDrop(board){
 }
 
 function jobStatusBadge(status){
+  // Repair progress and billing are different things: a finished job that has been invoiced or paid shows
+  // "Completed" plus a separate billing badge. (The stored status values are unchanged.)
+  if(status === 'invoiced' || status === 'paid'){
+    return `<span class="badge-pair"><span class="badge arrived"><span class="bd"></span>Completed</span><span class="badge bill ${status}"><span class="bd"></span>${status === 'paid' ? 'Paid' : 'Invoiced'}</span></span>`;
+  }
   const label = esc(statusLabel(status));
   let cls = 'arrived';
   if(status === 'new' || status === 'assigned') cls = 'pending';
@@ -750,6 +755,24 @@ async function initPublicRequestPage(orgId){
     }
 
     const btn = document.getElementById('requestSubmitBtn');
+    // Photos (signed-in fleet customers only): uploaded first, so a request never points at a missing photo.
+    const pField = document.getElementById('reqPhotosField'), pInput = document.getElementById('reqPhotos');
+    if(pField && pInput && pInput.files && pInput.files.length){
+      if(pInput.files.length > 5){ errEl.textContent = 'Please choose up to 5 photos.'; return; }
+      btn.disabled = true; const paths = [];
+      // signed-in fleet customers use their own folder; everyone else (the public link) uses the shop's public folder
+      const rid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => Math.floor(Math.random() * 16).toString(16));
+      const folder = (typeof session !== 'undefined' && session && session.role === 'fleet') ? orgId + '/' + session.id : orgId + '/public/' + rid();
+      for(let i = 0; i < pInput.files.length; i++){
+        btn.textContent = 'Uploading photo ' + (i + 1) + ' of ' + pInput.files.length + '…';
+        let small = pInput.files[i]; try { if(typeof scanShrink === 'function') small = (await scanShrink(small)) || small; } catch(_){ /* send the original */ }
+        const path = folder + '/' + Date.now() + '-' + i + '.jpg';
+        const { error: upErr } = await sb.storage.from('request-photos').upload(path, small, { contentType: small.type || 'image/jpeg', upsert: false });
+        if(upErr){ errEl.textContent = 'Photo ' + (i + 1) + " couldn't be uploaded (" + upErr.message + '). Remove it or try again.'; btn.disabled = false; btn.textContent = 'Submit request'; return; }
+        paths.push(path);
+      }
+      payload.photo_paths = paths;
+    }
     btn.disabled = true; btn.textContent = 'Sending…';
     const { error } = await sb.from('work_requests').insert([payload]);
     btn.disabled = false; btn.textContent = 'Submit request';
@@ -1276,6 +1299,7 @@ let fleetLocChannel = null;
 function enterApp(){
   if(appEntered) return;
   appEntered = true;
+  if(typeof relayLangInit === 'function') relayLangInit();   // language picker for shop staff and mechanics
   document.getElementById('publicNav').classList.add('hidden');
   homeView.classList.add('hidden');
   contactView.classList.add('hidden');
@@ -1966,7 +1990,7 @@ function setUpRequestLink(){
 
 async function fetchPendingWorkRequests(){
   const { data, error } = await sb.from('work_requests')
-    .select('id, customer_name, company_name, customer_phone, customer_email, vehicle, issue_description, job_type, breakdown_lat, breakdown_lng, breakdown_address, eta_to_shop, created_at')
+    .select('id, customer_name, company_name, customer_phone, customer_email, vehicle, issue_description, job_type, breakdown_lat, breakdown_lng, breakdown_address, eta_to_shop, photo_paths, created_at')
     .eq('org_id', session.orgId).eq('status', 'pending')
     .order('created_at', { ascending:false });
   if(error){ console.error('fetchPendingWorkRequests', error); return []; }
@@ -1987,6 +2011,7 @@ function workRequestCardHtml(req){
     <div class="meta" style="margin-top:6px;">${esc(contact)}</div>
     ${typeDetail}
     <div style="margin-top:8px; font-size:0.85rem;">${esc(req.issue_description)}</div>
+    ${(req.photo_paths || []).length ? `<div class="wreq-photos" data-paths="${esc(JSON.stringify(req.photo_paths))}"><span class="meta">Loading photos…</span></div>` : ''}
     <div style="margin-top:10px; display:flex; gap:8px;">
       <button class="text-btn wreq-accept-btn" data-id="${req.id}">Accept</button>
       <button class="text-btn wreq-decline-btn" data-id="${req.id}">Decline</button>
@@ -2005,6 +2030,12 @@ async function refreshWorkRequests(){
     else badge.classList.add('hidden');
   }
 
+  list.querySelectorAll('.wreq-photos').forEach(async box => {   // signed links, valid for an hour, only for this shop's staff
+    let paths = []; try { paths = JSON.parse(box.dataset.paths || '[]'); } catch(_){}
+    const { data, error } = await sb.storage.from('request-photos').createSignedUrls(paths, 3600);
+    if(error || !data){ box.innerHTML = '<span class="meta">Photos could not be loaded.</span>'; return; }
+    box.innerHTML = data.filter(d => d && d.signedUrl).map(d => `<a href="${esc(d.signedUrl)}" target="_blank" rel="noopener"><img src="${esc(d.signedUrl)}" alt="Photo from the customer" loading="lazy"></a>`).join('') || '<span class="meta">Photos could not be loaded.</span>';
+  });
   list.querySelectorAll('.wreq-decline-btn').forEach(btn=>{
     btn.onclick = async ()=>{
       const { error } = await sb.from('work_requests').update({ status:'declined', reviewed_at:new Date().toISOString() }).eq('id', Number(btn.dataset.id));

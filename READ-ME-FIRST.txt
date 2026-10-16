@@ -1,4 +1,4 @@
 RelayFleet website - complete set
-(admin map crash fixed; saved work order drafts; every field labelled for screen readers; keyboard focus; honest location wording)
+(no free-trial wording; photos on the public request link; languages for shop users: Spanish, Russian, Portuguese, French)
 
-Upload ALL files (select all) to GitHub, Commit. No database changes.
+FIRST run migration 0032_public_photos_no_trial.sql in the Supabase SQL Editor (after 0031), THEN upload ALL website files (including the lang-*.js files) to GitHub and commit.

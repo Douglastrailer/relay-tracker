@@ -46,7 +46,7 @@ const TRAINING = [
  { id:'business', title:'Running the business', roles:['shop'], items:[
    { q:'See reports and profit', steps:['Click **More** → **Reports**.','Choose a date range.','Check profit by customer, technician and location.'] },
    { q:'Add a second location', steps:['Click **Settings** → **Locations** → **Add location**.','Enter its address and drag the pin into place.','Choose who works there.'] },
-   { q:'Your plan and billing', steps:['Click **Settings** → **Plan & billing**.','See your plan and trial days left.','Click **Subscribe** or **Contact Relay** to change it.'] } ]},
+   { q:'Your plan and billing', steps:['Click **Settings** → **Plan & billing**.','See your plan and its status.','Click **Subscribe** or **Contact Relay** to change it.'] } ]},
  { id:'fleet', title:'Fleet portal', roles:['fleet'], items:[
    { q:'Request service', steps:['Click **My shops** and choose a shop.','Click **Request service** and fill in the truck and the problem.','Click **Send**.'] },
    { q:'Follow a repair', steps:['Open **Repairs** to see active jobs.','Watch the mechanic\'s ETA on the job.'] },

@@ -2274,3 +2274,16 @@ body:not(.in-app) .topbar-right-group{ margin-left:0; }
 /* visible keyboard focus everywhere */
 :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
 input:focus-visible, select:focus-visible, textarea:focus-visible{ outline-offset:0; }
+
+/* repair progress + billing shown as two badges */
+.badge-pair{ display:inline-flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.badge.bill{ background:transparent; border:1px solid var(--line-strong); color:var(--ink-soft); }
+.badge.bill.invoiced{ border-color:var(--warn); color:var(--warn); } .badge.bill.paid{ border-color:var(--ok); color:var(--ok); }
+/* customer photos on a service request */
+.wreq-photos{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.wreq-photos img{ width:84px; height:84px; object-fit:cover; border-radius:10px; border:1px solid var(--line); display:block; }
+
+/* language picker in the ⋯ menu */
+.menu-lang{ display:flex; flex-direction:column; gap:4px; padding:8px 12px 10px; border-top:1px solid var(--line); }
+.menu-lang label{ font-size:.78rem; font-weight:700; color:var(--ink-soft); }
+.menu-lang select{ min-height:38px; padding:4px 8px; border:1px solid var(--line-strong); border-radius:var(--r-md); background:var(--panel-2); color:var(--ink); font:inherit; }
