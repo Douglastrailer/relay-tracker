@@ -988,6 +988,7 @@ document.getElementById('changePassBtn').onclick = async ()=>{
 
 document.getElementById('logoutBtn').onclick = async ()=>{
   if(watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+  if(typeof woDraftClear === 'function') woDraftClear();   // drafts hold customer names: never left on a shared phone
   await sb.auth.signOut();
   location.reload();
 };
@@ -2411,6 +2412,7 @@ function initShopView(){
       if(typeof refreshWorkRequests === 'function') refreshWorkRequests();
     }
 
+    if(typeof woDraftClear === 'function') woDraftClear();   // the work order exists now; the draft is no longer needed
     { const vi = document.getElementById('njVin'); if(vi) vi.value = ''; const vm = document.getElementById('njVinMsg'); if(vm) vm.textContent = ''; window.njVinDecoded = null; }
     document.getElementById('njCustomer').value = ''; document.getElementById('njVehicle').value = ''; document.getElementById('njIssue').value = ''; addressInput.value = '';
     ['njPriority','njDrivable'].forEach(id => { const el = document.getElementById(id); if(el) el.selectedIndex = 0; });

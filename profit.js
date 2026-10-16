@@ -72,7 +72,7 @@ async function renderTechCosts(){
   box.innerHTML = `<div class="section-head" style="margin-top:22px;"><h2>Technician costs</h2></div><div class="card new-job-form" style="max-width:640px;">
     <p class="meta" style="margin-top:0;">What a technician costs you per hour (wage plus payroll taxes and benefits). Used only for profit in Reports; mechanics never see it.</p>
     <div class="field"><label>Shop default cost per hour ($)</label><input type="number" id="tcDefault" min="0" max="1000" step="0.01" value="${o.data && o.data.tech_cost_rate != null ? o.data.tech_cost_rate : ''}" placeholder="e.g. 38.00"></div>
-    ${(people.data || []).map(p => `<div class="ro-inv tc-row"><span>${esc(p.name)}</span><input type="number" min="0" max="1000" step="0.01" data-tc="${p.id}" value="${cost(p.id)}" placeholder="default" aria-label="Cost per hour for ${esc(p.name)}"></div>`).join('') || '<p class="meta">No mechanics yet.</p>'}
+    ${(people.data || []).map(p => `<div class="ro-inv tc-row"><span>${esc(p.name)}</span><input type="number" aria-label="Hourly cost for ${esc(p.name)}" min="0" max="1000" step="0.01" data-tc="${p.id}" value="${cost(p.id)}" placeholder="default" aria-label="Cost per hour for ${esc(p.name)}"></div>`).join('') || '<p class="meta">No mechanics yet.</p>'}
     <p class="form-error" id="tcErr"></p><div class="job-actions"><button type="button" id="tcSave">Save costs</button></div></div>`;
   document.getElementById('tcSave').onclick = async () => {
     const err = document.getElementById('tcErr'); err.textContent = '';

@@ -75,12 +75,23 @@ async function renderFleetShopMap(){
   };
 }
 // ---------- admin: every shop on Relay ----------
+// The box is rebuilt whenever a piece of it is missing (an earlier error message used to
+// replace the whole box, including the heading line this function writes into).
+const ADMIN_SHOP_MAP_INNER = '<div class="section-head"><h2>Shops on Relay</h2><span class="meta">Loading…</span></div><div class="form-error hidden" id="adminShopMapErr"></div><div class="shop-map" id="adminShopMap"></div>';
+function adminShopMapShell(){
+  const box = document.getElementById('adminShopMapBox'); if(!box) return null;
+  if(!box.querySelector('.section-head .meta') || !document.getElementById('adminShopMap') || !document.getElementById('adminShopMapErr')) box.innerHTML = ADMIN_SHOP_MAP_INNER;
+  return box;
+}
 async function renderAdminShopMap(){
-  const box = document.getElementById('adminShopMapBox'); if(!box) return;
+  const box = adminShopMapShell(); if(!box) return;
+  const meta = box.querySelector('.section-head .meta'), err = document.getElementById('adminShopMapErr');
+  err.classList.add('hidden'); err.textContent = '';
   let entries;
-  try { entries = await loadShopDirectory(true); } catch(e){ box.innerHTML = `<p class="form-error">${esc(e.message || String(e))}</p>`; return; }
+  try { entries = await loadShopDirectory(true); }
+  catch(e){ meta.textContent = ''; err.textContent = e.message || String(e); err.classList.remove('hidden'); return; }   // the heading and map stay in place
   const shops = new Set(entries.map(e => e.org_id)).size;
-  box.querySelector('.meta').textContent = `${shops} shop${shops === 1 ? '' : 's'} · ${entries.length} location${entries.length === 1 ? '' : 's'} with a pin`;
+  meta.textContent = `${shops} shop${shops === 1 ? '' : 's'} · ${entries.length} location${entries.length === 1 ? '' : 's'} with a pin`;
   drawShopMap('adminShopMap', entries, { request:false });
 }
 function initShopMaps(){
@@ -88,7 +99,7 @@ function initShopMaps(){
   if(ft) ft.addEventListener('click', () => setTimeout(renderFleetShopMap, 0));
   const ov = document.getElementById('admin-overview');
   if(ov && !document.getElementById('adminShopMapBox')){
-    ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminShopMapBox"><div class="section-head"><h2>Shops on Relay</h2><span class="meta">Loading…</span></div><div class="shop-map" id="adminShopMap"></div></div>');
+    ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminShopMapBox"></div>'); adminShopMapShell();
   }
 }
 document.addEventListener('DOMContentLoaded', initShopMaps);

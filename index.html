@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=70"/>
+<link rel="stylesheet" href="style.css?v=72"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -81,11 +81,11 @@
       <h2 style="font-family:var(--font-display); font-size:1.15rem; margin-bottom:8px;">Set a new password</h2>
       <p class="auth-note" style="margin-top:0;">You followed a password reset link — choose a new password for your account below.</p>
       <div class="field" style="margin-top:14px; text-align:left;">
-        <label>New password</label>
+        <label for="recoveryNewPass">New password</label>
         <input type="password" id="recoveryNewPass" placeholder="At least 8 characters">
       </div>
       <div class="field" style="text-align:left;">
-        <label>Confirm new password</label>
+        <label for="recoveryConfirmPass">Confirm new password</label>
         <input type="password" id="recoveryConfirmPass" placeholder="Re-enter the password above">
       </div>
       <p class="auth-error" id="recoveryError"></p>
@@ -200,7 +200,7 @@
         <details class="lx-q"><summary>What is Relay?</summary><p>Relay is shop and road service software for truck and trailer repair. Every repair lives on one work order — from the call or request, through dispatch, the mechanic on site, the estimate and the customer's approval, to the invoice and payment — and your office, your mechanics and your fleet customers all see the same job, live.</p></details>
         <details class="lx-q"><summary>Who is it for?</summary><p>Truck and trailer repair shops, mobile mechanics and roadside service businesses — from a two-mechanic shop with no dispatcher to companies running several locations.</p></details>
         <details class="lx-q"><summary>Do mechanics need special devices?</summary><p>No. Mechanics use Relay on their own phones (iPhone or Android). They accept road calls, navigate, run timers, add parts and photos, and can use voice commands. Relay can be installed on the home screen like an app — no app store needed.</p></details>
-        <details class="lx-q"><summary>How does live tracking work?</summary><p>When a mechanic is on a road call and sharing location, the office sees them on the dispatch map and the fleet customer sees the ETA. Mechanics control when they share, and location is only visible to their own shop and the customer on that job.</p></details>
+        <details class="lx-q"><summary>How does live tracking work?</summary><p>When a mechanic is on a road call and sharing location, the office sees them on the dispatch map and the fleet customer sees the ETA. Mechanics control when they share, and location is only visible to their own shop and the customer on that job. Phones pause location while an app is closed or the screen is locked, so the ETA updates while Relay is open on the mechanic's phone.</p></details>
         <details class="lx-q"><summary>Can our fleet customers use it?</summary><p>Yes. Fleet customers get their own portal: they request service, follow the mechanic's ETA, approve estimates, see photos and invoices, and look up every unit's repair history.</p></details>
         <details class="lx-q"><summary>We use Fullbay, Shopmonkey or spreadsheets today. Can we bring our data?</summary><p>Yes. Export your customers, vehicles and parts as CSV or Excel files and add them all at once — Relay recognises each file, matches the columns, and imports everything in the right order. Nothing is duplicated.</p></details>
         <details class="lx-q"><summary>Does it work with QuickBooks?</summary><p>Relay exports your customers, invoices, payments, products and vendors in the format QuickBooks Online imports.</p></details>
@@ -249,13 +249,13 @@
     </div>
 
     <div class="card new-job-form" style="max-width:560px; margin:0 auto;" id="requestFormCard">
-      <div class="field"><label>Your name</label><input type="text" id="reqCustomerName" placeholder="e.g. Jane Smith"></div>
-      <div class="field"><label>Company name (optional)</label><input type="text" id="reqCompanyName" placeholder="e.g. Acme Logistics"></div>
-      <div class="field"><label>Phone</label><input type="tel" id="reqCustomerPhone" placeholder="e.g. (555) 123-4567"></div>
-      <div class="field"><label>Email</label><input type="email" id="reqCustomerEmail" placeholder="you@example.com"></div>
+      <div class="field"><label for="reqCustomerName">Your name</label><input type="text" id="reqCustomerName" placeholder="e.g. Jane Smith"></div>
+      <div class="field"><label for="reqCompanyName">Company name (optional)</label><input type="text" id="reqCompanyName" placeholder="e.g. Acme Logistics"></div>
+      <div class="field"><label for="reqCustomerPhone">Phone</label><input type="tel" id="reqCustomerPhone" placeholder="e.g. (555) 123-4567"></div>
+      <div class="field"><label for="reqCustomerEmail">Email</label><input type="email" id="reqCustomerEmail" placeholder="you@example.com"></div>
       <p class="meta" style="margin:-6px 0 4px;">At least a phone or an email, so we can reach you back.</p>
-      <div class="field"><label>Vehicle / unit</label><input type="text" id="reqVehicle" placeholder="e.g. Ford F-150, Trailer #7790"></div>
-      <div class="field"><label>What's going on?</label><textarea id="reqIssue" rows="4" placeholder="e.g. Grinding noise when braking, started yesterday"></textarea></div>
+      <div class="field"><label for="reqVehicle">Vehicle / unit</label><input type="text" id="reqVehicle" placeholder="e.g. Ford F-150, Trailer #7790"></div>
+      <div class="field"><label for="reqIssue">What's going on?</label><textarea id="reqIssue" rows="4" placeholder="e.g. Grinding noise when braking, started yesterday"></textarea></div>
 
       <div class="field">
         <label>What do you need?</label>
@@ -275,7 +275,7 @@
       </div>
 
       <div class="field hidden" id="reqEtaField">
-        <label>When can you bring it in?</label>
+        <label for="reqEta">When can you bring it in?</label>
         <input type="text" id="reqEta" placeholder="e.g. Tomorrow around 9am">
       </div>
 
@@ -309,7 +309,7 @@
         </div>
 
         <div id="loginForm">
-          <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="username"></div>
+          <div class="field"><label for="loginEmail">Email</label><input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="username"></div>
           <div class="field"><label>Password</label><div class="pw-wrap"><input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"><button type="button" class="pw-eye" data-pw="loginPass" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
           <button class="auth-submit" id="loginSubmit">Log in</button>
           <button class="text-btn auth-forgot" id="forgotPassBtn">Forgot password?</button>
@@ -317,10 +317,10 @@
         </div>
 
         <div id="signupForm" class="hidden">
-          <div class="field"><label>Name</label><input type="text" id="suName" placeholder="Your name"></div>
-          <div class="field"><label>Email</label><input type="email" id="suEmail" placeholder="you@example.com"></div>
-          <div class="field"><label>Phone number</label><input type="tel" id="suPhone" placeholder="(555) 555-5555"></div>
-          <div class="field"><label>Role</label>
+          <div class="field"><label for="suName">Name</label><input type="text" id="suName" placeholder="Your name"></div>
+          <div class="field"><label for="suEmail">Email</label><input type="email" id="suEmail" placeholder="you@example.com"></div>
+          <div class="field"><label for="suPhone">Phone number</label><input type="tel" id="suPhone" placeholder="(555) 555-5555"></div>
+          <div class="field"><label for="suRole">Role</label>
             <select id="suRole">
               <option value="shop">Shop owner (setting up a new company)</option>
               <option value="mechanic">Mechanic (joining an existing company)</option>
@@ -328,15 +328,15 @@
             </select>
           </div>
           <div class="field" id="suShopNameField">
-            <label>Your company / shop name</label>
+            <label for="suShopName">Your company / shop name</label>
             <input type="text" id="suShopName" placeholder="e.g. Unlimited Truck Repair">
           </div>
           <div class="field hidden" id="suInviteField">
-            <label>Invite code (from your shop owner)</label>
+            <label for="suInvite">Invite code (from your shop owner)</label>
             <input type="text" id="suInvite" placeholder="e.g. A1B2C3D4">
           </div>
           <div class="field hidden" id="suCompanyField">
-            <label>Your company name</label>
+            <label for="suCompany">Your company name</label>
             <input type="text" id="suCompany" placeholder="e.g. Amazon, FedEx">
           </div>
           <div class="field"><label>Choose a password</label><div class="pw-wrap"><input type="password" id="suPass" placeholder="At least 8 characters" autocomplete="new-password"><button type="button" class="pw-eye" data-pw="suPass" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
@@ -347,9 +347,9 @@
         <!-- Shown when a logged-in user has no profile row yet (e.g. after email confirmation) -->
         <div id="completeProfileForm" class="hidden">
           <p class="auth-note" style="margin-top:0;">Almost there — finish setting up your account.</p>
-          <div class="field"><label>Name</label><input type="text" id="cpName" placeholder="Your name"></div>
-          <div class="field"><label>Phone number</label><input type="tel" id="cpPhone" placeholder="(555) 555-5555"></div>
-          <div class="field"><label>Role</label>
+          <div class="field"><label for="cpName">Name</label><input type="text" id="cpName" placeholder="Your name"></div>
+          <div class="field"><label for="cpPhone">Phone number</label><input type="tel" id="cpPhone" placeholder="(555) 555-5555"></div>
+          <div class="field"><label for="cpRole">Role</label>
             <select id="cpRole">
               <option value="shop">Shop owner (setting up a new company)</option>
               <option value="mechanic">Mechanic (joining an existing company)</option>
@@ -357,15 +357,15 @@
             </select>
           </div>
           <div class="field" id="cpShopNameField">
-            <label>Your company / shop name</label>
+            <label for="cpShopName">Your company / shop name</label>
             <input type="text" id="cpShopName" placeholder="e.g. Unlimited Truck Repair">
           </div>
           <div class="field hidden" id="cpInviteField">
-            <label>Invite code (from your shop owner)</label>
+            <label for="cpInvite">Invite code (from your shop owner)</label>
             <input type="text" id="cpInvite" placeholder="e.g. A1B2C3D4">
           </div>
           <div class="field hidden" id="cpCompanyField">
-            <label>Your company name</label>
+            <label for="cpCompany">Your company name</label>
             <input type="text" id="cpCompany" placeholder="e.g. Amazon, FedEx">
           </div>
           <button class="auth-submit" id="completeProfileSubmit">Finish setup</button>
@@ -404,14 +404,14 @@
             <button id="goLiveBtn" class="go-live-btn offline-state">Go live</button>
             <span class="badge offline" id="liveBadge" style="margin-left:10px;"><span class="bd"></span>Offline</span>
           </div>
-          <select class="status-select" id="mechStatus">
+          <select class="status-select" id="mechStatus" aria-label="My status">
             <option value="available">Available</option>
             <option value="busy">Busy</option>
             <option value="off_duty">Off duty</option>
           </select>
         </div>
         <div class="gps-readout" id="gpsReadout">Turn on "Go live" and allow location access to start sharing your position.</div>
-        <p class="privacy-note">Your location is only shared while you're marked live — visible to your shop and to the customer you're currently assigned to. Nobody else can see it, and it stops the moment you go offline.</p>
+        <p class="privacy-note">Your location is only shared while you're marked live — visible to your shop and to the customer you're currently assigned to. Nobody else can see it, and it stops the moment you go offline. Your phone pauses location updates when Relay is closed or the screen is locked, so keep Relay open during a road call.</p>
         <div class="map-box" id="mechMap"></div>
       </div>
     </div>
@@ -532,7 +532,7 @@
         <h3 style="margin-bottom:6px;">Your request link</h3>
         <p class="meta" style="margin-bottom:12px;">Share this with customers — they can request service without needing an account. No pricing shown, just their info and what's wrong.</p>
         <div class="address-search">
-          <input type="text" id="requestLinkDisplay" readonly>
+          <input type="text" id="requestLinkDisplay" readonly aria-label="Your request link">
           <button type="button" id="copyRequestLinkBtn">Copy link</button>
         </div>
       </div>
@@ -583,24 +583,24 @@
                 <button type="button" class="kind-toggle-btn" data-jobtype="inshop" id="jobTypeInshopBtn">In-shop</button>
               </div>
             </div>
-            <div class="field"><label>Customer / company</label>
+            <div class="field"><label for="njCustomer">Customer / company</label>
               <input type="text" id="njCustomer" list="companyList" placeholder="e.g. FedEx">
               <datalist id="companyList"></datalist>
             </div>
             <div class="rec-grid">
-              <div class="field"><label>Unit number</label><input type="text" id="njVehicle" list="unitList" placeholder="e.g. 7790"><datalist id="unitList"></datalist></div>
-              <div class="field"><label>Unit type</label><select id="njUnitType"><option value="trailer">Trailer</option><option value="truck">Truck</option><option value="other">Other</option></select></div>
+              <div class="field"><label for="njVehicle">Unit number</label><input type="text" id="njVehicle" list="unitList" placeholder="e.g. 7790"><datalist id="unitList"></datalist></div>
+              <div class="field"><label for="njUnitType">Unit type</label><select id="njUnitType"><option value="trailer">Trailer</option><option value="truck">Truck</option><option value="other">Other</option></select></div>
             </div>
-            <div class="field"><label>Customer complaint</label><textarea id="njIssue" rows="3" placeholder="e.g. Grinding noise when braking, right rear"></textarea></div>
-            <div class="field"><label>Assign mechanic</label><select id="njMechanic"></select></div>
+            <div class="field"><label for="njIssue">Customer complaint</label><textarea id="njIssue" rows="3" placeholder="e.g. Grinding noise when braking, right rear"></textarea></div>
+            <div class="field"><label for="njMechanic">Assign mechanic</label><select id="njMechanic"></select></div>
             <details class="nj-more"><summary>More details <span class="meta">priority, drivable, safety, VIN, fleet account</span></summary>
             <div class="rec-grid">
-              <div class="field"><label>Priority</label><select id="njPriority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option><option value="low">Low</option></select></div>
-              <div class="field"><label>Drivable?</label><select id="njDrivable"><option value="">Unknown</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+              <div class="field"><label for="njPriority">Priority</label><select id="njPriority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option><option value="low">Low</option></select></div>
+              <div class="field"><label for="njDrivable">Drivable?</label><select id="njDrivable"><option value="">Unknown</option><option value="yes">Yes</option><option value="no">No</option></select></div>
             </div>
             <label class="rec-check"><input type="checkbox" id="njSafety"> Safety issue (brakes, tires, lights, coupling…)</label>
               <div class="nj-vin"><div class="field rec-span"><label>VIN (optional)</label><div class="vin-row"><input type="text" id="njVin" maxlength="18" class="mono" placeholder="Scan or type — fills the truck's details" autocapitalize="characters"><button type="button" class="ghost-btn" id="njVinScan">Scan</button><button type="button" class="ghost-btn" id="njVinDecode">Decode</button></div><p class="vin-msg" id="njVinMsg"></p></div></div>
-            <div class="field"><label>Fleet customer account (optional)</label><select id="njFleet"><option value="">No fleet account (only your shop sees it)</option></select><p class="meta" style="margin-top:4px;">Only the fleet you pick here can see this job and track the mechanic.</p></div>
+            <div class="field"><label for="njFleet">Fleet customer account (optional)</label><select id="njFleet"><option value="">No fleet account (only your shop sees it)</option></select><p class="meta" style="margin-top:4px;">Only the fleet you pick here can see this job and track the mechanic.</p></div>
             </details>
             <div class="field" id="njLocationField">
               <label>Breakdown location</label>
@@ -676,8 +676,8 @@
       <div class="section">
         <div class="section-head"><h2>Job history</h2></div>
         <div class="history-search-row">
-          <input type="text" id="historySearchInput" placeholder="Search by customer or vehicle...">
-          <select id="historyTypeFilter">
+          <input type="text" id="historySearchInput" placeholder="Search by customer or vehicle..." aria-label="Search completed work">
+          <select id="historyTypeFilter" aria-label="Filter by type">
             <option value="">All service types</option>
             <option value="mobile">Mobile / dispatch</option>
             <option value="inshop">In-shop</option>
@@ -705,18 +705,18 @@
                 <button type="button" class="kind-toggle-btn" data-kind="estimate" id="kindEstimateBtn">Estimate</button>
               </div>
             </div>
-            <div class="field"><label>Customer name</label><input type="text" id="invCustomerName" placeholder="e.g. FedEx"></div>
-            <div class="field"><label>Customer address (optional)</label><textarea id="invCustomerAddress" rows="2" placeholder="Company legal address for billing"></textarea></div>
-            <div class="field"><label>Unit number (optional)</label><input type="text" id="invUnitNumber" placeholder="e.g. TR-4521"></div>
-            <div class="field"><label>Link to a job (optional)</label><select id="invJobSelect"><option value="">— No linked job —</option></select></div>
+            <div class="field"><label for="invCustomerName">Customer name</label><input type="text" id="invCustomerName" placeholder="e.g. FedEx"></div>
+            <div class="field"><label for="invCustomerAddress">Customer address (optional)</label><textarea id="invCustomerAddress" rows="2" placeholder="Company legal address for billing"></textarea></div>
+            <div class="field"><label for="invUnitNumber">Unit number (optional)</label><input type="text" id="invUnitNumber" placeholder="e.g. TR-4521"></div>
+            <div class="field"><label for="invJobSelect">Link to a job (optional)</label><select id="invJobSelect"><option value="">— No linked job —</option></select></div>
             <div class="field">
-              <label>Line items</label>
+              <label for="invItemPicker">Line items</label>
               <select id="invItemPicker" style="margin-bottom:8px;"><option value="">+ Add from price list...</option></select>
               <div id="invItemRows"></div>
               <button type="button" class="text-btn" id="addInvItemBtn">+ Add line item</button>
             </div>
             <div class="inv-total-row">Total: <b id="invTotalDisplay">$0.00</b></div>
-            <div class="field"><label>Notes (optional)</label><textarea id="invNotes" rows="2" placeholder="e.g. Net 30 — thank you for your business"></textarea></div>
+            <div class="field"><label for="invNotes">Notes (optional)</label><textarea id="invNotes" rows="2" placeholder="e.g. Net 30 — thank you for your business"></textarea></div>
             <button id="createInvoiceBtn">Save invoice</button>
           </div>
         </div>
@@ -739,14 +739,14 @@
               <input type="file" id="billingLogoInput" accept="image/png,image/jpeg">
             </div>
           </div>
-          <div class="field"><label>Billing email</label><input type="email" id="billingEmail" placeholder="billing@yourshop.com"></div>
-          <div class="field"><label>Phone number</label><input type="text" id="billingPhone" placeholder="(555) 123-4567"></div>
-          <div class="field"><label>Shop address</label><textarea id="billingAddress" rows="2" placeholder="123 Main St, City, ST 12345"></textarea></div>
-          <div class="field"><label>Payment methods</label><textarea id="billingPaymentInstructions" rows="3" placeholder="e.g. Zelle: billing@yourshop.com&#10;Check payable to Your Shop LLC&#10;Net 30 from invoice date"></textarea></div>
-          <div class="field"><label>Review link (optional)</label><input type="text" id="billingReviewLink" placeholder="Your Google Business review link"></div>
+          <div class="field"><label for="billingEmail">Billing email</label><input type="email" id="billingEmail" placeholder="billing@yourshop.com"></div>
+          <div class="field"><label for="billingPhone">Phone number</label><input type="text" id="billingPhone" placeholder="(555) 123-4567"></div>
+          <div class="field"><label for="billingAddress">Shop address</label><textarea id="billingAddress" rows="2" placeholder="123 Main St, City, ST 12345"></textarea></div>
+          <div class="field"><label for="billingPaymentInstructions">Payment methods</label><textarea id="billingPaymentInstructions" rows="3" placeholder="e.g. Zelle: billing@yourshop.com&#10;Check payable to Your Shop LLC&#10;Net 30 from invoice date"></textarea></div>
+          <div class="field"><label for="billingReviewLink">Review link (optional)</label><input type="text" id="billingReviewLink" placeholder="Your Google Business review link"></div>
           <div class="rec-grid">
-            <div class="field"><label>Default sales tax rate (%)</label><input type="number" id="billingTaxRate" min="0" max="30" step="0.001" inputmode="decimal" placeholder="e.g. 7.75"></div>
-            <div class="field"><label>Labor rate ($ per hour)</label><input type="number" id="billingLaborRate" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 135"></div>
+            <div class="field"><label for="billingTaxRate">Default sales tax rate (%)</label><input type="number" id="billingTaxRate" min="0" max="30" step="0.001" inputmode="decimal" placeholder="e.g. 7.75"></div>
+            <div class="field"><label for="billingLaborRate">Labor rate ($ per hour)</label><input type="number" id="billingLaborRate" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 135"></div>
           </div>
           <p class="meta" style="margin-top:-4px;">Used to pre-fill new estimates. Tax-exempt customers start at 0%.</p>
           <p class="meta" style="margin:-6px 0 4px;">Your review page link (e.g. Google). Review requests use it — see Customer updates below.</p>
@@ -841,7 +841,7 @@
       <p style="font-size:0.8rem; color:var(--ink-soft); margin-bottom:10px;">If your units are serviced by more than one shop, join each one using their invite code — you'll see all your units in one place below.</p>
       <div id="fleetShopList" style="margin-bottom:12px;"></div>
       <div class="address-search">
-        <input type="text" id="fleetAddShopCode" placeholder="Enter another shop's invite code">
+        <input type="text" id="fleetAddShopCode" placeholder="Enter another shop's invite code" aria-label="Shop invite code">
         <button type="button" id="fleetAddShopBtn">Join</button>
       </div>
       <div class="auth-error" id="fleetAddShopError"></div>
@@ -886,7 +886,7 @@
       <div class="section">
         <div class="section-head"><h2>Current users</h2></div>
         <div class="field" style="max-width:280px; margin-bottom:18px;">
-          <label>Showing</label>
+          <label for="accountsRoleFilter">Showing</label>
           <select id="accountsRoleFilter">
             <option value="mechanic">Mechanics</option>
             <option value="fleet">Fleet managers</option>
@@ -969,14 +969,14 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=68"></script>
+<script src="script.js?v=69"></script>
 <script src="ro.js?v=16"></script>
 <script src="insp.js?v=4"></script>
 <script src="est.js?v=11"></script>
 <script src="tech.js?v=7"></script>
 <script src="fleet.js?v=6"></script>
 <script src="unit.js?v=5"></script>
-<script src="inv.js?v=5"></script>
+<script src="inv.js?v=6"></script>
 <script src="analytics.js?v=3"></script>
 <script src="comms.js?v=2"></script>
 <script src="roles.js?v=2"></script>
@@ -987,7 +987,7 @@
   </div>
 </div>
 <script src="shop.js?v=5"></script>
-<script src="ops.js?v=3"></script>
+<script src="ops.js?v=4"></script>
 <script src="dispatch.js?v=6"></script>
 <button type="button" id="assistFab" class="assist-fab hidden" aria-label="Ask Natasha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>Ask Natasha</span></button>
 <div id="assistPanel" class="assist-panel hidden" role="dialog" aria-label="Ask Natasha">
@@ -1009,16 +1009,16 @@
 <script src="assist.js?v=2"></script>
 <script src="scan.js?v=1"></script>
 <script src="r6.js?v=2"></script>
-<script src="profit.js?v=2"></script>
+<script src="profit.js?v=3"></script>
 <script src="loc.js?v=3"></script>
 <script src="voice.js?v=4"></script>
 <script src="pdfview.js?v=1"></script>
-<script src="map.js?v=3"></script>
-<script src="sheet.js?v=2"></script>
+<script src="map.js?v=4"></script>
+<script src="sheet.js?v=3"></script>
 <script src="parts.js?v=2"></script>
 <script src="migrate.js?v=1"></script>
-<script src="training.js?v=2"></script>
-<script src="ux.js?v=1"></script>
+<script src="training.js?v=3"></script>
+<script src="ux.js?v=3"></script>
 <script src="natasha.js?v=1"></script>
 <script src="plans.js?v=3"></script>
 <script src="landing.js?v=1"></script>

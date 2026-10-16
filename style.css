@@ -2270,3 +2270,7 @@ body:not(.in-app) .topbar-right-group{ margin-left:0; }
 .undo-toast{ display:flex; align-items:center; gap:14px; } .undo-btn{ background:none; border:none; color:#7FD0E0; font:inherit; font-weight:700; cursor:pointer; padding:2px 4px; }
 #boardToggle{ margin-left:auto; }
 @media (max-width:760px){ .inv-actions .row-menu{ left:0; right:auto; } }
+
+/* visible keyboard focus everywhere */
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible{ outline-offset:0; }

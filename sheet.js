@@ -14,16 +14,23 @@ function sheetEl(){
   o = document.getElementById('formSheet');
   o.addEventListener('click', (e) => { if(e.target === o) closeFormSheet(); });
   document.getElementById('formSheetClose').onclick = () => closeFormSheet();
+  o.addEventListener('keydown', (e) => {   // keep Tab inside the open sheet
+    if(e.key !== 'Tab') return;
+    const f = [...o.querySelectorAll('button, [href], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && x.offsetParent !== null);
+    if(!f.length) return; const first = f[0], last = f[f.length - 1];
+    if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); } else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  });
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && formSheet) closeFormSheet(); });
   return o;
 }
 function openFormSheet(title, nodes, onClose){
   if(formSheet) closeFormSheet(true);
   const o = sheetEl(), body = document.getElementById('formSheetBody');
+  const opener = document.activeElement;   // focus returns here when the sheet closes
   document.getElementById('formSheetTitle').textContent = title;
   // existing forms are moved in and put back on close; new content (e.g. the scanner) has no home and is just removed
   const moved = nodes.filter(Boolean).map(node => { let marker = null; if(node.parentNode){ marker = document.createComment('sheet-home'); node.parentNode.insertBefore(marker, node); } body.appendChild(node); return { node, marker }; });
-  formSheet = { nodes: moved, onClose };
+  formSheet = { nodes: moved, onClose, opener };
   o.classList.remove('hidden'); requestAnimationFrame(() => o.classList.add('open'));
   document.body.classList.add('sheet-open');
   body.scrollTop = 0;
@@ -38,6 +45,7 @@ function closeFormSheet(silent){
   const o = document.getElementById('formSheet'); o.classList.add('hidden'); o.classList.remove('open');
   document.body.classList.remove('sheet-open');
   if(typeof s.onClose === 'function') s.onClose(silent);
+  if(!silent && s.opener && s.opener.isConnected && typeof s.opener.focus === 'function') try { s.opener.focus(); } catch(_){}
 }
 
 // ---------- shop: New work order ----------

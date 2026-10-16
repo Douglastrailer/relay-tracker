@@ -22,7 +22,7 @@ const TRAINING = [
    { q:'Send a road call to a mechanic', steps:['Select the road call on **Dispatch**.','Click **Assign** next to the nearest available mechanic.','They get an alert and have to accept.'] } ]},
  { id:'phone', title:'On the mechanic\'s phone', roles:['mechanic'], items:[
    { q:'Accept a road call', steps:['Open the alert, or go to **My jobs**.','Tap **Accept**, or **Decline** and give a reason.'] },
-   { q:'Go on the job', steps:['Tap **On my way** when you leave. Location sharing starts.','Tap **Arrived** when you get there.','Tap **Start repair** to start the labor timer.'] },
+   { q:'Go on the job', steps:['Tap **On my way** when you leave. Location sharing starts.','Keep Relay open: phones pause location when the app is closed or the screen is locked.','Tap **Arrived** when you get there, then **Start repair** to start the labor timer.'] },
    { q:'Add parts', steps:['Open the job and go to **Parts**.','Type the part, or tap **Scan** and scan its barcode.','Set the quantity and tap **Add part**.'] },
    { q:'Add photos and notes', steps:['Go to **Photos** and take a picture.','Write what you found under **Diagnosis**.','Parts and photos are saved to the job as you add them.'] },
    { q:'Finish the job', steps:['Tap **Stop repair** when the work is done.','Tap **Complete job**.'] },

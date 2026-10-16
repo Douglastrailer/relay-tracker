@@ -299,7 +299,7 @@ async function renderBaySettings(){
   box.innerHTML = `<div class="section-head" style="margin-top:22px;"><h2>Shop bays</h2></div><div class="card new-job-form" style="max-width:640px;">
     <p class="meta" style="margin-top:0;">Bays show on the Shop floor screen. Put a work order in a bay from its Overview tab.</p>
     ${bays.map(b => `<div class="ro-inv"><b>${esc(b.name)}</b>${b.active ? '' : '<span class="rec-tag">Hidden</span>'}<button type="button" class="text-btn" data-btog="${b.id}" data-on="${b.active}">${b.active ? 'Hide' : 'Show'}</button></div>`).join('')}
-    <div class="insp-start"><input id="bayName" maxlength="40" placeholder="e.g. Bay 3"><button type="button" id="bayAdd">Add bay</button></div><p class="form-error" id="bayErr"></p></div>`;
+    <div class="insp-start"><input id="bayName" maxlength="40" placeholder="e.g. Bay 3" aria-label="Bay name"><button type="button" id="bayAdd">Add bay</button></div><p class="form-error" id="bayErr"></p></div>`;
   document.getElementById('bayAdd').onclick = async () => {
     const n = document.getElementById('bayName').value.trim();
     if(!n){ document.getElementById('bayErr').textContent = 'Enter a name.'; return; }
