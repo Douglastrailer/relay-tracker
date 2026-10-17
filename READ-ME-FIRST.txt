@@ -1,7 +1,4 @@
-RelayFleet website - complete set
-(Completed work with date finder; Estimates & invoices table; Settings tabs; every form in a blurred sheet; paid-invoice review button for fleets)
+RelayFleet website - complete set (FIX: Estimates & invoices and Completed work buttons now work)
 
-ORDER:
- 1. Run migration 0033_completed_work_numbers_receipts.sql in the Supabase SQL Editor (needs 0032).
- 2. Update the 3 Edge Functions (see RelayFleet-Functions.zip).
- 3. Upload ALL files in this folder to GitHub and commit. Refresh with Cmd+Shift+R.
+Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R (on phones: close Relay and reopen).
+No database or Edge Function changes in this update.

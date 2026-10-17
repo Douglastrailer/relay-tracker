@@ -27,6 +27,7 @@ function docTabsHtml(){ return DOC_TABS.map(([k, l]) => `<button type="button" c
 // the same tab, search and number of rows, never flashes, and never replaces a good table with an error
 async function refreshDocsTable(mode){
   const body = document.getElementById('invoiceList'); if(!body) return;
+  if(!docWired && document.getElementById('docTabs')) return initDocsTable();   // however the table is first drawn, connect its tabs, search, buttons and row clicks first
   if(mode === undefined) mode = true;
   const quiet = mode === 'quiet', reset = mode === true || quiet;
   const startAt = reset ? 0 : docState.offset, size = quiet ? Math.max(FIND_PAGE, docState.offset) : FIND_PAGE;

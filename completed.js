@@ -90,6 +90,7 @@ function cwActiveChips(){
 }
 async function cwLoad(reset){
   const body = document.getElementById('fullHistoryList'); if(!body) return;
+  if(!cwWired && document.getElementById('cwDates')) return initCompletedWork();   // connect the date buttons, search and clicks before the first draw
   const mySeq = ++cwState.seq;
   if(reset){ cwState.offset = 0; body.innerHTML = '<tr><td colspan="5" class="meta">Loading…</td></tr>'; }
   const { data, error } = await sb.rpc('completed_work_page', { p_from: cwState.from ? cwState.from.toISOString() : null, p_to: cwState.to ? cwState.to.toISOString() : null,
