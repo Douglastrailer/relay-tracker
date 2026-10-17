@@ -1655,6 +1655,7 @@ async function sendInvoiceEmail(invoiceId, email){
 async function markInvoicePaid(invoiceId){
   const { error } = await sb.from('invoices').update({ status:'paid', paid_at:new Date().toISOString() }).eq('id', invoiceId);
   if(error){ alert('Could not update: ' + error.message); return; }
+  if(typeof notifyKick === 'function') notifyKick();   // send the paid receipt now instead of waiting for the schedule
   refreshInvoices();
 }
 

@@ -2313,3 +2313,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible{ outline-offse
   .cw-wrap{ border:none; background:none; overflow:visible; } .cw-table thead{ display:none; } .cw-table, .cw-table tbody, .cw-table tr, .cw-table td{ display:block; width:100%; }
   .cw-table tr{ margin-bottom:10px; border:1px solid var(--line); border-radius:var(--r-lg); background:var(--panel); padding:6px 4px; } .cw-table td{ border:none; padding:6px 12px; text-align:left !important; } .cw-what{ max-width:none; }
 }
+
+/* receipt status on a paid invoice */
+.est-receipt{ margin:10px 0 0; padding:10px 14px; border-radius:var(--r-md); font-size:.9rem; line-height:1.45; background:var(--panel-2); color:var(--ink-soft); }
+.est-receipt.ok{ background:var(--ok-soft); color:var(--ok); } .est-receipt.warn{ background:var(--warn-soft); color:var(--warn); }

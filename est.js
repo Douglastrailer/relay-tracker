@@ -154,7 +154,7 @@ function renderEstimateEditor(){
     </div>
     <div class="field"><label>Notes for the customer</label><textarea id="estNotes" rows="2" maxlength="2000" ${editable ? '' : 'disabled'}>${esc(doc.notes || '')}</textarea></div>
     <p class="form-error" id="estError"></p>
-    <div class="insp-footer est-actions">${actionsHtml(doc, editable)}</div>`;
+    <div class="insp-footer est-actions">${actionsHtml(doc, editable)}</div>${doc.kind === 'invoice' && doc.status === 'paid' ? '<div id="estReceipt" class="est-receipt" role="status">Checking the receipt…</div>' : ''}`;
   wireEditor(editable);
   if(typeof loadInvoicePayments === 'function') loadInvoicePayments(estCurrent.doc);
 }
@@ -197,6 +197,7 @@ function actionsHtml(doc, editable){
   } else {
     if(doc.status === 'draft') b.push('<button type="button" id="estEmailInv">Email invoice</button>');
     if(doc.status === 'unpaid') b.push('<button type="button" id="estPaid">Mark paid in full</button>');
+    if(doc.status === 'paid') b.push('<button type="button" id="estEmailPaid">Email paid invoice</button>');
   }
   b.push('<button type="button" class="ghost-btn" id="estPdf">PDF</button>');
   return b.join('');
@@ -271,36 +272,69 @@ function wireEditor(editable){
     if(ar) ar.onclick = () => { collectEditor(); addRecommendedLines(); renderEstimateEditor(); };
     document.getElementById('estSave').onclick = async () => { if(await saveEstimate()) recordsToast('Saved'); };
   }
-  const on = (id, fn) => { const el = document.getElementById(id); if(el) el.onclick = fn; };
+  const on = (id, fn) => { const el = document.getElementById(id); if(el) el.onclick = (e) => { if(!estCurrent) return; return fn(e); }; };   // a late click on a closed editor does nothing
   on('estSend', sendEstimate);
-  on('estCopy', async () => { await copyText(approvalLink(estCurrent.doc.approval_token)); recordsToast('Approval link copied — paste it in a text or WhatsApp'); });
+  on('estCopy', async () => { const tok = estCurrent.doc.approval_token; await copyText(approvalLink(tok)); recordsToast('Approval link copied — paste it in a text or WhatsApp'); });
   on('estPhone', recordPhoneApproval);
   on('estRevise', async () => {
     if(!confirm('Revise this estimate? The customer\'s link will stop working until you send the new version.')) return;
-    const { error } = await sb.rpc('revise_estimate', { p_invoice: estCurrent.doc.id });
+    const id = estCurrent.doc.id;
+    const { error } = await sb.rpc('revise_estimate', { p_invoice: id });
     if(error){ showEstError(error.message); return; }
-    afterChange(estCurrent.doc.id);
+    afterChange(id);
   });
   on('estConvert', async () => {
     if(!confirm('Create an invoice from the approved lines?')) return;
-    const { data, error } = await sb.rpc('convert_estimate_to_invoice', { p_estimate: estCurrent.doc.id });
+    const estId = estCurrent.doc.id;
+    const { data, error } = await sb.rpc('convert_estimate_to_invoice', { p_estimate: estId });
     if(error){ showEstError(error.message); return; }
     recordsToast('Invoice created');
     afterChange(Number(data));
   });
   on('estEmailInv', async () => {
+    const id = estCurrent.doc.id;
     collectEditor();
     if(!(await saveEstimate())) return;
+    if(!estCurrent){ return; }
     if(!estCurrent.doc.customer_email){ showEstError('Add the customer\'s email first.'); return; }
-    await emailDoc(estCurrent.doc.id, estCurrent.doc.customer_email);
-    afterChange(estCurrent.doc.id);
+    await emailDoc(id, estCurrent.doc.customer_email);
+    afterChange(id);
   });
   on('estPaid', async () => {
-    const { error } = await sb.from('invoices').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', estCurrent.doc.id);
+    const id = estCurrent.doc.id;
+    const { error } = await sb.from('invoices').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', id);
     if(error){ showEstError(error.message); return; }
-    recordsToast('Marked paid'); afterChange(estCurrent.doc.id);
+    recordsToast('Marked paid'); afterChange(id);
+  });
+  // a paid invoice can always be emailed by hand (the automatic receipt can be off, skipped or waiting)
+  on('estEmailPaid', async () => {
+    const id = estCurrent.doc.id, typed = ((document.getElementById('estEmail') || {}).value || estCurrent.doc.customer_email || '').trim();
+    const email = typed || (prompt('Send the paid invoice to which email address?') || '').trim();
+    if(!email) return;
+    if(email !== estCurrent.doc.customer_email){ try { await sb.from('invoices').update({ customer_email: email }).eq('id', id); } catch(_){} }   // remember it on the invoice (not required)
+    await emailDoc(id, email);
   });
   on('estPdf', () => { if(typeof viewInvoicePdf === 'function') viewInvoicePdf(estCurrent.doc.id); });
+  if(estCurrent.doc.kind === 'invoice' && estCurrent.doc.status === 'paid') loadReceiptStatus(estCurrent.doc);
+}
+
+// Tells the shop what happened to the automatic paid receipt for this invoice (it is queued when the invoice becomes paid).
+async function loadReceiptStatus(doc){
+  const box = document.getElementById('estReceipt'); if(!box) return;
+  const { data, error } = await sb.from('notification_outbox').select('status, skip_reason, error, to_address, attempts, created_at, sent_at').eq('invoice_id', doc.id).eq('event', 'payment_received').eq('channel', 'email').order('created_at', { ascending: false }).limit(1);
+  if(!estCurrent || estCurrent.doc.id !== doc.id) return;   // the editor moved on
+  const when = t => t ? new Date(t).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+  let cls = 'info', html;
+  if(error) html = `Couldn't check the receipt: ${esc(error.message)}`;
+  else if(!data || !data.length) { cls = 'warn'; html = '<b>No automatic receipt was queued for this invoice.</b> It needs the work order to have a customer with an email (or an email typed on the invoice), and “Payment received” switched on under Customer updates. You can send the paid invoice yourself with <b>Email paid invoice</b>.'; }
+  else {
+    const r = data[0], to = esc(r.to_address || 'the customer');
+    if(r.status === 'sent'){ cls = 'ok'; html = `✓ Paid receipt emailed to <b>${to}</b> on ${esc(when(r.sent_at || r.created_at))}.`; }
+    else if(r.status === 'skipped'){ cls = 'warn'; html = `<b>Paid receipt not sent:</b> ${esc(r.skip_reason || 'skipped')}. You can send the paid invoice yourself with <b>Email paid invoice</b>.`; }
+    else if(r.status === 'failed'){ cls = 'warn'; html = `<b>Paid receipt could not be sent to ${to}:</b> ${esc(r.error || 'unknown error')}${r.attempts ? ` (tried ${r.attempts} time${r.attempts === 1 ? '' : 's'})` : ''}. You can send it yourself with <b>Email paid invoice</b>.`; }
+    else { const mins = Math.round((Date.now() - new Date(r.created_at).getTime()) / 60000); if(mins >= 3){ cls = 'warn'; html = `The receipt to <b>${to}</b> was queued ${mins} minutes ago but has not gone out. The scheduled sender may not be running. Use <b>Email paid invoice</b> to send it now.`; } else html = `Paid receipt to <b>${to}</b> is queued; it goes out within a minute.`; }
+  }
+  box.className = 'est-receipt ' + cls; box.innerHTML = html;
 }
 
 function addRecommendedLines(){
@@ -311,9 +345,10 @@ function addRecommendedLines(){
 function showEstError(msg){ const e = document.getElementById('estError'); if(e) e.textContent = msg; else alert(msg); }
 
 async function saveEstimate(){
+  if(!estCurrent) return false;
   collectEditor();
-  const d = estCurrent.doc;
-  const bad = estCurrent.lines.find(l => l.description.trim() && (!(l.quantity > 0) || l.unit_price < 0));
+  const cur = estCurrent, d = cur.doc;   // the editor can be closed or reloaded while we wait on the database
+  const bad = cur.lines.find(l => l.description.trim() && (!(l.quantity > 0) || l.unit_price < 0));
   if(bad){ showEstError('Each line needs a quantity above 0 and a price of 0 or more.'); return false; }
   const btn = document.getElementById('estSave'); if(btn) btn.disabled = true;
   const up = docEditable(d)
@@ -322,7 +357,7 @@ async function saveEstimate(){
   const { error: e1 } = await sb.from('invoices').update(up).eq('id', d.id);
   let e2 = null;
   if(!e1 && docEditable(d)){
-    ({ error: e2 } = await sb.rpc('replace_invoice_items', { p_invoice: d.id, p_items: estCurrent.lines.map(l => ({
+    ({ error: e2 } = await sb.rpc('replace_invoice_items', { p_invoice: d.id, p_items: cur.lines.map(l => ({
       description: l.description, quantity: l.quantity, unit_price: l.unit_price, item_type: l.item_type, taxable: !!l.taxable, recommended_repair_id: l.recommended_repair_id || null })) }));
   }
   if(btn) btn.disabled = false;
@@ -337,19 +372,22 @@ async function reloadDoc(id){
 }
 
 async function sendEstimate(){
+  if(!estCurrent) return;
+  const id = estCurrent.doc.id;
   if(docEditable(estCurrent.doc) && !(await saveEstimate())) return;
-  if(!estCurrent.lines.filter(l => l.description.trim()).length){ showEstError('Add at least one line before sending.'); return; }
-  const { data: token, error } = await sb.rpc('send_estimate_for_approval', { p_invoice: estCurrent.doc.id });
+  const cur = estCurrent; if(!cur) return;   // saving reloads the editor: use the fresh copy, and stop if it was closed
+  if(!cur.lines.filter(l => l.description.trim()).length){ showEstError('Add at least one line before sending.'); return; }
+  const { data: token, error } = await sb.rpc('send_estimate_for_approval', { p_invoice: id });
   if(error){ showEstError(error.message); return; }
-  const email = (document.getElementById('estEmail').value || '').trim();
+  const emailEl = document.getElementById('estEmail'), email = ((emailEl && emailEl.value) || '').trim();
   if(email){
-    if(email !== estCurrent.doc.customer_email) await sb.from('invoices').update({ customer_email: email }).eq('id', estCurrent.doc.id);
-    await emailDoc(estCurrent.doc.id, email);
+    if(email !== cur.doc.customer_email) await sb.from('invoices').update({ customer_email: email }).eq('id', id);
+    await emailDoc(id, email);
   } else {
     await copyText(approvalLink(token));
     recordsToast('No email on file — approval link copied. Paste it in a text or WhatsApp.');
   }
-  afterChange(estCurrent.doc.id);
+  afterChange(id);
 }
 
 async function emailDoc(id, email){
@@ -360,13 +398,15 @@ async function emailDoc(id, email){
 }
 
 async function recordPhoneApproval(){
+  if(!estCurrent) return;
+  const id = estCurrent.doc.id;
   if(docEditable(estCurrent.doc) && !(await saveEstimate())) return;
   const name = prompt('Who approved it? (name, and how — e.g. "Dan, by phone")');
   if(name === null) return;
-  const { error } = await sb.rpc('record_shop_approval', { p_invoice: estCurrent.doc.id, p_name: name, p_note: null, p_declined_items: [] });
+  const { error } = await sb.rpc('record_shop_approval', { p_invoice: id, p_name: name, p_note: null, p_declined_items: [] });
   if(error){ showEstError(error.message); return; }
   recordsToast('Approval recorded');
-  afterChange(estCurrent.doc.id);
+  afterChange(id);
 }
 
 async function copyText(text){

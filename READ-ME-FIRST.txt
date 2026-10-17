@@ -1,4 +1,5 @@
-RelayFleet website - complete set (FIX: Estimates & invoices and Completed work buttons now work)
+RelayFleet website - complete set
+(FIX: "reading doc of null" error; paid invoices show what happened to the receipt, with an "Email paid invoice" button; table Mark paid sends the receipt right away)
 
-Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R (on phones: close Relay and reopen).
-No database or Edge Function changes in this update.
+Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R (phones: close Relay and reopen).
+No database changes. One Edge Function changed: send-invoice-email (index.ts) - see RelayFleet-Functions.zip.
