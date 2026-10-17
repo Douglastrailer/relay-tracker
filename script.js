@@ -1639,6 +1639,7 @@ async function createInvoice(){
   if(itemErr) alert(`${kind === 'estimate' ? 'Estimate' : 'Invoice'} was created, but the line items failed to save: ` + itemErr.message);
 
   resetInvoiceForm();
+  if(typeof docNewClose === 'function') docNewClose();   // the form lives in a sheet now
   btn.disabled = false; setInvoiceFormKind(kind);
   refreshInvoices();
 }
@@ -1764,6 +1765,7 @@ async function viewInvoicePdf(invoiceId){
 }
 
 async function refreshInvoices(){
+  if(typeof refreshDocsTable === 'function') return refreshDocsTable('quiet');   // the new table (docs.js); background refreshes keep your place
   const list = document.getElementById('invoiceList');
   if(!list) return;
   const invoices = await fetchInvoices();
@@ -2186,6 +2188,7 @@ async function refreshHistoryMechCache(){
 }
 
 async function loadHistoryPage(reset){
+  if(typeof cwLoad === 'function') return cwLoad(reset);
   const list = document.getElementById('fullHistoryList');
   const loadMoreBtn = document.getElementById('historyLoadMoreBtn');
   const endNote = document.getElementById('historyEndNote');
@@ -2214,6 +2217,7 @@ async function loadHistoryPage(reset){
 }
 
 function initHistoryUI(){
+  if(typeof initCompletedWork === 'function') return initCompletedWork();   // the new Completed work page (completed.js)
   let searchDebounce = null;
   document.getElementById('historySearchInput').addEventListener('input', ()=>{
     clearTimeout(searchDebounce);

@@ -29,6 +29,9 @@ const TRAINING = [
    { q:'Use your voice', steps:['Tap the **mic** and wait for the chime.','Say "start repair", "add two brake drums" or "what\'s wrong?"','Relay answers out loud, and asks before adding parts.'] },
    { q:'Clock in and out', steps:['Tap **Clock in** at the start of your shift.','Tap **Clock out** at the end.'] } ]},
  { id:'money', title:'Estimates, invoices and payments', roles:['shop'], items:[
+   { q:'Find an invoice or estimate', steps:['Click **Estimates & invoices**. Use the tabs: **Estimates**, **Invoices**, **Unpaid**, **Paid**.','Search by number, customer or unit — or type a date like **03.03.2026**.','Click a row to open it, or **PDF** to see the document.'] },
+   { q:'Invoice numbers', steps:['An invoice takes its number from the work order: **WO-004031** becomes **INV-004031**.','An estimate is **EST-004031**. A second invoice on the same job adds **-2**.'] },
+   { q:'When an invoice is paid', steps:['The customer is emailed the paid invoice, stamped **PAID**, with your review link.','Fleet customers also see it in their portal, with a **Leave a review** button.','Add your review link in **Settings** → **Company & rates**.'] },
    { q:'Create an estimate', steps:['Open the work order and click **Create estimate**.','Add the labor and parts. Or click **Draft with Natasha**.','Check the lines and click **Save**.'] },
    { q:'Send an estimate for approval', steps:['Click **Send**, or **Copy approval link** to text it.','The customer taps **Approve** or **Decline** on their phone.','You see the answer on the work order.'] },
    { q:'Record a phone approval', steps:['Open the estimate.','Click **Approved by phone**.','Enter who approved it.'] },
@@ -46,6 +49,8 @@ const TRAINING = [
  { id:'business', title:'Running the business', roles:['shop'], items:[
    { q:'See reports and profit', steps:['Click **More** → **Reports**.','Choose a date range.','Check profit by customer, technician and location.'] },
    { q:'Add a second location', steps:['Click **Settings** → **Locations** → **Add location**.','Enter its address and drag the pin into place.','Choose who works there.'] },
+   { q:'Find a finished job', steps:['Click **More** → **Completed work**.','Type a customer, unit, work order or invoice number — or a date like **03.03.2026** — or tap **Today**, **This month**…','Click a job to open it. Click the invoice number to see its PDF. The line at the top shows what the jobs came to.'] },
+   { q:'Settings tabs', steps:['**Settings** has tabs: Company & rates, Plan & billing, Locations, Customer updates, Technician costs, Shop bays.','Click a tab to see that section only.'] },
    { q:'Your plan and billing', steps:['Click **Settings** → **Plan & billing**.','See your plan and its status.','Click **Subscribe** or **Contact Relay** to change it.'] } ]},
  { id:'fleet', title:'Fleet portal', roles:['fleet'], items:[
    { q:'Request service', steps:['Click **My shops** and choose a shop.','Click **Request service** and fill in the truck and the problem.','Click **Send**.'] },

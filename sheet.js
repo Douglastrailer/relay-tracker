@@ -94,3 +94,28 @@ document.addEventListener('click', (e) => {
   e.preventDefault();
   openFleetRequest(b.dataset.reqorg, b.dataset.reqname || '');
 });
+
+// ---------- inline forms: customers, units, parts, locations, checklists, time, new invoice ----------
+// These used to open in the middle of a page. They now open in the same blurred sheet as New work order:
+// the form box is MOVED into the sheet while it is open and put back when it closes (so each form keeps
+// its own behaviour). A box counts as open when it has content and is not hidden.
+const INLINE_FORMS = { invFormBox:'Edit', customerFormBox:'Customer', unitFormBox:'Unit', locForm:'Location', templateFormBox:'Checklist', timeFormBox:'Time entry', docNewBox:'New invoice or estimate' };
+function watchInlineForm(id){
+  const box = document.getElementById(id); if(!box || box._sheetWatch) return;
+  const isOpen = () => !box.classList.contains('hidden') && box.childElementCount > 0 && (box.textContent || '').trim().length > 0;
+  const inSheet = () => !!(formSheet && formSheet.nodes.some(n => n.node === box));
+  const sync = () => {
+    const open = isOpen();
+    if(open && !inSheet()){
+      const h = box.querySelector('.rec-form-head h3, h2, h3, h4'); if(h) h.classList.add('sheet-dup-title');
+      const title = (h && h.textContent.trim()) || INLINE_FORMS[id] || 'Edit';
+      openFormSheet(title, [box], () => { box.classList.add('hidden'); if(id !== 'docNewBox') box.innerHTML = ''; });   // closing the sheet closes the form (static forms keep their fields)
+    } else if(!open && inSheet()) closeFormSheet();
+  };
+  box._sheetWatch = new MutationObserver(sync); box._sheetWatch.observe(box, { attributes:true, attributeFilter:['class'], childList:true });
+  sync();
+}
+function watchInlineForms(){ Object.keys(INLINE_FORMS).forEach(watchInlineForm); }
+watchInlineForms();
+{ let queued = false;   // some boxes are drawn later (e.g. inventory draws its own when you open it)
+  new MutationObserver(() => { if(queued) return; queued = true; requestAnimationFrame(() => { queued = false; watchInlineForms(); }); }).observe(document.body, { childList:true, subtree:true }); }

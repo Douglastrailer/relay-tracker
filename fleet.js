@@ -5,7 +5,7 @@
 // own repair orders, units, documents and shops.
 // ============================================================
 
-let fleetPortal = { orgs:[], jobs:[], units:[], docs:[], mechNames:{} };
+let fleetPortal = { orgs:[], jobs:[], units:[], docs:[], mechNames:{}, reviewLinks:{} };
 const FLEET_AVG_MPH = 45;   // for a rough arrival estimate on road calls
 
 function fleetMoney(n){ return '$' + (Math.round(Number(n || 0) * 100) / 100).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 }); }
@@ -28,12 +28,15 @@ async function refreshFleetPortal(){
     fetchAllOrganizations(),
     sb.from('jobs').select(JOB_COLUMNS).order('created_at', { ascending:false }).limit(500),
     sb.from('units').select('id, org_id, customer_id, unit_number, unit_type, trailer_type, vin, year, make, model, plate, plate_state, odometer, active').eq('active', true).order('unit_number').limit(1000),
-    sb.from('invoices').select('doc_number, id, org_id, job_id, kind, status, total, due_date, created_at, approval_token, unit_number, customer_name, approved_by_name, responded_at').order('created_at', { ascending:false }).limit(300)
+    sb.from('invoices').select('doc_number, id, org_id, job_id, kind, status, total, due_date, created_at, approval_token, unit_number, customer_name, approved_by_name, responded_at, paid_at').order('created_at', { ascending:false }).limit(300)
   ]);
   fleetPortal.orgs = orgs || [];
   fleetPortal.jobs = jobsRes.data || [];
   fleetPortal.units = unitsRes.data || [];
   fleetPortal.docs = docsRes.data || [];
+  // the review links of the shops this fleet uses (for the "Leave a review" button on paid invoices); a failure just means no button
+  fleetPortal.reviewLinks = {};
+  try { const rl = await sb.rpc('fleet_review_links'); (rl.data || []).forEach(r => { fleetPortal.reviewLinks[r.org_id] = r.review_link; }); } catch(_){}
   renderFleetDashboard();
   renderFleetUnits();
   renderFleetInvoices();
@@ -111,6 +114,8 @@ function openFleetUnit(id){
   });
 }
 
+// a link typed in by a shop is only ever used if it is a real web address (never javascript: or similar)
+function safeHttpUrl(u){ const t = String(u || '').trim(); return /^https?:\/\/[^\s<>"']+$/i.test(t) ? t : ''; }
 function renderFleetInvoices(){
   const box = document.getElementById('fleetInvoices');
   if(!box) return;
@@ -122,10 +127,11 @@ function renderFleetInvoices(){
   box.innerHTML = docs.length ? docs.map(d => { const j = jobs.find(x => x.id === d.job_id) || {};
     return `<div class="fleet-doc">
       <div class="rec-main"><b>${d.kind === 'estimate' ? 'Estimate' : 'Invoice'} ${esc(docNo(d))}</b>
-        <div class="meta">${[fleetOrgName(d.org_id), j.ro_number, d.unit_number || j.vehicle, fmtDate(d.created_at), d.kind === 'invoice' && d.due_date && d.status !== 'paid' ? 'due ' + fmtDate(d.due_date) : ''].filter(Boolean).map(esc).join(' · ')}</div></div>
+        <div class="meta">${[fleetOrgName(d.org_id), j.ro_number, d.unit_number || j.vehicle, fmtDate(d.created_at), d.kind === 'invoice' && d.due_date && d.status !== 'paid' ? 'due ' + fmtDate(d.due_date) : '', d.kind === 'invoice' && d.status === 'paid' && d.paid_at ? 'paid ' + fmtDate(d.paid_at) : ''].filter(Boolean).map(esc).join(' · ')}</div></div>
       <div class="fleet-doc-side"><b>${fleetMoney(d.total)}</b><span class="badge ${cls(d)}"><span class="bd"></span>${esc(label(d))}</span>
         ${d.kind === 'estimate' && d.status === 'sent' && d.approval_token ? `<a class="attn-btn" href="${esc(fleetApproveUrl(d.approval_token))}" target="_blank" rel="noopener">Review &amp; approve</a>` : ''}
-        <button type="button" class="text-btn" data-pdf="${d.id}">PDF</button></div></div>`; }).join('')
+        ${d.kind === 'invoice' && d.status === 'paid' && safeHttpUrl(fleetPortal.reviewLinks[d.org_id]) ? `<a class="attn-btn" href="${esc(safeHttpUrl(fleetPortal.reviewLinks[d.org_id]))}" target="_blank" rel="noopener noreferrer">Leave a review</a>` : ''}
+        <button type="button" class="text-btn" data-pdf="${d.id}">${d.kind === 'invoice' && d.status === 'paid' ? 'Paid invoice (PDF)' : 'PDF'}</button></div></div>`; }).join('')
     : '<div class="card empty-note">No estimates or invoices yet.</div>';
   box.querySelectorAll('[data-pdf]').forEach(b => b.onclick = () => viewInvoicePdf(Number(b.dataset.pdf)));
 }

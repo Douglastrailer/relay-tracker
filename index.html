@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=75"/>
+<link rel="stylesheet" href="style.css?v=77"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -681,29 +681,34 @@
 
     <div class="dash-panel hidden" id="shop-history">
       <div class="section">
-        <div class="section-head"><h2>Job history</h2></div>
-        <div class="history-search-row">
-          <input type="text" id="historySearchInput" placeholder="Search by customer or vehicle..." aria-label="Search completed work">
+        <div class="section-head"><h2>Completed work</h2><span class="meta" id="cwSummary"></span></div>
+        <div class="fd-bar">
+          <input type="search" id="historySearchInput" class="fd-search" placeholder="Search customer, unit, WO #, invoice #, problem — or type a date like 03.03.2026" aria-label="Search completed work" autocomplete="off">
           <select id="historyTypeFilter" aria-label="Filter by type">
             <option value="">All service types</option>
             <option value="mobile">Mobile / dispatch</option>
             <option value="inshop">In-shop</option>
           </select>
         </div>
-        <div class="job-list" id="fullHistoryList"></div>
+        <div class="fd-dates" id="cwDates"></div>
+        <div class="fd-active" id="cwActive"></div>
+        <div class="cw-wrap"><table class="cw-table"><thead><tr><th>Work order</th><th>Customer · Unit</th><th>What was done</th><th>Invoice</th><th class="num">Amount</th></tr></thead><tbody id="fullHistoryList"></tbody></table></div>
         <button id="historyLoadMoreBtn" class="btn-ghost hidden" style="margin-top:14px;">Load more</button>
-        <div class="empty-note hidden" id="historyEndNote">That's the full history.</div>
+        <div class="empty-note hidden" id="historyEndNote">That's everything for this search.</div>
       </div>
     </div>
 
     <div class="dash-panel hidden" id="shop-invoices">
-      <div class="grid-2 section">
-        <div>
-          <div class="section-head"><h2>Invoices &amp; Estimates</h2></div>
-          <div class="job-list" id="invoiceList"></div>
-        </div>
-        <div>
-          <div class="card new-job-form">
+      <div class="section">
+        <div class="section-head"><h2>Estimates &amp; invoices</h2><span class="meta" id="docSummary"></span><button type="button" class="ghost-btn" id="docNewBtn">+ New invoice</button></div>
+        <nav class="fleet-tabs doc-tabs" id="docTabs" aria-label="Show"></nav>
+        <div class="fd-bar"><input type="search" id="docSearch" class="fd-search" placeholder="Search number, customer or unit — or type a date like 03.03.2026" aria-label="Search estimates and invoices" autocomplete="off"></div>
+        <div class="fd-dates" id="docDates"></div>
+        <div class="fd-active" id="docActive"></div>
+        <div class="cw-wrap"><table class="cw-table doc-table"><thead><tr><th>Number</th><th>Customer</th><th>Date</th><th>Status</th><th class="num">Total</th><th></th></tr></thead><tbody id="invoiceList"></tbody></table></div>
+        <button id="docLoadMore" class="btn-ghost hidden" style="margin-top:14px;">Load more</button>
+      </div>
+      <div id="docNewBox" class="hidden"><div class="card new-job-form">
             <h3 id="invFormTitle">New invoice</h3>
             <div class="field">
               <label>Type</label>
@@ -725,9 +730,7 @@
             <div class="inv-total-row">Total: <b id="invTotalDisplay">$0.00</b></div>
             <div class="field"><label for="invNotes">Notes (optional)</label><textarea id="invNotes" rows="2" placeholder="e.g. Net 30 — thank you for your business"></textarea></div>
             <button id="createInvoiceBtn">Save invoice</button>
-          </div>
-        </div>
-      </div>
+          </div></div>
     </div>
 
     <div class="dash-panel hidden" id="shop-inventory">
@@ -976,12 +979,12 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=72"></script>
+<script src="script.js?v=74"></script>
 <script src="ro.js?v=16"></script>
 <script src="insp.js?v=4"></script>
 <script src="est.js?v=11"></script>
 <script src="tech.js?v=7"></script>
-<script src="fleet.js?v=6"></script>
+<script src="fleet.js?v=8"></script>
 <script src="unit.js?v=5"></script>
 <script src="inv.js?v=6"></script>
 <script src="analytics.js?v=3"></script>
@@ -1021,11 +1024,13 @@
 <script src="voice.js?v=4"></script>
 <script src="pdfview.js?v=1"></script>
 <script src="map.js?v=4"></script>
-<script src="sheet.js?v=4"></script>
+<script src="sheet.js?v=6"></script>
 <script src="parts.js?v=2"></script>
 <script src="migrate.js?v=1"></script>
-<script src="training.js?v=4"></script>
-<script src="ux.js?v=3"></script>
+<script src="training.js?v=5"></script>
+<script src="ux.js?v=4"></script>
+<script src="completed.js?v=1"></script>
+<script src="docs.js?v=2"></script>
 <script src="lang.js?v=1"></script>
 <script src="natasha.js?v=1"></script>
 <script src="plans.js?v=4"></script>

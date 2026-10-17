@@ -1,4 +1,7 @@
 RelayFleet website - complete set
-(no free-trial wording; photos on the public request link; languages for shop users: Spanish, Russian, Portuguese, French)
+(Completed work with date finder; Estimates & invoices table; Settings tabs; every form in a blurred sheet; paid-invoice review button for fleets)
 
-FIRST run migration 0032_public_photos_no_trial.sql in the Supabase SQL Editor (after 0031), THEN upload ALL website files (including the lang-*.js files) to GitHub and commit.
+ORDER:
+ 1. Run migration 0033_completed_work_numbers_receipts.sql in the Supabase SQL Editor (needs 0032).
+ 2. Update the 3 Edge Functions (see RelayFleet-Functions.zip).
+ 3. Upload ALL files in this folder to GitHub and commit. Refresh with Cmd+Shift+R.

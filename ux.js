@@ -104,3 +104,34 @@ function woDraftRestore(){
   box.addEventListener('input', woDraftSave); box.addEventListener('change', woDraftSave);
   new MutationObserver(() => { if(!box.classList.contains('hidden')) woDraftRestore(); }).observe(box, { attributes: true, attributeFilter: ['class'] });
 })();
+
+// ============================================================
+// Settings as tabs: one section at a time instead of one long page.
+// The sections themselves are drawn by other files; this only groups them and shows one.
+// ============================================================
+const SETTINGS_TABS = [['company', 'Company & rates'], ['plan', 'Plan & billing'], ['locations', 'Locations'], ['updates', 'Customer updates'], ['costs', 'Technician costs'], ['bays', 'Shop bays']];
+const SETTINGS_GROUP = { planBox:'plan', locSettings:'locations', notifySettings:'updates', techCostBox:'costs', baySettings:'bays' };
+function uxSettingsTabs(){
+  const panel = document.getElementById('shop-billing'); if(!panel) return;
+  const kids = [...panel.children].filter(c => !c.classList.contains('settings-tabs'));
+  kids.forEach(k => { const g = SETTINGS_GROUP[k.id] || (k.classList.contains('section') ? 'company' : null); if(g) k.dataset.setgroup = g; });
+  const present = SETTINGS_TABS.filter(([g]) => kids.some(k => k.dataset.setgroup === g));
+  let bar = panel.querySelector(':scope > .settings-tabs');
+  if(!bar){ bar = document.createElement('nav'); bar.className = 'fleet-tabs settings-tabs'; bar.setAttribute('aria-label', 'Settings sections'); panel.insertBefore(bar, panel.firstChild); }
+  let active = 'company'; try { active = localStorage.getItem('relay.settingsTab') || 'company'; } catch(_){}
+  if(!present.some(([g]) => g === active)) active = present.length ? present[0][0] : 'company';
+  const html = present.map(([g, l]) => `<button type="button" class="fleet-tab${g === active ? ' active' : ''}" data-settab="${g}" aria-pressed="${g === active}">${l}</button>`).join('');
+  if(bar.dataset.sig !== html){ bar.innerHTML = html; bar.dataset.sig = html; }
+  bar.classList.toggle('hidden', present.length < 2);
+  kids.forEach(k => { if(k.dataset.setgroup) k.classList.toggle('hidden', k.dataset.setgroup !== active); });
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('[data-settab]'); if(!b) return;
+  try { localStorage.setItem('relay.settingsTab', b.dataset.settab); } catch(_){}
+  uxSettingsTabs();
+});
+(function(){
+  const panel = document.getElementById('shop-billing'); if(!panel) return;
+  let q = false; new MutationObserver(() => { if(q) return; q = true; requestAnimationFrame(() => { q = false; uxSettingsTabs(); }); }).observe(panel, { childList:true });
+  uxSettingsTabs();
+})();
