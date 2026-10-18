@@ -49,6 +49,11 @@ const TRAINING = [
  { id:'business', title:'Running the business', roles:['shop'], items:[
    { q:'See reports and profit', steps:['Click **More** → **Reports**.','Choose a date range.','Check profit by customer, technician and location.'] },
    { q:'Add a second location', steps:['Click **Settings** → **Locations** → **Add location**.','Enter its address and drag the pin into place.','Choose who works there.'] },
+   { q:'Order parts that are low', steps:['**Inventory** → **Low stock**. Parts are grouped by vendor with a suggested quantity.','Untick anything you do not want, change quantities if you like.','**Create purchase orders** makes one draft order per vendor.'] },
+   { q:'Count the shelf or a truck', steps:['**Inventory** → **Count**. Pick the location.','Type what you actually counted. The difference shows as you type.','**Save the count**. Blank boxes are left alone, so you can stop and come back.'] },
+   { q:'Cores', steps:['A part with a core charge adds a core to **Inventory** → **Cores** when it is used on a job.','Tick the cores you sent back and choose **Mark returned**, then **Mark credited** when the vendor credits you.'] },
+   { q:'Change many prices at once', steps:['**Inventory** → **Change prices**.','Choose a percentage, or price from cost to a margin. You can limit it to one vendor or category.','**Preview** first, then **Apply**. Work already written keeps its old prices.'] },
+   { q:'Parts below zero', steps:['A warning appears on the parts list when stock has gone below zero.','It usually means a part was used before it was received. Receive the purchase order, or use **Count** to set the real number.'] },
    { q:'Find a finished job', steps:['Click **More** → **Completed work**.','Type a customer, unit, work order or invoice number — or a date like **03.03.2026** — or tap **Today**, **This month**…','Click a job to open it. Click the invoice number to see its PDF. The line at the top shows what the jobs came to.'] },
    { q:'Settings tabs', steps:['**Settings** has tabs: Company & rates, Plan & billing, Locations, Customer updates, Technician costs, Shop bays.','Click a tab to see that section only.'] },
    { q:'Your plan and billing', steps:['Click **Settings** → **Plan & billing**.','See your plan and its status.','Click **Subscribe** or **Contact Relay** to change it.'] } ]},

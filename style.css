@@ -2317,3 +2317,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible{ outline-offse
 /* receipt status on a paid invoice */
 .est-receipt{ margin:10px 0 0; padding:10px 14px; border-radius:var(--r-md); font-size:.9rem; line-height:1.45; background:var(--panel-2); color:var(--ink-soft); }
 .est-receipt.ok{ background:var(--ok-soft); color:var(--ok); } .est-receipt.warn{ background:var(--warn-soft); color:var(--warn); }
+
+/* inventory: warnings, negative rows, counts, key numbers */
+.inv-warn{ margin:8px 0; padding:10px 14px; border-radius:var(--r-md); background:var(--warn-soft); color:var(--warn); font-size:.9rem; }
+.inv-row.is-neg{ border-left:3px solid var(--danger); }
+.cw-table td.pos{ color:var(--ok); } .cw-table td.neg, .cw-table .neg{ color:var(--danger); }
+.ro-vendor{ margin-bottom:18px; }
+.kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin:8px 0; }
+.kpi{ background:var(--panel-2); border:1px solid var(--line); border-radius:var(--r-lg); padding:14px; display:flex; flex-direction:column; gap:2px; }
+.kpi em{ font-style:normal; font-size:.76rem; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); }
+.kpi b{ font-size:1.35rem; }
+.more-details{ margin:4px 0 10px; } .more-details > summary{ cursor:pointer; font-weight:700; color:var(--accent); padding:6px 0; }

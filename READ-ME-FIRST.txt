@@ -1,5 +1,8 @@
-RelayFleet website - complete set
-(FIX: "reading doc of null" error; paid invoices show what happened to the receipt, with an "Email paid invoice" button; table Mark paid sends the receipt right away)
+RelayFleet website - complete set (Inventory rework)
 
-Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R (phones: close Relay and reopen).
-No database changes. One Edge Function changed: send-invoice-email (index.ts) - see RelayFleet-Functions.zip.
+ORDER:
+ 1. Run migration 0034_inventory.sql in the Supabase SQL Editor (needs 0033).
+ 2. Upload ALL files in this folder to GitHub and commit. Refresh with Cmd+Shift+R.
+
+New in Inventory: Low stock, Count, Cores tabs; parts load a page at a time with filters; part Usage; Change prices; a warning when stock goes below zero; the Add a part form now shows the essentials with the rest under "More details".
+No Edge Function changes.
