@@ -106,6 +106,8 @@ function initPlansUI(){
   if(session.role === 'admin'){
     const ov = document.getElementById('admin-overview');
     if(ov && !document.getElementById('adminRevenueBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminRevenueBox"></div>');
+    if(ov && !document.getElementById('adminUsageBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminUsageBox"></div>');
+    if(typeof renderShopUsage === 'function') renderShopUsage();
     if(ov && !document.getElementById('adminPlansBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminPlansBox"></div>');
     renderAdminPlans();
   }

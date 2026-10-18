@@ -2348,3 +2348,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible{ outline-offse
 .mfa-steps{ padding-left:20px; color:var(--ink-soft); font-size:.92rem; line-height:1.6; }
 .mfa-qr{ display:block; margin:10px 0; border:1px solid var(--line); border-radius:var(--r-md); background:#fff; padding:8px; }
 #mfaPrompt h3{ margin:0 0 4px; }
+
+/* safety net */
+.feedback-btn{ position:fixed; right:14px; bottom:76px; z-index:55; min-height:40px; padding:6px 16px; border:1px solid var(--line-strong); border-radius:999px; background:var(--panel); color:var(--ink-soft); font:inherit; font-size:.85rem; font-weight:700; box-shadow:0 4px 14px rgba(14,42,49,.12); cursor:pointer; }
+.feedback-btn:hover, .feedback-btn:focus-visible{ border-color:var(--accent); color:var(--accent); }
+.rec-row-static{ display:flex; gap:12px; align-items:center; justify-content:space-between; padding:10px 14px; border:1px solid var(--line); border-radius:var(--r-md); background:var(--panel); margin-bottom:6px; }
+.rec-subhead{ margin:14px 0 6px; font-size:.95rem; }
+@media (max-width:760px){ .feedback-btn{ bottom:auto; top:70px; right:10px; } }

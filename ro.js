@@ -89,7 +89,7 @@ async function openCustomerForm(id){
   const panel = document.getElementById('customerFormBox');
   panel.innerHTML = `
     <div class="card rec-form">
-      <div class="rec-form-head"><h3>${c ? esc(c.company_name) : 'New customer'}</h3><button type="button" class="ghost" id="cfClose">Close</button></div>
+      <div class="rec-form-head"><h3>${c ? esc(c.company_name) : 'New customer'}</h3>${c && c.active ? '<button type="button" class="text-btn" id="cfMerge">Join duplicate</button>' : ''}<button type="button" class="ghost" id="cfClose">Close</button></div>
       <div class="rec-grid">
         <div class="field"><label>Company name *</label><input id="cfName" maxlength="160" value="${c ? esc(c.company_name) : ''}"></div>
         <div class="field"><label>Contact person</label><input id="cfContact" maxlength="120" value="${c ? esc(c.contact_name || '') : ''}"></div>
@@ -114,6 +114,7 @@ async function openCustomerForm(id){
     </div>`;
   panel.classList.remove('hidden');
   panel.scrollIntoView({ behavior:'smooth', block:'start' });
+  { const mg = document.getElementById('cfMerge'); if(mg) mg.onclick = () => { if(typeof openMergeCustomers === 'function') openMergeCustomers(c.id); }; }
   document.getElementById('cfClose').onclick = () => { panel.innerHTML = ''; panel.classList.add('hidden'); };
   document.getElementById('cfSave').onclick = () => saveCustomer(c);
   if(c) loadOrdersInto('cfOrders', 'customer_id', c.id);

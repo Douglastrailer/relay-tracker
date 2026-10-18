@@ -1343,6 +1343,9 @@ function enterApp(){
   appEntered = true;
   if(typeof relayLangInit === 'function') relayLangInit();   // language picker for shop staff and mechanics
   if(typeof initExportUI === 'function') initExportUI();
+  if(typeof renderRemovedBox === 'function') renderRemovedBox();
+  if(typeof renderOverdueBox === 'function') renderOverdueBox();
+  if(typeof initFeedbackUI === 'function') initFeedbackUI();
   if(typeof renderMfaBox === 'function') renderMfaBox();
   document.getElementById('publicNav').classList.add('hidden');
   homeView.classList.add('hidden');
