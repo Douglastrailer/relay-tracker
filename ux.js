@@ -110,7 +110,7 @@ function woDraftRestore(){
 // The sections themselves are drawn by other files; this only groups them and shows one.
 // ============================================================
 const SETTINGS_TABS = [['company', 'Company & rates'], ['plan', 'Plan & billing'], ['locations', 'Locations'], ['updates', 'Customer updates'], ['costs', 'Technician costs'], ['bays', 'Shop bays']];
-const SETTINGS_GROUP = { planBox:'plan', locSettings:'locations', notifySettings:'updates', techCostBox:'costs', baySettings:'bays' };
+const SETTINGS_GROUP = { planBox:'plan', exportBox:'plan', mfaBox:'plan', locSettings:'locations', notifySettings:'updates', techCostBox:'costs', baySettings:'bays' };
 function uxSettingsTabs(){
   const panel = document.getElementById('shop-billing'); if(!panel) return;
   const kids = [...panel.children].filter(c => !c.classList.contains('settings-tabs'));

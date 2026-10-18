@@ -1,9 +1,9 @@
 RelayFleet website - complete set
-(dead-button sweep fixes; "Move to..." on board cards; admin Revenue view; Terms + Privacy pages; 50 more words in each language)
+(mechanics can work with no signal; download all your data; two-step sign-in; tests for inspections, purchase orders and the time clock)
 
 ORDER:
- 1. Run migration 0035_photo_cleanup.sql in the Supabase SQL Editor (needs 0034).
- 2. Upload ALL files in this folder to GitHub and commit. Refresh with Cmd+Shift+R.
+ 1. Run migration 0036_offline_export.sql in the Supabase SQL Editor (needs 0035).
+ 2. Upload ALL files in this folder to GitHub and commit. Refresh with Cmd+Shift+R; on phones close Relay and reopen.
 
-NOTE: terms.html and privacy.html are DRAFTS. Everything in [SQUARE BRACKETS] needs your details, and a lawyer must review them.
+IMPORTANT: 0036 must be run BEFORE the website files, because the mechanic app now sends the time an action happened.
 No Edge Function changes.

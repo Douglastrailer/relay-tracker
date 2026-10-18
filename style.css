@@ -2338,3 +2338,13 @@ input:focus-visible, select:focus-visible, textarea:focus-visible{ outline-offse
 .wo-move-menu button{ text-align:left; min-height:40px; padding:6px 10px; border:none; border-radius:var(--r-md); background:none; color:var(--ink); font:inherit; cursor:pointer; }
 .wo-move-menu button:hover, .wo-move-menu button:focus-visible{ background:var(--accent-soft); color:var(--accent); }
 .wo-move-menu .wo-move-cancel{ color:var(--ink-soft); }
+
+/* saved-on-this-phone bar */
+.offline-bar{ position:fixed; left:0; right:0; bottom:0; z-index:60; display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap;
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background:var(--warn-soft); color:var(--warn); font-size:.9rem; font-weight:600; border-top:1px solid var(--warn); }
+.offline-bar.is-off{ background:var(--danger-soft, #FDECEC); color:var(--danger); border-top-color:var(--danger); }
+.offline-bar button{ min-height:36px; padding:4px 14px; border:1px solid currentColor; border-radius:999px; background:transparent; color:inherit; font:inherit; font-weight:700; cursor:pointer; }
+.form-note{ color:var(--ink-soft); font-size:.9rem; }
+.mfa-steps{ padding-left:20px; color:var(--ink-soft); font-size:.92rem; line-height:1.6; }
+.mfa-qr{ display:block; margin:10px 0; border:1px solid var(--line); border-radius:var(--r-md); background:#fff; padding:8px; }
+#mfaPrompt h3{ margin:0 0 4px; }

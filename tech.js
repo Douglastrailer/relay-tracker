@@ -14,6 +14,17 @@ function fmtClock(sec){ sec = Math.max(0, Math.floor(sec)); const h = Math.floor
 function availChip(a){ return `<span class="avail-chip av-${esc(a || 'offline')}">${esc(AVAIL_LABELS[a] || 'Offline')}</span>`; }
 
 // Which big buttons make sense next, given the job and whether a timer runs.
+const WORK_ACTION_LABELS = { start_drive:'On my way', arrived:'Arrived', start_diagnosis:'Start diagnosis', start_repair:'Start repair', quality_check:'Quality check', resume:'Resume', pause:'Pause', wait_parts:'Waiting for parts', complete:'Complete job' };
+// While out of signal the phone shows the new status straight away, so the mechanic is not stuck.
+const OFFLINE_NEXT_STATUS = { start_drive:'en_route', arrived:'on_site', start_diagnosis:'diagnosing', start_repair:'repairing', quality_check:'quality_control', wait_parts:'waiting_parts', complete:'complete' };
+const offlineJobStatus = {};   // job id → the status set while out of signal, until the queue is sent
+function markJobLocally(jobId, action){
+  const st = OFFLINE_NEXT_STATUS[action]; if(!st) return;
+  offlineJobStatus[jobId] = st;
+  if(typeof renderMechJobs === 'function') try { renderMechJobs(); } catch(_){}
+  renderWorkScreen();
+}
+function clearLocalJobStatus(){ Object.keys(offlineJobStatus).forEach(k => delete offlineJobStatus[k]); }
 function workButtons(job, running){
   const B = (action, label, cls) => ({ action, label, cls: cls || '' });
   const s = job.status, mobile = job.job_type === 'mobile';
@@ -40,11 +51,13 @@ async function openWorkScreen(jobId){
 async function renderWorkScreen(){
   const body = document.getElementById('workBody');
   if(!workJobId || !body) return;
+  if(typeof offlineCount === 'function' && offlineCount() === 0) clearLocalJobStatus();   // everything is sent: trust the server again
   const [jobRes, runRes, sumRes] = await Promise.all([
     sb.from('jobs').select(JOB_COLUMNS).eq('id', workJobId).maybeSingle(),
     sb.from('time_entries').select('id, job_id, kind, started_at').eq('mechanic_id', session.id).is('ended_at', null).maybeSingle(),
     sb.from('job_time_summary').select('drive_minutes, labor_minutes').eq('job_id', workJobId).maybeSingle()
   ]);
+  if(jobRes && jobRes.data && offlineJobStatus[workJobId]) jobRes.data.status = offlineJobStatus[workJobId];   // show what the mechanic just pressed
   const job = jobRes.data;
   if(!job){ body.innerHTML = '<p class="form-error">This job could not be loaded.</p>'; return; }
   const run = runRes.data;
@@ -85,11 +98,19 @@ async function renderWorkScreen(){
 async function doWorkAction(job, action, btn, opts){
   if(action === 'complete' && !(opts && opts.confirmed) && !confirm('Mark this job complete?')) return;   // voice asks its own question first
   document.querySelectorAll('#workBody .work-btn').forEach(b => b.disabled = true);
-  const { error } = await sb.rpc('job_action', { p_job: job.id, p_action: action });
-  if(error){
-    document.getElementById('workError').textContent = error.message;
+  // In a dead zone this is saved on the phone and sent when the signal returns.
+  const res = typeof offlineRun === 'function'
+    ? await offlineRun('job_action', { job: job.id, action }, (WORK_ACTION_LABELS[action] || action) + ' · ' + (job.ro_number || 'job ' + job.id))
+    : await (async () => { const { error } = await sb.rpc('job_action', { p_job: job.id, p_action: action }); return error ? { error } : { ok: true }; })();
+  if(res.error){
+    document.getElementById('workError').textContent = res.error.message;
     document.querySelectorAll('#workBody .work-btn').forEach(b => b.disabled = false);
     return;
+  }
+  if(res.queued){
+    const w = document.getElementById('workError');
+    if(w){ w.className = 'form-note'; w.textContent = 'No signal — saved on your phone and sent when you are back in range.'; }
+    if(typeof markJobLocally === 'function') markJobLocally(job.id, action);
   }
   // Heading out on a road call: turn on live GPS if it isn't already.
   if(action === 'start_drive' && typeof watchId !== 'undefined' && watchId === null){

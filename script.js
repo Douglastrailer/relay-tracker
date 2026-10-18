@@ -938,9 +938,42 @@ document.getElementById('loginSubmit').onclick = async (e)=>{
 
   const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
   if(error){ authError.textContent = error.message; btn.disabled=false; return; }
+  // Two-step sign-in: if this account uses it, ask for the code before going in.
+  if(typeof mfaSignInStep === 'function'){
+    const step = await mfaSignInStep();
+    if(step && step.needsCode){ showMfaPrompt(step.factorId, data.user.id); btn.disabled = false; return; }
+  }
   await onAuthed(data.user.id);
   btn.disabled = false;
 };
+
+// Asks for the 6-digit code after the password.
+function showMfaPrompt(factorId, userId){
+  const card = document.getElementById('loginCard') || document.querySelector('#authView .auth-card');
+  const box = document.getElementById('mfaPrompt') || (() => { const d = document.createElement('div'); d.id = 'mfaPrompt'; card.appendChild(d); return d; })();
+  document.querySelectorAll('#authView .auth-form').forEach(f => f.classList.add('hidden'));
+  box.classList.remove('hidden');
+  box.innerHTML = `<h3>One more step</h3><p class="meta">Type the 6-digit number from your authenticator app.</p>
+    <div class="field"><label for="mfaLoginCode">Code</label><input id="mfaLoginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="mono"></div>
+    <p class="auth-error" id="mfaLoginErr"></p>
+    <button class="auth-submit" id="mfaLoginGo">Sign in</button>
+    <button type="button" class="text-btn" id="mfaLoginCancel">Cancel</button>`;
+  const input = document.getElementById('mfaLoginCode'); input.focus();
+  const go = async () => {
+    const b = document.getElementById('mfaLoginGo'); b.disabled = true; b.textContent = 'Checking…';
+    const res = await mfaSubmitCode(factorId, input.value);
+    b.disabled = false; b.textContent = 'Sign in';
+    if(res.error){ document.getElementById('mfaLoginErr').textContent = res.error.message; return; }
+    box.classList.add('hidden'); box.innerHTML = '';
+    await onAuthed(userId);
+  };
+  document.getElementById('mfaLoginGo').onclick = go;
+  input.addEventListener('keydown', e => { if(e.key === 'Enter') go(); });
+  document.getElementById('mfaLoginCancel').onclick = async () => {
+    await sb.auth.signOut(); box.classList.add('hidden'); box.innerHTML = '';
+    document.querySelectorAll('#authView .auth-form').forEach(f => f.classList.remove('hidden'));
+  };
+}
 
 document.getElementById('forgotPassBtn').onclick = async ()=>{
   const email = document.getElementById('loginEmail').value.trim();
@@ -1309,6 +1342,8 @@ function enterApp(){
   if(appEntered) return;
   appEntered = true;
   if(typeof relayLangInit === 'function') relayLangInit();   // language picker for shop staff and mechanics
+  if(typeof initExportUI === 'function') initExportUI();
+  if(typeof renderMfaBox === 'function') renderMfaBox();
   document.getElementById('publicNav').classList.add('hidden');
   homeView.classList.add('hidden');
   contactView.classList.add('hidden');
