@@ -119,7 +119,25 @@ function roChipsHtml(j){
   return out ? `<div class="ro-chips">${out}</div>` : '';
 }
 
+const BOARD_COLUMN_LABELS = { new:'New', estimate:'Estimate', approval:'Waiting for approval', assigned:'Assigned', progress:'In progress', waiting:'Waiting for parts', completed:'Completed', invoiced:'Invoiced' };
 let draggedJobId = null;
+
+// One place that moves a job to a column — used by dragging AND by the "Move to…" menu,
+// so a phone with no drag gets exactly the same behaviour, including Undo.
+async function moveJobToColumn(jobId, jobType, currentStatus, column){
+  const targetStatus = kanbanDropStatus(jobType, currentStatus, column);
+  if(!targetStatus){ alert(column === 'invoiced' ? 'Open the work order and create the invoice from it.' : "That move isn't allowed for this job."); return false; }
+  if(targetStatus === currentStatus) return false;
+  const { error } = await sb.from('jobs').update({ status: targetStatus, updated_at: new Date().toISOString() }).eq('id', jobId);
+  if(error){ alert('Could not move the job: ' + error.message); return false; }
+  if(typeof notifyKick === 'function') notifyKick();
+  refreshShopData();
+  if(typeof undoToast === 'function') undoToast('Moved to ' + statusLabel(targetStatus), async () => {
+    const { error: e } = await sb.from('jobs').update({ status: currentStatus, updated_at: new Date().toISOString() }).eq('id', jobId);
+    if(e) return e.message; refreshShopData();
+  });
+  return true;
+}
 
 function wireKanbanDragDrop(board){
   board.querySelectorAll('.job-card').forEach(card=>{
@@ -144,18 +162,7 @@ function wireKanbanDragDrop(board){
       const card = board.querySelector(`.job-card[data-job="${draggedJobId}"]`);
       const jobType = card ? card.dataset.jobtype : 'mobile';
       const currentStatus = card ? card.dataset.status : '';
-      const targetStatus = kanbanDropStatus(jobType, currentStatus, column);
-      if(!targetStatus){ if(column === 'invoiced') alert('Open the work order and create the invoice from it.'); return; }
-      if(targetStatus === currentStatus) return;
-      const { error } = await sb.from('jobs').update({ status: targetStatus, updated_at: new Date().toISOString() }).eq('id', draggedJobId);
-      if(error){ alert('Could not move the job: ' + error.message); return; }
-      if(typeof notifyKick === 'function') notifyKick();
-      refreshShopData();
-      { const id = draggedJobId, prev = currentStatus;
-        if(typeof undoToast === 'function') undoToast('Moved to ' + statusLabel(targetStatus), async () => {
-          const { error: e } = await sb.from('jobs').update({ status: prev, updated_at: new Date().toISOString() }).eq('id', id);
-          if(e) return e.message; refreshShopData();
-        }); }
+      await moveJobToColumn(draggedJobId, jobType, currentStatus, column);
     });
   });
 }
@@ -765,7 +772,9 @@ async function initPublicRequestPage(orgId){
       const folder = (typeof session !== 'undefined' && session && session.role === 'fleet') ? orgId + '/' + session.id : orgId + '/public/' + rid();
       for(let i = 0; i < pInput.files.length; i++){
         btn.textContent = 'Uploading photo ' + (i + 1) + ' of ' + pInput.files.length + '…';
-        let small = pInput.files[i]; try { if(typeof scanShrink === 'function') small = (await scanShrink(small)) || small; } catch(_){ /* send the original */ }
+        // Shrinking is a nice-to-have: if it fails or stalls (an odd image, a slow phone), send the original.
+        let small = pInput.files[i];
+        try { if(typeof scanShrink === 'function' && !window.__noShrink) small = (await Promise.race([scanShrink(small), new Promise(r => setTimeout(() => r(null), 8000))])) || pInput.files[i]; } catch(_){ small = pInput.files[i]; }
         const path = folder + '/' + Date.now() + '-' + i + '.jpg';
         const { error: upErr } = await sb.storage.from('request-photos').upload(path, small, { contentType: small.type || 'image/jpeg', upsert: false });
         if(upErr){ errEl.textContent = 'Photo ' + (i + 1) + " couldn't be uploaded (" + upErr.message + '). Remove it or try again.'; btn.disabled = false; btn.textContent = 'Submit request'; return; }

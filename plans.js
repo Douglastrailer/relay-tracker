@@ -57,6 +57,30 @@ async function renderAdminPlans(){
   const orgs = data || [];
   const n = s => orgs.filter(o => o.billing_status === s).length;
   const dateIn = v => v ? String(v).slice(0, 10) : '';
+  // what the shops are worth each month, and who needs chasing
+  const day = 864e5, today = new Date(); today.setHours(0, 0, 0, 0);
+  const dayDiff = v => v ? Math.round((new Date(v + 'T00:00:00').getTime() - today.getTime()) / day) : null;
+  const approved = orgs.filter(o => o.status === 'approved');
+  const paying = approved.filter(o => o.billing_status === 'active');
+  const comp = approved.filter(o => o.billing_status === 'comp');
+  const onboarding = approved.filter(o => o.billing_status === 'trial');
+  const late = approved.filter(o => (o.billing_status === 'active' || o.billing_status === 'past_due') && dayDiff(o.paid_through) != null && dayDiff(o.paid_through) < 0);
+  const dueSoon = paying.filter(o => { const d = dayDiff(o.paid_through); return d != null && d >= 0 && d <= 7; });
+  const money = n => '$' + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
+  const tile = (label, value, sub, cls) => `<div class="kpi${cls ? ' ' + cls : ''}"><em>${label}</em><b>${value}</b>${sub ? `<span class="meta">${sub}</span>` : ''}</div>`;
+  const names = list => list.slice(0, 6).map(o => esc(o.name)).join(', ') + (list.length > 6 ? ` +${list.length - 6} more` : '');
+  const revenueBox = document.getElementById('adminRevenueBox');
+  if(revenueBox) revenueBox.innerHTML = `<div class="section-head"><h2>Revenue</h2><span class="meta">$${RELAY_PLAN.price}/month per shop</span></div>
+    <div class="kpi-grid">
+      ${tile('Monthly revenue', money(paying.length * RELAY_PLAN.price), `${paying.length} paying shop${paying.length === 1 ? '' : 's'}`)}
+      ${tile('A year at this rate', money(paying.length * RELAY_PLAN.price * 12), 'if nobody leaves or joins')}
+      ${tile('Onboarding', String(onboarding.length), onboarding.length ? names(onboarding) : 'none waiting', onboarding.length ? 'warn' : '')}
+      ${tile('Complimentary', String(comp.length), comp.length ? names(comp) : 'none')}
+      ${tile('Payment late', String(late.length), late.length ? names(late) : 'nobody is late', late.length ? 'bad' : '')}
+      ${tile('Due within a week', String(dueSoon.length), dueSoon.length ? names(dueSoon) : 'nothing due')}
+    </div>
+    ${late.length ? `<p class="meta">Late: ${late.map(o => `${esc(o.name)} (${Math.abs(dayDiff(o.paid_through))} day${Math.abs(dayDiff(o.paid_through)) === 1 ? '' : 's'})`).join(' · ')}</p>` : ''}
+    ${onboarding.length ? `<p class="meta">Onboarding shops are not paying yet. Set them to <b>Active</b> below when you invoice them.</p>` : ''}`;
   box.innerHTML = `<div class="section-head"><h2>Billing</h2><span class="meta">$${RELAY_PLAN.price}/month per shop · ${n('active')} active · ${n('trial')} onboarding · ${n('past_due')} past due · ${n('comp')} complimentary</span></div>
     <div class="an-scroll"><table class="an-table admin-billing"><thead><tr><th>Shop</th><th>Status</th><th>Trial ends</th><th>Paid through</th><th>Note</th><th></th></tr></thead><tbody>
     ${orgs.map(o => { const st = billingState(o); return `<tr data-org="${o.id}"><td><b>${esc(o.name || '—')}</b>${o.status !== 'approved' ? ` <span class="rec-tag">${esc(o.status || '')}</span>` : ''}${!st.ok ? ' <span class="rec-tag warn">paused</span>' : ''}</td>
@@ -81,6 +105,7 @@ function initPlansUI(){
   }
   if(session.role === 'admin'){
     const ov = document.getElementById('admin-overview');
+    if(ov && !document.getElementById('adminRevenueBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminRevenueBox"></div>');
     if(ov && !document.getElementById('adminPlansBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminPlansBox"></div>');
     renderAdminPlans();
   }

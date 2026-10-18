@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=80"/>
+<link rel="stylesheet" href="style.css?v=82"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -218,7 +218,7 @@
       <div class="lx-actions center"><button class="lx-btn lx-btn-light" id="landingSignup2">Get started</button><button class="lx-btn lx-btn-ghost-light" data-contact>Contact us</button></div>
     </section>
     <div class="lx-for"><span>Built for</span><b>Heavy-duty truck repair</b><b>Trailer repair</b><b>Mobile mechanics</b><b>Roadside service</b><b>Fleet maintenance</b><b>Multi-location shops</b></div>
-    <footer class="lx-footer">
+    <footer class="lx-footer"><p class="meta footer-legal"><a href="/terms.html">Terms of Service</a> · <a href="/privacy.html">Privacy Policy</a></p>
       <div class="lx-foot-brand"><b>Relay</b><span>Shop &amp; road service — the shop system that also runs the road.</span></div>
       <div><h4>Product</h4><button data-goto="lxFeatures">Features</button><button data-goto="lxSwitch">Switching</button><button data-goto="lxFaq">FAQ</button></div>
       <div><h4>Company</h4><button data-contact>Contact</button><button data-signin>Sign in</button><a href="mailto:support@relayfleet.us">support@relayfleet.us</a></div>
@@ -319,6 +319,7 @@
           <div class="field"><label for="loginEmail">Email</label><input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="username"></div>
           <div class="field"><label>Password</label><div class="pw-wrap"><input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"><button type="button" class="pw-eye" data-pw="loginPass" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
           <button class="auth-submit" id="loginSubmit">Log in</button>
+          <p class="auth-note legal-note">By creating an account you agree to our <a href="/terms.html" target="_blank" rel="noopener">Terms of Service</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
           <button class="text-btn auth-forgot" id="forgotPassBtn">Forgot password?</button>
           <div class="auth-switch"><span>New to Relay?</span><button type="button" class="auth-outline" id="authToSignup">Set up your company</button></div>
         </div>
@@ -944,7 +945,7 @@
 
 </main>
 
-<footer>© 2026 Relay — Shop management and dispatch for truck and trailer repair</footer>
+<footer>© 2026 Relay — Shop management and dispatch for truck and trailer repair · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -979,7 +980,7 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=75"></script>
+<script src="script.js?v=76"></script>
 <script src="ro.js?v=16"></script>
 <script src="insp.js?v=4"></script>
 <script src="est.js?v=12"></script>
@@ -996,7 +997,7 @@
     <div id="custBody"></div>
   </div>
 </div>
-<script src="shop.js?v=5"></script>
+<script src="shop.js?v=6"></script>
 <script src="ops.js?v=4"></script>
 <script src="dispatch.js?v=6"></script>
 <button type="button" id="assistFab" class="assist-fab hidden" aria-label="Ask Natasha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>Ask Natasha</span></button>
@@ -1033,7 +1034,7 @@
 <script src="docs.js?v=3"></script>
 <script src="lang.js?v=1"></script>
 <script src="natasha.js?v=1"></script>
-<script src="plans.js?v=4"></script>
+<script src="plans.js?v=5"></script>
 <script src="landing.js?v=1"></script>
 <script src="pwa.js?v=1"></script>
 

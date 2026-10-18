@@ -97,7 +97,7 @@ async function cwLoad(reset){
     p_search: cwState.q || null, p_type: cwState.type || null, p_offset: cwState.offset, p_limit: FIND_PAGE });
   if(mySeq !== cwState.seq) return;   // a newer search is already on its way
   const more = document.getElementById('historyLoadMoreBtn'), end = document.getElementById('historyEndNote'), sum = document.getElementById('cwSummary');
-  if(error){ body.innerHTML = `<tr><td colspan="5"><div class="form-error">Couldn't load completed work: ${cwEsc(error.message)}</div></td></tr>`; if(more) more.classList.add('hidden'); return; }
+  if(error || !data){ body.innerHTML = `<tr><td colspan="5"><div class="form-error">Couldn't load completed work${error ? ': ' + cwEsc(error.message) : '.'}</div></td></tr>`; if(more) more.classList.add('hidden'); return; }
   const rows = data.rows || [], count = Number(data.count || 0);
   if(reset) body.innerHTML = '';
   if(!rows.length && reset) body.innerHTML = `<tr><td colspan="5"><div class="empty-note">No completed jobs match${cwState.from || cwState.to || cwState.q || cwState.type ? '. <button type="button" class="link" data-clear="all">Clear the filters</button>' : ' yet.'}</div></td></tr>`;

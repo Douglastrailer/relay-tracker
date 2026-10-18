@@ -37,14 +37,15 @@ async function refreshAnalyticsV2(){
   if(rg.to <= rg.from){ out.innerHTML = '<p class="form-error">The end date must be after the start date.</p>'; return; }
   out.innerHTML = '<p class="meta">Calculating…</p>';
   const { data, error } = await sb.rpc('shop_analytics', { p_from: rg.from.toISOString(), p_to: rg.to.toISOString() });
-  if(error){ out.innerHTML = `<p class="form-error">${esc(error.message)}</p>`; return; }
+  if(error || !data || !data.summary){ out.innerHTML = `<p class="form-error">The report couldn't be worked out${error ? ': ' + esc(error.message) : '.'}</p>`; return; }
   anState.data = data; anState.from = rg.from; anState.to = rg.to;
   renderAnalyticsV2();
   if(typeof refreshProfit === 'function') refreshProfit(rg);
 }
 
 function renderAnalyticsV2(){
-  const d = anState.data, s = d.summary;
+  const d = anState.data; if(!d || !d.summary) return;   // nothing loaded yet
+  const s = d.summary;
   const marginPct = Number(s.revenue) > 0 ? Math.round(Number(s.gross_margin) / Number(s.revenue) * 100) : null;
   const tile = (label, value, sub, cls) => `<div class="an-tile${cls ? ' ' + cls : ''}"><span>${esc(label)}</span><b>${value}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
   const toLabel = new Date(anState.to.getTime() - 1);

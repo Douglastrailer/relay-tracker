@@ -1,8 +1,9 @@
-RelayFleet website - complete set (Inventory rework)
+RelayFleet website - complete set
+(dead-button sweep fixes; "Move to..." on board cards; admin Revenue view; Terms + Privacy pages; 50 more words in each language)
 
 ORDER:
- 1. Run migration 0034_inventory.sql in the Supabase SQL Editor (needs 0033).
+ 1. Run migration 0035_photo_cleanup.sql in the Supabase SQL Editor (needs 0034).
  2. Upload ALL files in this folder to GitHub and commit. Refresh with Cmd+Shift+R.
 
-New in Inventory: Low stock, Count, Cores tabs; parts load a page at a time with filters; part Usage; Change prices; a warning when stock goes below zero; the Add a part form now shows the essentials with the rest under "More details".
+NOTE: terms.html and privacy.html are DRAFTS. Everything in [SQUARE BRACKETS] needs your details, and a lawyer must review them.
 No Edge Function changes.

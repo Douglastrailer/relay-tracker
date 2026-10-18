@@ -80,12 +80,38 @@ function woCardHtml(j, techName, m){
       ${j.complaint ? `<div class="wo-card-svc">${esc(j.complaint.length > 70 ? j.complaint.slice(0, 68) + '…' : j.complaint)}</div>` : ''}
       <div class="wo-card-meta"><span>${esc(j.customer || '')}</span><span>${esc(techName || 'Unassigned')}${m.helpers ? ' +' + m.helpers : ''}</span></div>
       <div class="wo-card-foot">${jobStatusBadge(j.status)}${facts.length ? `<div class="wo-card-facts">${facts.join('')}</div>` : ''}</div>
+      <button type="button" class="wo-move-btn" data-move-job="${j.id}" aria-label="Move ${esc(j.ro_number || 'this work order')} to another column">Move ▾</button>
     </div>`;
 }
 // Board cards open their work order (drag still moves them).
 document.addEventListener('click', (e) => {
   const c = e.target.closest('#shopKanbanBoard .wo-card, #woList .wo-row:not(.wo-thead), #shopHistoryList .wo-row');
   if(c && !e.target.closest('button, a, select, input')) openRepairOrder(Number(c.dataset.job));
+});
+
+// "Move to…" — the same moves as dragging, for phones and keyboards.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-move-job]');
+  document.querySelectorAll('.wo-move-menu').forEach(m => { if(!btn || m.dataset.forJob !== btn.dataset.moveJob) m.remove(); });
+  if(!btn) return;
+  e.stopPropagation();
+  if(document.querySelector(`.wo-move-menu[data-for-job="${btn.dataset.moveJob}"]`)) return;
+  const card = btn.closest('.wo-card'), here = typeof boardColumnFor === 'function' ? boardColumnFor(card.dataset.status) : null;
+  const menu = document.createElement('div');
+  menu.className = 'wo-move-menu'; menu.dataset.forJob = btn.dataset.moveJob; menu.setAttribute('role', 'menu');
+  menu.innerHTML = '<p class="meta">Move to…</p>' + Object.keys(BOARD_COLUMNS)
+    .filter(col => col !== 'invoiced' && col !== here && kanbanDropStatus(card.dataset.jobtype, card.dataset.status, col))
+    .map(col => `<button type="button" role="menuitem" data-move-to="${col}">${esc(BOARD_COLUMN_LABELS[col] || col)}</button>`).join('')
+    + '<button type="button" role="menuitem" class="wo-move-cancel">Cancel</button>';
+  card.appendChild(menu);
+  const first = menu.querySelector('[data-move-to]'); if(first) first.focus();
+  menu.addEventListener('click', async (ev) => {
+    ev.stopPropagation();
+    const pick = ev.target.closest('[data-move-to]');
+    menu.remove(); btn.focus();
+    if(pick) await moveJobToColumn(Number(btn.dataset.moveJob), card.dataset.jobtype, card.dataset.status, pick.dataset.moveTo);
+  });
+  menu.addEventListener('keydown', (ev) => { if(ev.key === 'Escape'){ menu.remove(); btn.focus(); } });
 });
 document.addEventListener('keydown', (e) => {
   if(e.key === 'Enter' && e.target.matches && e.target.matches('#shopKanbanBoard .wo-card, #woList .wo-row, #shopHistoryList .wo-row')) openRepairOrder(Number(e.target.dataset.job));

@@ -82,12 +82,14 @@ function renderParts(){
     <div id="invList" class="rec-list"></div>
     <button id="invLoadMore" class="btn-ghost hidden" style="margin-top:14px;">Load more</button>`;
   const chips = () => {
+    if(!document.getElementById('invFilters')) return;
     const t = partsState.totals || {};
     const set = [['all', 'All parts', t.all], ['low', 'Low stock', t.low], ['negative', 'Below zero', t.negative], ['nostock', 'None on hand', t.nostock], ['service', 'Services', t.service]];
     document.getElementById('invFilters').innerHTML = set.filter(([k, , n]) => k === 'all' || k === partsState.filter || Number(n) > 0)
       .map(([k, l, n]) => `<button type="button" class="fd-chip${partsState.filter === k ? ' active' : ''}" data-pfilter="${k}">${l}${n != null ? ' (' + n + ')' : ''}</button>`).join('');
   };
   const draw = () => {
+    if(!document.getElementById('invList')) return;
     document.getElementById('invList').innerHTML = partsState.rows.length ? partsState.rows.map(i => {
       const low = i.low, lv = (i.levels || []).filter(l => Number(l.qty) !== 0);
       return `<div class="inv-row${low ? ' is-low' : ''}${Number(i.on_hand) < 0 ? ' is-neg' : ''}">
@@ -113,10 +115,11 @@ function renderParts(){
     chips();
   };
   const load = async (append) => {
+    const list = document.getElementById('invList'); if(!list) return;   // the user has moved to another tab
     const mySeq = ++partsState.seq; partsState.loading = true;
-    if(!append){ partsState.offset = 0; document.getElementById('invList').innerHTML = '<div class="meta">Loading…</div>'; }
+    if(!append){ partsState.offset = 0; list.innerHTML = '<div class="meta">Loading…</div>'; }
     const { data, error } = await sb.rpc('parts_page', { p_search: partsState.q || null, p_filter: partsState.filter, p_vendor: partsState.vendor ? Number(partsState.vendor) : null, p_category: partsState.category || null, p_offset: partsState.offset, p_limit: 50 });
-    if(mySeq !== partsState.seq) return;
+    if(mySeq !== partsState.seq || !document.getElementById('invList')) return;
     partsState.loading = false;
     if(error || !data){ document.getElementById('invList').innerHTML = `<div class="form-error">Parts couldn't be loaded${error ? ': ' + esc(error.message) : '.'}</div>`; document.getElementById('invLoadMore').classList.add('hidden'); return; }
     partsState.rows = append ? partsState.rows.concat(data.rows || []) : (data.rows || []);
@@ -508,6 +511,7 @@ async function renderCount(){
     <p class="form-error" id="invPanelErr"></p>
     <div id="cntList"></div>`;
   const draw = () => {
+    if(!document.getElementById('cntList')) return;
     const rows = countState.rows;
     document.getElementById('cntList').innerHTML = rows.length ? `<div class="cw-wrap"><table class="cw-table"><thead><tr><th>Part</th><th class="num">Relay expects</th><th class="num">Counted</th><th class="num">Difference</th></tr></thead><tbody>
       ${rows.map(r => { const e = countState.entered[r.item_id]; const diff = e === undefined || e === '' ? null : Number(e) - Number(r.expected);
@@ -521,8 +525,10 @@ async function renderCount(){
       cell.textContent = d == null ? '—' : (d > 0 ? '+' : '') + qtyFmt(d); cell.className = 'num ' + (d == null ? '' : d === 0 ? 'meta' : d < 0 ? 'neg' : 'pos'); });
   };
   const load = async () => {
-    document.getElementById('cntList').innerHTML = '<div class="meta">Loading…</div>';
+    const list = document.getElementById('cntList'); if(!list) return;
+    list.innerHTML = '<div class="meta">Loading…</div>';
     const { data, error } = await sb.rpc('count_session_list', { p_location: Number(countState.location), p_search: countState.q || null, p_only_stocked: countState.onlyStocked });
+    if(!document.getElementById('cntList')) return;
     if(error || !data){ document.getElementById('cntList').innerHTML = `<div class="form-error">${error ? esc(error.message) : 'The count sheet could not be loaded.'}</div>`; return; }
     countState.rows = data.rows || []; draw();
   };
