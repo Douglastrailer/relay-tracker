@@ -7,7 +7,7 @@
 // ============================================================
 const NAV_GROUPS = [
   { id: 'overview',  label: 'Overview',            tabs: ['shop-overview'] },
-  { id: 'work',      label: 'Work orders',         tabs: ['shop-jobs', 'shop-requests', 'shop-floor', 'shop-inspections', 'shop-history'] },
+  { id: 'work',      label: 'Work orders',         tabs: ['shop-jobs', 'shop-requests', 'shop-floor', 'shop-inspections', 'shop-history', 'shop-pastdue'] },
   { id: 'dispatch',  label: 'Dispatch',            tabs: ['shop-dispatch'] },
   { id: 'customers', label: 'Customers & units',   tabs: ['shop-customers', 'shop-units'] },
   { id: 'parts',     label: 'Parts & inventory',   tabs: ['shop-inventory'] },
@@ -20,7 +20,7 @@ const NAV_GROUPS = [
 const NAV_SUB_LABELS = {
   'shop-jobs': 'All work orders', 'shop-requests': 'Requests', 'shop-floor': 'Board',
   'shop-inspections': 'Inspections', 'shop-history': 'Completed', 'shop-customers': 'Customers',
-  'shop-units': 'Units', 'shop-team': 'Technicians', 'shop-time': 'Time', 'shop-billing': 'Settings',
+  'shop-units': 'Units', 'shop-pastdue': 'Past due', 'shop-team': 'Technicians', 'shop-time': 'Time', 'shop-billing': 'Settings',
   'shop-integrations': 'Integrations', 'shop-invoices': 'Estimates & invoices'
 };
 let navBuilt = false;
@@ -108,10 +108,20 @@ function navRollUpBadges(){
     let total = 0;
     g.tabs.forEach(t => { const b = navTabButton(t); const badge = b && b.querySelector('.nav-badge'); if(badge && !badge.classList.contains('hidden')) total += Number((badge.textContent || '').replace(/\D/g, '')) || 0; });
     const gb = document.querySelector(`[data-gbadge="${g.id}"]`);
-    if(gb){ gb.textContent = total ? String(total) : ''; gb.classList.toggle('hidden', !total); }
+    // Only touch the page when the number really changed: writing the same text again is itself
+    // a change, which this file is watching for — that would loop forever and freeze the screen.
+    const want = total ? String(total) : '';
+    if(gb && gb.textContent !== want) gb.textContent = want;
+    if(gb && gb.classList.contains('hidden') !== !total) gb.classList.toggle('hidden', !total);
   });
 }
 if(typeof window !== 'undefined'){
   document.addEventListener('DOMContentLoaded', buildNav);
-  new MutationObserver(() => { buildNav(); if(navBuilt) navRollUpBadges(); }).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+  let navQueued = false;
+  new MutationObserver((records) => {
+    // ignore changes the navigation made to its own group badges
+    if(records.every(r => { const el = r.target.nodeType === 3 ? r.target.parentElement : r.target; return el && el.closest && el.closest('[data-gbadge]'); })) return;
+    if(navQueued) return; navQueued = true;
+    requestAnimationFrame(() => { navQueued = false; buildNav(); if(navBuilt) navRollUpBadges(); });   // at most once per frame
+  }).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
 }

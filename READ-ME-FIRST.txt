@@ -1,8 +1,13 @@
-RelayFleet - subscriptions under your control
+RelayFleet website - Overview, Past due, admin map and plan price
 
-ORDER:
- 1. Run migration 0039_subscriptions.sql in the Supabase SQL Editor (needs 0038).
- 2. Deploy the NEW Edge Function send-subscription-invoice (see RelayFleet-Functions.zip).
- 3. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
+Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R.
+No database or Edge Function changes in this update (0039 and the send-subscription-invoice function from the last round are still required).
 
-What changed: no price anywhere in the app or on the website - you set a price per shop in Admin > Subscriptions after talking to them. New Subscriptions tab with expired / expiring in a week / active / no price set / complimentary, due dates and days left. Billing moved off the admin Overview. Live mechanics count removed from Overview (the shops map stays). You can raise a subscription invoice for any shop and email it.
+What changed:
+- Overview (shop): workflow only - Today and the Shop board.
+- Past due: its own sub-tab under Work orders, with a count; says "Nothing is past due" when empty.
+- Your request link: moved to Work orders > Requests.
+- Dispatch keeps the live map; the duplicate On the road map on Overview is removed.
+- Admin Overview: live mechanics map removed; Shops on Relay map stays.
+- Shop Plan & billing: shows the monthly price you set, paid-through date, its own Relay invoices and what is due. Shows no figure until you set one.
+- Fixed: navigation count badges could loop and freeze the screen when a count was above zero.

@@ -37,12 +37,14 @@ async function renderOverdueBox(){
   const box = document.getElementById('overdueBox');
   if(!box || !session || session.role !== 'shop'){ if(box) box.classList.add('hidden'); return; }
   const { data, error } = await sb.rpc('overdue_invoices');
-  if(error || !data){ box.classList.add('hidden'); return; }
+  if(error || !data){ box.classList.remove('hidden'); box.innerHTML = `<div class="section-head"><h2>Past due</h2></div><p class="form-error">${esc(error ? error.message : 'Could not load this.')}</p>`; return; }
   const rows = data.rows || [];
-  if(!rows.length){ box.classList.add('hidden'); return; }
+  const badge = document.getElementById('pastDueBadge');
+  if(badge){ badge.textContent = rows.length ? String(rows.length) : ''; badge.classList.toggle('hidden', !rows.length); }
   box.classList.remove('hidden');
+  if(!rows.length){ box.innerHTML = '<div class="section-head"><h2>Past due</h2></div><div class="empty-note">Nothing is past due. Every invoice is paid or still within its due date.</div>'; return; }
   const money = n => '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  box.innerHTML = `<div class="section-head"><h3>Past due</h3><span class="meta">${rows.length} invoice${rows.length === 1 ? '' : 's'} · ${money(data.total)}</span></div>
+  box.innerHTML = `<div class="section-head"><h2>Past due</h2><span class="meta">${rows.length} invoice${rows.length === 1 ? '' : 's'} · ${money(data.total)}</span></div>
     <p class="form-error" id="overdueErr"></p>
     <div class="cw-wrap"><table class="cw-table"><thead><tr><th>Invoice</th><th>Customer</th><th class="num">Days late</th><th class="num">Amount</th><th>Reminders</th><th></th></tr></thead><tbody>
     ${rows.map(r => `<tr><td><b class="mono">${esc(r.doc_number || '#' + r.id)}</b></td><td>${esc(r.customer)}</td>

@@ -27,15 +27,37 @@ function contactRelayHref(subject){ return 'mailto:' + RELAY_PLAN.contact + '?su
 // ---------- shop: Settings → Plan & billing ----------
 async function renderPlanBox(){
   const box = document.getElementById('planBox'); if(!box || !session || session.role !== 'shop') return;
-  const { data: org } = await sb.from('organizations').select('billing_status, trial_ends_at, paid_through').eq('id', session.orgId).maybeSingle();
-  if(!org) return;
+  const [orgRes, invRes] = await Promise.all([
+    sb.from('organizations').select('billing_status, trial_ends_at, paid_through, monthly_price').eq('id', session.orgId).maybeSingle(),
+    sb.from('subscription_invoices').select('id, number, period_start, period_end, amount, status, due_date, paid_on').eq('org_id', session.orgId).neq('status', 'void').order('period_start', { ascending: false }).limit(12)
+  ]);
+  const org = orgRes.data; if(!org) return;
+  const invoices = invRes.data || [];
   const st = billingState(org), d = trialDaysLeft(org);
-  const line = org.billing_status === 'trial' && st.ok ? (d == null ? 'Getting started — Relay will confirm your plan with you' : `Onboarding · ${d} day${d === 1 ? '' : 's'} left (until ${fmtDay(org.trial_ends_at)})`) : (st.text || BILLING_LABEL[org.billing_status]);
-  box.innerHTML = `<div class="section-head" style="margin-top:22px;"><h2>Plan &amp; billing</h2></div><div class="card new-job-form plan-card" style="max-width:640px;">
-    <div class="plan-now"><div><span class="meta">Your plan</span><b>${RELAY_PLAN.name} · $Unlimited users</b><span class="${st.ok ? 'meta' : 'neg'}">${esc(line)}</span></div>
-      <a class="ghost-btn" href="${contactRelayHref(org.billing_status === 'trial' ? 'Subscribe to Relay' : 'Relay billing question')}">${org.billing_status === 'trial' ? 'Subscribe' : 'Contact Relay'}</a></div>
-    ${!st.ok ? '<p class="meta">Your data is safe: you can still see everything, finish jobs in progress and record payments. Creating new work orders, estimates and invoices resumes as soon as your plan is active.</p>' : ''}
-    <p class="meta">Billing is by invoice for now. Questions: <a href="mailto:${RELAY_PLAN.contact}">${RELAY_PLAN.contact}</a></p></div>`;
+  const money = n => '$' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const day = v => v ? new Date(v + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+  // The price is the one Relay agreed with this shop; until it is set, nothing is shown.
+  const price = org.monthly_price == null ? null : Number(org.monthly_price);
+  const priceLine = org.billing_status === 'comp' ? 'Complimentary — no charge'
+    : price == null ? 'Relay will confirm your price with you'
+    : `${money(price)} per month · unlimited users`;
+  const status = org.billing_status === 'trial' && st.ok
+    ? (d == null ? 'Getting started' : `Onboarding · ${d} day${d === 1 ? '' : 's'} left`)
+    : org.paid_through ? `Paid through ${day(org.paid_through)}` : st.text || '';
+  const unpaid = invoices.filter(x => x.status === 'unpaid');
+  box.innerHTML = `<div class="section-head" style="margin-top:22px;"><h2>Plan &amp; billing</h2></div>
+    <div class="card new-job-form plan-card" style="max-width:640px;">
+      <div class="plan-now"><div><span class="meta">Your plan</span><b>${esc(priceLine)}</b><span class="${st.ok ? 'meta' : 'neg'}">${esc(status)}</span></div>
+        <a class="ghost-btn" href="${contactRelayHref('Relay billing question')}">Contact Relay</a></div>
+      ${unpaid.length ? `<p class="${unpaid.some(x => x.due_date < new Date().toISOString().slice(0, 10)) ? 'neg' : 'meta'}">${unpaid.length === 1 ? 'One invoice is' : unpaid.length + ' invoices are'} waiting to be paid: ${esc(money(unpaid.reduce((t, x) => t + Number(x.amount), 0)))}.</p>` : ''}
+      ${!st.ok ? '<p class="meta">Your data is safe: you can still see everything, finish jobs in progress and record payments. Creating new work orders, estimates and invoices is paused until the subscription is renewed.</p>' : ''}
+      ${invoices.length ? `<h4 class="rec-subhead">Your Relay invoices</h4>
+      <div class="cw-wrap"><table class="cw-table"><thead><tr><th>Invoice</th><th>Period</th><th class="num">Amount</th><th>Status</th></tr></thead><tbody>
+      ${invoices.map(x => `<tr><td class="mono">${esc(x.number)}</td><td>${day(x.period_start)} – ${day(x.period_end)}</td><td class="num"><b>${money(x.amount)}</b></td>
+        <td>${x.status === 'paid' ? `<span class="badge arrived"><span class="bd"></span>Paid${x.paid_on ? ' ' + esc(day(x.paid_on)) : ''}</span>` : `<span class="badge waiting"><span class="bd"></span>Due ${esc(day(x.due_date))}</span>`}</td></tr>`).join('')}
+      </tbody></table></div>` : ''}
+      <p class="meta">Billing is by invoice. Questions: <a href="mailto:${RELAY_PLAN.contact}">${RELAY_PLAN.contact}</a></p>
+    </div>`;
 }
 // ---------- shop: a banner only when it matters ----------
 async function renderTrialBanner(){

@@ -2281,8 +2281,8 @@ function initHistoryUI(){
 
 function initShopView(){
   if(shopMap){ shopMap.remove(); shopMap = null; } // guards against initShopView running more than once per page session (e.g. sign-out then sign-in without a full reload)
-  shopMap = L.map('shopOpsMap', { attributionControl:false }).setView([42.45, -83.25], 10);
-  addBaseMapToggle(shopMap);
+  // The Overview no longer has a map (Dispatch has the live one), so only draw it if the box exists.
+  if(document.getElementById('shopOpsMap')){ shopMap = L.map('shopOpsMap', { attributionControl:false }).setView([42.45, -83.25], 10); addBaseMapToggle(shopMap); }
 
   loadInviteCode();
 
@@ -2686,12 +2686,12 @@ async function refreshShopData(){
     if(!loc) continue;
     const isLive = Date.now() - loc.updatedAt < 30000;
     if(isLive) liveCount++;
+    if(!shopMap) continue;
     if(shopMarkers[m.id]) shopMarkers[m.id].setLatLng([loc.lat, loc.lng]);
     else shopMarkers[m.id] = L.marker([loc.lat, loc.lng], { icon: pinIcon(isLive?'mech':'offline') }).addTo(shopMap).bindPopup(esc(m.name));
   }
   const countBadge = document.getElementById('shopMechCount');
-  countBadge.style.display = 'inline-flex';
-  countBadge.innerHTML = `<span class="bd"></span>${liveCount} live`;
+  if(countBadge){ countBadge.style.display = 'inline-flex'; countBadge.innerHTML = `<span class="bd"></span>${liveCount} live`; }
 
   const mechName = id => (mechanics.find(m=>m.id===id) || {}).name || 'Unassigned';
 
@@ -2857,8 +2857,8 @@ const adminMarkers = {};
 
 function initAdminView(){
   if(adminOpsMap){ adminOpsMap.remove(); adminOpsMap = null; } // same guard as the other three view-init maps
-  adminOpsMap = L.map('adminOpsMap', { attributionControl:false }).setView([42.45, -83.25], 9);
-  addBaseMapToggle(adminOpsMap);
+  // The admin Overview shows the Shops on Relay map only; the live mechanics map was removed.
+  if(document.getElementById('adminOpsMap')){ adminOpsMap = L.map('adminOpsMap', { attributionControl:false }).setView([42.45, -83.25], 9); addBaseMapToggle(adminOpsMap); }
 
   refreshAdminData();
   everyWhileVisible(refreshAdminData, 120000); // fallback only - Realtime handles instant updates
@@ -2877,7 +2877,7 @@ async function refreshAdminData(){
   ]);
   const mechanics = profiles.filter(p=>p.role==='mechanic');
   const orgName = id => (orgs.find(o=>o.id===id) || {}).name || '—';
-  const locByMechanic = await fetchLocationsFor(mechanics.map(m=>m.id));
+  const locByMechanic = adminOpsMap ? await fetchLocationsFor(mechanics.map(m=>m.id)) : {};   // only needed for the live map
 
   // Fleet managers can belong to multiple shops now — build the full list
   // per fleet manager instead of just showing their first/primary one.
@@ -2909,6 +2909,7 @@ async function refreshAdminData(){
     const loc = locByMechanic[m.id];
     if(!loc) continue;
     const isLive = Date.now() - loc.updatedAt < 30000;
+    if(!adminOpsMap) continue;
     if(adminMarkers[m.id]) adminMarkers[m.id].setLatLng([loc.lat, loc.lng]);
     else adminMarkers[m.id] = L.marker([loc.lat, loc.lng], { icon: pinIcon(isLive?'mech':'offline') }).addTo(adminOpsMap).bindPopup(esc(m.name));
   }
