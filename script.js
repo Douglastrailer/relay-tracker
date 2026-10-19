@@ -2901,7 +2901,6 @@ async function refreshAdminData(){
   const completeCount = completeRes.count;
   document.getElementById('adminStats').innerHTML = `
     <div class="stat-box"><b>${profiles.length}</b><span>Total accounts</span></div>
-    <div class="stat-box"><b>${liveCount}</b><span>Mechanics live now</span></div>
     <div class="stat-box"><b>${activeJobs.length}</b><span>Active jobs</span></div>
     <div class="stat-box"><b>${completeCount || 0}</b><span>Completed jobs</span></div>`;
 

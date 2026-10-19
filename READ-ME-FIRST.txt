@@ -1,6 +1,8 @@
-RelayFleet website - navigation (UX overhaul Phase 3-4)
+RelayFleet - subscriptions under your control
 
-Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R.
-No database or Edge Function changes.
+ORDER:
+ 1. Run migration 0039_subscriptions.sql in the Supabase SQL Editor (needs 0038).
+ 2. Deploy the NEW Edge Function send-subscription-invoice (see RelayFleet-Functions.zip).
+ 3. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
 
-What changed: the sidebar now has NINE destinations instead of sixteen, with no "More" menu. Screens that belong together appear as sub-tabs at the top of the page (Work orders holds All work orders, Requests, Board, Inspections, Completed). Estimates & invoices is now a destination of its own instead of being buried. Counts from hidden screens roll up onto their destination. Toolbar buttons that duplicated a sub-tab are gone. Every old screen is still reachable - nothing was deleted.
+What changed: no price anywhere in the app or on the website - you set a price per shop in Admin > Subscriptions after talking to them. New Subscriptions tab with expired / expiring in a week / active / no price set / complimentary, due dates and days left. Billing moved off the admin Overview. Live mechanics count removed from Overview (the shops map stays). You can raise a subscription invoice for any shop and email it.

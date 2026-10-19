@@ -1,10 +1,11 @@
 // ============================================================
-// RelayFleet — one plan: $320/month, unlimited users. No free trial.
+// RelayFleet — the plan a shop is on. The price is agreed privately and set by Relay in Admin → Subscriptions; the app never shows a figure the shop has not been told.
 // Billing is manual for now: the platform admin sets each shop's status in
 // the admin panel (set_org_billing). The database (0030) decides whether a
 // shop may start new work; this file only shows the status.
 // ============================================================
-const RELAY_PLAN = { name:'Relay', price:320, contact:'support@relayfleet.us' };
+// No price is kept in the app: Relay agrees one with each shop and sets it in Admin → Subscriptions.
+const RELAY_PLAN = { name:'Relay', contact:'support@relayfleet.us' };
 const BILLING_LABEL = { trial:'Onboarding', active:'Active', past_due:'Payment past due', cancelled:'Cancelled', comp:'Complimentary' };
 function trialDaysLeft(o){ if(!o || !o.trial_ends_at) return null; return Math.ceil((new Date(o.trial_ends_at).getTime() - Date.now()) / 864e5); }
 const fmtDay = d => d ? new Date(String(d).length <= 10 ? d + 'T12:00:00' : d).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' }) : '';
@@ -31,7 +32,7 @@ async function renderPlanBox(){
   const st = billingState(org), d = trialDaysLeft(org);
   const line = org.billing_status === 'trial' && st.ok ? (d == null ? 'Getting started — Relay will confirm your plan with you' : `Onboarding · ${d} day${d === 1 ? '' : 's'} left (until ${fmtDay(org.trial_ends_at)})`) : (st.text || BILLING_LABEL[org.billing_status]);
   box.innerHTML = `<div class="section-head" style="margin-top:22px;"><h2>Plan &amp; billing</h2></div><div class="card new-job-form plan-card" style="max-width:640px;">
-    <div class="plan-now"><div><span class="meta">Your plan</span><b>${RELAY_PLAN.name} · $${RELAY_PLAN.price}/month · unlimited users</b><span class="${st.ok ? 'meta' : 'neg'}">${esc(line)}</span></div>
+    <div class="plan-now"><div><span class="meta">Your plan</span><b>${RELAY_PLAN.name} · $Unlimited users</b><span class="${st.ok ? 'meta' : 'neg'}">${esc(line)}</span></div>
       <a class="ghost-btn" href="${contactRelayHref(org.billing_status === 'trial' ? 'Subscribe to Relay' : 'Relay billing question')}">${org.billing_status === 'trial' ? 'Subscribe' : 'Contact Relay'}</a></div>
     ${!st.ok ? '<p class="meta">Your data is safe: you can still see everything, finish jobs in progress and record payments. Creating new work orders, estimates and invoices resumes as soon as your plan is active.</p>' : ''}
     <p class="meta">Billing is by invoice for now. Questions: <a href="mailto:${RELAY_PLAN.contact}">${RELAY_PLAN.contact}</a></p></div>`;
@@ -42,7 +43,7 @@ async function renderTrialBanner(){
   const { data: org } = await sb.from('organizations').select('billing_status, trial_ends_at, paid_through').eq('id', session.orgId).maybeSingle();
   let b = document.getElementById('trialBanner'); const st = billingState(org);
   let text = '', cls = '';
-  if(org && st.trial && st.days != null && st.days <= 7) text = `Your onboarding period ends in ${st.days} day${st.days === 1 ? '' : 's'}. Keep everything running for $${RELAY_PLAN.price}/month, unlimited users.`;
+  if(org && st.trial && st.days != null && st.days <= 7) text = `Your onboarding period ends in ${st.days} day${st.days === 1 ? '' : 's'}. Keep everything running for your agreed plan`;
   else if(st.due){ text = st.text; cls = 'warn'; }
   else if(!st.ok){ text = st.text + ' New work orders, estimates and invoices are paused — your data is safe.'; cls = 'stop'; }
   if(!text){ if(b) b.remove(); return; }
@@ -69,19 +70,8 @@ async function renderAdminPlans(){
   const money = n => '$' + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
   const tile = (label, value, sub, cls) => `<div class="kpi${cls ? ' ' + cls : ''}"><em>${label}</em><b>${value}</b>${sub ? `<span class="meta">${sub}</span>` : ''}</div>`;
   const names = list => list.slice(0, 6).map(o => esc(o.name)).join(', ') + (list.length > 6 ? ` +${list.length - 6} more` : '');
-  const revenueBox = document.getElementById('adminRevenueBox');
-  if(revenueBox) revenueBox.innerHTML = `<div class="section-head"><h2>Revenue</h2><span class="meta">$${RELAY_PLAN.price}/month per shop</span></div>
-    <div class="kpi-grid">
-      ${tile('Monthly revenue', money(paying.length * RELAY_PLAN.price), `${paying.length} paying shop${paying.length === 1 ? '' : 's'}`)}
-      ${tile('A year at this rate', money(paying.length * RELAY_PLAN.price * 12), 'if nobody leaves or joins')}
-      ${tile('Onboarding', String(onboarding.length), onboarding.length ? names(onboarding) : 'none waiting', onboarding.length ? 'warn' : '')}
-      ${tile('Complimentary', String(comp.length), comp.length ? names(comp) : 'none')}
-      ${tile('Payment late', String(late.length), late.length ? names(late) : 'nobody is late', late.length ? 'bad' : '')}
-      ${tile('Due within a week', String(dueSoon.length), dueSoon.length ? names(dueSoon) : 'nothing due')}
-    </div>
-    ${late.length ? `<p class="meta">Late: ${late.map(o => `${esc(o.name)} (${Math.abs(dayDiff(o.paid_through))} day${Math.abs(dayDiff(o.paid_through)) === 1 ? '' : 's'})`).join(' · ')}</p>` : ''}
-    ${onboarding.length ? `<p class="meta">Onboarding shops are not paying yet. Set them to <b>Active</b> below when you invoice them.</p>` : ''}`;
-  box.innerHTML = `<div class="section-head"><h2>Billing</h2><span class="meta">$${RELAY_PLAN.price}/month per shop · ${n('active')} active · ${n('trial')} onboarding · ${n('past_due')} past due · ${n('comp')} complimentary</span></div>
+  // The money summary lives on the Subscriptions tab, built from each shop's agreed price.
+  box.innerHTML = `<div class="section-head"><h2>Billing</h2><span class="meta">your agreed plan'active')} active · ${n('trial')} onboarding · ${n('past_due')} past due · ${n('comp')} complimentary</span></div>
     <div class="an-scroll"><table class="an-table admin-billing"><thead><tr><th>Shop</th><th>Status</th><th>Trial ends</th><th>Paid through</th><th>Note</th><th></th></tr></thead><tbody>
     ${orgs.map(o => { const st = billingState(o); return `<tr data-org="${o.id}"><td><b>${esc(o.name || '—')}</b>${o.status !== 'approved' ? ` <span class="rec-tag">${esc(o.status || '')}</span>` : ''}${!st.ok ? ' <span class="rec-tag warn">paused</span>' : ''}</td>
       <td><select data-f="status">${Object.entries(BILLING_LABEL).map(([k, l]) => `<option value="${k}" ${o.billing_status === k ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
@@ -105,9 +95,12 @@ function initPlansUI(){
   }
   if(session.role === 'admin'){
     const ov = document.getElementById('admin-overview');
-    if(ov && !document.getElementById('adminRevenueBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminRevenueBox"></div>');
+    // Billing lives on its own Subscriptions tab now, not on the Overview.
+    const subsPanel = document.getElementById('admin-subs');
+    if(subsPanel && !document.getElementById('adminPlansBox')) subsPanel.insertAdjacentHTML('beforeend', '<div class="section" id="adminPlansBox"></div>');
     if(ov && !document.getElementById('adminUsageBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminUsageBox"></div>');
     if(typeof renderShopUsage === 'function') renderShopUsage();
+    if(typeof renderSubscriptions === 'function') renderSubscriptions();
     if(ov && !document.getElementById('adminPlansBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminPlansBox"></div>');
     renderAdminPlans();
   }
