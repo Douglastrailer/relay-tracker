@@ -2436,3 +2436,20 @@ body:has(.offline-bar) main{ padding-bottom:calc(var(--gutter) + 72px + var(--of
 }
 .section-head{ padding-right:4px; }
 @media (max-width:760px){ body.in-app main, body.has-sidebar main{ padding-bottom:calc(var(--gutter) + 64px); } }
+
+/* ============================================================
+   NAVIGATION — nine destinations in the sidebar; the screens inside
+   one destination appear as sub-tabs across the top of the page.
+   ============================================================ */
+.dash-tabs.nav-grouped > .dash-tab:not(.nav-group-btn),
+.dash-tabs.nav-grouped > .nav-group,
+.dash-tabs.nav-grouped > .nav-more-toggle,
+.dash-tabs.nav-grouped > #navMore{ display:none !important; }
+.nav-groups{ display:flex; flex-direction:column; gap:2px; }
+.nav-subtabs{ display:flex; gap:4px; flex-wrap:wrap; margin:0 0 18px; padding-bottom:2px; border-bottom:1px solid var(--line); }
+.nav-sub{ min-height:44px; padding:8px 14px; border:none; border-bottom:2px solid transparent; border-radius:var(--r-md) var(--r-md) 0 0;
+  background:none; color:var(--ink-soft); font:inherit; font-weight:600; cursor:pointer; }
+.nav-sub:hover{ color:var(--accent); background:var(--accent-soft); }
+.nav-sub.active{ color:var(--accent); border-bottom-color:var(--accent); background:none; }
+.nav-sub-badge{ display:inline-block; min-width:20px; padding:0 6px; margin-left:4px; border-radius:999px; background:var(--accent); color:#fff; font-size:.72rem; font-weight:800; }
+@media (max-width:760px){ .nav-subtabs{ overflow-x:auto; flex-wrap:nowrap; } .nav-sub{ white-space:nowrap; } }

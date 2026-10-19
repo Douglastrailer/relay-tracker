@@ -1,6 +1,6 @@
-RelayFleet website - layout and placement
+RelayFleet website - navigation (UX overhaul Phase 3-4)
 
 Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R.
-No database or Edge Function changes in this update.
+No database or Edge Function changes.
 
-What changed: only ONE thing floats now (Ask Natasha) - "Tell Relay" moved into the ... menu; one layer order for the whole app so nothing covers anything else; the saved-on-this-phone bar pushes the button and messages up instead of hiding behind them; every screen keeps clear space at the bottom and right so no button hides under Natasha; one shape for every section heading; one spacing rhythm for every panel.
+What changed: the sidebar now has NINE destinations instead of sixteen, with no "More" menu. Screens that belong together appear as sub-tabs at the top of the page (Work orders holds All work orders, Requests, Board, Inspections, Completed). Estimates & invoices is now a destination of its own instead of being buried. Counts from hidden screens roll up onto their destination. Toolbar buttons that duplicated a sub-tab are gone. Every old screen is still reachable - nothing was deleted.

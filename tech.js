@@ -305,7 +305,8 @@ async function openSkillsEditor(mech){
   box.classList.remove('hidden'); box.scrollIntoView({ behavior:'smooth', block:'start' });
   document.getElementById('skClose').onclick = () => { box.innerHTML = ''; box.classList.add('hidden'); };
   document.getElementById('skAdd').onclick = async () => {
-    const v = document.getElementById('skNew').value.trim();
+    const field = document.getElementById('skNew'); if(!field) return;   // the panel was redrawn under this button
+    const v = field.value.trim();
     if(!v) return;
     if(!cat.includes(v)){
       const { error } = await sb.from('organizations').update({ skill_catalog: [...cat, v] }).eq('id', session.orgId);
