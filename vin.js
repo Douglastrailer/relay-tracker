@@ -21,11 +21,31 @@ function vinRemember(vin, label){
   try { const list = [{ vin, label }].concat(vinRecent().filter(x => x.vin !== vin)).slice(0, 8); localStorage.setItem(VIN_RECENT_KEY, JSON.stringify(list)); } catch(_){}
 }
 
+// Everyone using Relay gets VIN lookup. There is one #vinBox; it is moved into the right place
+// for whoever is signed in (shop, admin and fleet: a tab; mechanics: the slide-up sheet).
+function vinMount(holder){
+  const box = document.getElementById('vinBox'); if(!box || !holder) return;
+  if(box.parentNode !== holder) holder.appendChild(box);
+  renderVinPanel();
+  const i = document.getElementById('vinInput'); if(i && !('ontouchstart' in window)) setTimeout(() => i.focus(), 50);
+}
+function vinIsShop(){ return typeof session !== 'undefined' && session && session.role === 'shop'; }
+function openVinSheet(){
+  const box = document.getElementById('vinBox'); if(!box) return;
+  renderVinPanel();
+  if(typeof openFormSheet === 'function') openFormSheet('VIN lookup', [box]);
+}
+document.addEventListener('click', (e) => {
+  if(e.target.closest('[data-target="admin-vin"]')) vinMount(document.getElementById('adminVinHolder'));
+  if(e.target.closest('#fleetView [data-ftab="vin"]')) vinMount(document.getElementById('fp-vin'));
+  if(e.target.closest('#mechVinBtn')) openVinSheet();
+});
+
 function renderVinPanel(){
   const box = document.getElementById('vinBox'); if(!box) return;
   if(box.dataset.built) return;
   box.dataset.built = '1';
-  box.innerHTML = `<div class="section-head"><h2>VIN lookup</h2><span class="meta">Free, from the U.S. NHTSA vehicle database</span></div>
+  box.innerHTML = `<div class="section-head"><h2>VIN lookup</h2></div>
     <form class="vin-search" id="vinForm" autocomplete="off">
       <label for="vinInput" class="sr-only">VIN</label>
       <input id="vinInput" class="mono" maxlength="20" placeholder="Type or scan a 17-character VIN" spellcheck="false" autocapitalize="characters">
@@ -62,7 +82,7 @@ async function vinLookup(raw){
   // decode, our own units, in parallel
   const [dec, mine] = await Promise.all([
     vinDecodeFull(vin).then(d => ({ d }), e => ({ e })),
-    sb.from('units').select('id, unit_number, customer_id, year, make, model, active').eq('vin', vin).limit(5)
+    vinIsShop() ? sb.from('units').select('id, unit_number, customer_id, year, make, model, active').eq('vin', vin).limit(5) : Promise.resolve({ data: [] })
   ]);
   if(go) go.disabled = false;
   if(mySeq !== vinState.seq) return;   // a newer lookup has started
@@ -99,6 +119,7 @@ async function vinLookup(raw){
 }
 
 function vinUnitsHtml(units, customers, vin, x){
+  if(!vinIsShop()) return '';   // mechanics, fleets and admin see the vehicle and its recalls
   if(units.length) return `<div class="section-head" style="margin-top:18px;"><h3>Already in your units</h3></div><div class="rec-list">
     ${units.map(u => `<div class="rec-row-static"><div class="rec-main"><b>${esc(u.unit_number || 'Unit')}</b>${u.active ? '' : ' <span class="meta">(removed)</span>'}
       <div class="meta">${esc(customers[u.customer_id] || 'no customer')} · ${esc([u.year, u.make, u.model].filter(Boolean).join(' '))}</div></div>

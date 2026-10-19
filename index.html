@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=90"/>
+<link rel="stylesheet" href="style.css?v=91"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -420,6 +420,7 @@
         </div>
         <div class="gps-readout" id="gpsReadout">Turn on "Go live" and allow location access to start sharing your position.</div>
         <p class="privacy-note">Your location is only shared while you're marked live — visible to your shop and to the customer you're currently assigned to. Nobody else can see it, and it stops the moment you go offline. Your phone pauses location updates when Relay is closed or the screen is locked, so keep Relay open during a road call.</p>
+          <div class="job-actions"><button type="button" class="ghost-btn" id="mechVinBtn">VIN lookup</button></div>
         <div class="map-box" id="mechMap"></div>
       </div>
     </div>
@@ -819,6 +820,7 @@
       <button type="button" class="dash-tab fleet-tab" data-ftab="history" title="History"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg><span class="nav-label">History</span></button>
       <button type="button" class="dash-tab fleet-tab" data-ftab="invoices" title="Invoices"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></svg><span class="nav-label">Invoices</span></button>
       <div class="nav-group">Shops</div>
+      <button type="button" class="dash-tab fleet-tab" data-ftab="vin" title="VIN lookup"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M8 11h6M11 8v6"/></svg><span class="nav-label">VIN lookup</span></button>
       <button type="button" class="dash-tab fleet-tab" data-ftab="shops" title="My shops"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg><span class="nav-label">My shops</span></button>
       <button type="button" class="dash-tab fleet-tab" data-ftab="findshops" title="Find shops"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg><span class="nav-label">Find shops</span></button>
     </nav>
@@ -841,6 +843,7 @@
     </div>
 
     <div class="fleet-panel hidden" id="fp-findshops"></div>
+    <div class="fleet-panel hidden" id="fp-vin"></div>
     <div class="fleet-panel hidden" id="fp-history">
       <div class="section-head"><h2>Completed repairs</h2></div>
       <div id="fleetHistory"></div>
@@ -874,6 +877,7 @@
       <button class="dash-tab active" data-target="admin-overview" title="Overview" aria-current="page"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span class="nav-label">Overview</span></button>
       <button class="dash-tab" data-target="admin-requests" title="Requests"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><span class="nav-label">Requests</span> <span id="requestsBadge" class="req-badge hidden">0</span></button>
       <button class="dash-tab" data-target="admin-subs" title="Subscriptions">💳 <span class="nav-label">Subscriptions</span></button>
+      <button class="dash-tab" data-target="admin-vin" title="VIN lookup"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M8 11h6M11 8v6"/></svg><span class="nav-label">VIN lookup</span></button>
       <button class="dash-tab" data-target="admin-settings" title="Settings"><span class="nav-label">Settings</span></button>
       <button class="dash-tab" data-target="admin-accounts" title="Accounts"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="nav-label">Accounts</span></button>
       <div class="nav-group">Activity</div>
@@ -896,6 +900,9 @@
       </div>
     </div>
 
+    <div class="dash-panel hidden" id="admin-vin">
+      <div id="adminVinHolder"></div>
+    </div>
     <div class="dash-panel hidden" id="admin-settings">
       <div class="section" id="adminSettingsBox"></div>
     </div>
@@ -1036,7 +1043,7 @@
 <script src="map.js?v=4" defer></script>
 <script src="sheet.js?v=6" defer></script>
 <script src="parts.js?v=2" defer></script>
-<script src="vin.js?v=1" defer></script>
+<script src="vin.js?v=2" defer></script>
 <script src="migrate.js?v=1" defer></script>
 <script src="training.js?v=10" defer></script>
 <script src="ux.js?v=5" defer></script>

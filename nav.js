@@ -39,7 +39,7 @@ function navOpen(groupId, target){
   const want = target && tabs.includes(target) ? target : tabs[0];
   const btn = navTabButton(want); if(!btn) return;
   btn.click();
-  if(want === 'shop-vin' && typeof renderVinPanel === 'function'){ renderVinPanel(); const vi = document.getElementById('vinInput'); if(vi) setTimeout(() => vi.focus(), 50); }
+  if(want === 'shop-vin' && typeof vinMount === 'function') vinMount(document.getElementById('shop-vin'));
   try { localStorage.setItem('relay.nav.' + groupId, want); } catch(_){}
   navPaint(groupId, want);
 }

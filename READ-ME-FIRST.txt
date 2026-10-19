@@ -1,6 +1,12 @@
-RelayFleet website - VIN lookup
+RelayFleet website - VIN lookup for everyone
 
-Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R.
-No database or Edge Function changes for this. (If you have not yet done the last round - migration 0040 and the two subscription functions - do those first.)
+Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R. On phones, close Relay and reopen it.
+No database or Edge Function changes.
 
-What changed: a VIN lookup button in the menu, right after Customers & units. Type or scan a VIN: it is checked for typos, decoded from the free NHTSA database (year, make, model, GVWR, engine, horsepower, axles, brakes, fuel, transmission, where it was built), matched against your own units (with a link to repair history), and checked for safety recalls. "Add as a new unit" fills the unit form for you. Recent lookups are remembered on that computer.
+What changed: VIN lookup is now available to every account.
+- Shop staff: VIN lookup in the menu (as before).
+- Admin: a VIN lookup tab in the admin menu.
+- Fleet customers: a VIN lookup tab in the fleet portal menu.
+- Mechanics: a VIN lookup button on their screen; it opens in the slide-up sheet.
+Shop staff also see whether the VIN is one of their units and can add it; everyone sees the vehicle details and safety recalls.
+The "Free, from the U.S. NHTSA vehicle database" line under the heading has been removed.
