@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=88"/>
+<link rel="stylesheet" href="style.css?v=90"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -484,6 +484,7 @@
         <button class="dash-tab" data-target="shop-integrations" title="Integrations"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7H6a3 3 0 0 0 0 6h3M15 7h3a3 3 0 0 1 0 6h-3M8 10h8"/></svg><span class="nav-label">Integrations</span></button>
         <button class="dash-tab" data-target="shop-billing" title="Settings"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M8 7h4M8 11h4M8 15h4M2 21h20"/></svg><span class="nav-label">Settings</span></button>
       </div>
+      <button class="dash-tab nav-hidden" data-target="shop-vin" title="VIN lookup"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M8 11h6M11 8v6"/></svg><span class="nav-label">VIN lookup</span></button>
       <button class="dash-tab nav-hidden" data-target="shop-pastdue" title="Past due"><span class="nav-label">Past due</span><span class="nav-badge hidden" id="pastDueBadge"></span></button>
       <button class="dash-tab nav-hidden" data-target="shop-requests" title="Requests"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><span class="nav-label">Requests</span> <span id="workRequestsBadge" class="req-badge hidden">0</span></button>
       <button type="button" class="nav-foot nav-install hidden" title="Install the Relay app"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="nav-label">Install app</span></button>
@@ -552,6 +553,9 @@
       <div id="integrationsBox"></div>
     </div>
 
+    <div class="dash-panel hidden" id="shop-vin">
+      <div class="section" id="vinBox"></div>
+    </div>
     <div class="dash-panel hidden" id="shop-pastdue">
       <div class="section" id="overdueBox"></div>
     </div>
@@ -1032,11 +1036,12 @@
 <script src="map.js?v=4" defer></script>
 <script src="sheet.js?v=6" defer></script>
 <script src="parts.js?v=2" defer></script>
+<script src="vin.js?v=1" defer></script>
 <script src="migrate.js?v=1" defer></script>
-<script src="training.js?v=8" defer></script>
+<script src="training.js?v=10" defer></script>
 <script src="ux.js?v=5" defer></script>
 <script src="subs.js?v=2" defer></script>
-<script src="nav.js?v=3" defer></script>
+<script src="nav.js?v=5" defer></script>
 <script src="safety.js?v=3" defer></script>
 <script src="offline.js?v=1" defer></script>
 <script src="account.js?v=1" defer></script>

@@ -10,6 +10,8 @@ const NAV_GROUPS = [
   { id: 'work',      label: 'Work orders',         tabs: ['shop-jobs', 'shop-requests', 'shop-floor', 'shop-inspections', 'shop-history', 'shop-pastdue'] },
   { id: 'dispatch',  label: 'Dispatch',            tabs: ['shop-dispatch'] },
   { id: 'customers', label: 'Customers & units',   tabs: ['shop-customers', 'shop-units'] },
+  // shops asked for this: decode any VIN, see if it is already a unit, check recalls
+  { id: 'vin',       label: 'VIN lookup',          tabs: ['shop-vin'] },
   { id: 'parts',     label: 'Parts & inventory',   tabs: ['shop-inventory'] },
   { id: 'money',     label: 'Estimates & invoices',tabs: ['shop-invoices'] },
   { id: 'team',      label: 'Team & time',         tabs: ['shop-team', 'shop-time'] },
@@ -37,6 +39,7 @@ function navOpen(groupId, target){
   const want = target && tabs.includes(target) ? target : tabs[0];
   const btn = navTabButton(want); if(!btn) return;
   btn.click();
+  if(want === 'shop-vin' && typeof renderVinPanel === 'function'){ renderVinPanel(); const vi = document.getElementById('vinInput'); if(vi) setTimeout(() => vi.focus(), 50); }
   try { localStorage.setItem('relay.nav.' + groupId, want); } catch(_){}
   navPaint(groupId, want);
 }

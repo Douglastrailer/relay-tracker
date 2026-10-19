@@ -2459,3 +2459,24 @@ body:has(.offline-bar) main{ padding-bottom:calc(var(--gutter) + 72px + var(--of
 .subs-table td{ vertical-align:middle; }
 .subs-table input[type="date"]{ min-height:40px; }
 .badge.pending{ background:#FFF4E5; color:#8A5A00; }
+
+/* VIN lookup */
+.vin-search{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; max-width:720px; }
+.vin-search input{ flex:1 1 300px; min-height:48px; font-size:1.05rem; letter-spacing:.06em; }
+.vin-card{ margin-top:14px; max-width:880px; }
+.vin-title{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }
+.vin-title b{ font-size:1.2rem; }
+.vin-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:10px 18px; margin:0; }
+.vin-grid div{ border-bottom:1px solid var(--line); padding-bottom:6px; }
+.vin-grid dt{ color:var(--ink-soft); font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; }
+.vin-grid dd{ margin:2px 0 0; font-weight:600; }
+.vin-recall{ border:1px solid var(--line); border-radius:var(--r-md); padding:10px 14px; background:var(--panel); margin-bottom:6px; }
+.vin-recall summary{ cursor:pointer; }
+.sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+/* the VIN form's own buttons: one teal primary action, a secondary Scan, both full height */
+.vin-search button{ min-height:48px; padding:0 20px; border-radius:var(--r-md); font:inherit; font-weight:700; cursor:pointer; }
+.vin-search button[type="submit"]{ background:var(--accent); color:#fff; border:1px solid var(--accent); }
+.vin-search button[type="submit"]:hover{ filter:brightness(1.08); }
+.vin-search button[type="submit"]:disabled{ opacity:.6; cursor:default; }
+.vin-search input::placeholder{ letter-spacing:normal; font-family:inherit; }

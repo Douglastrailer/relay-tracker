@@ -1,14 +1,6 @@
-RelayFleet website - request messages, invoices and billing
+RelayFleet website - VIN lookup
 
-ORDER:
- 1. Run migration 0040_request_messages_and_billing.sql in the Supabase SQL Editor (needs 0039).
- 2. Upload the NEW and changed functions from RelayFleet-Functions.zip: send-subscription-invoice (replace) and get-subscription-pdf (new).
- 3. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
+Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R.
+No database or Edge Function changes for this. (If you have not yet done the last round - migration 0040 and the two subscription functions - do those first.)
 
-What changed:
-- A customer who submits a request with an email gets a message when it is received, when it is approved (they can go ahead), and when it is declined WITH the reason.
-- Declining needs a reason. Common reasons can be tapped; the customer reads what is written.
-- Admin > Subscriptions: each shop shows its price, paid-through date, active or stopped, months paid, total paid and owed, in separate columns. Stop and Start keep history.
-- Each shop has a billing sheet: every invoice, View (digital), PDF, Edit (figures lock once paid, note stays editable), Mark paid, Email, Void.
-- Admin > Settings: every subscription invoice across all shops, filterable by status and shop, and Relays own details printed on invoices.
-- Invoice emails now carry the PDF attached.
+What changed: a VIN lookup button in the menu, right after Customers & units. Type or scan a VIN: it is checked for typos, decoded from the free NHTSA database (year, make, model, GVWR, engine, horsepower, axles, brakes, fuel, transmission, where it was built), matched against your own units (with a link to repair history), and checked for safety recalls. "Add as a new unit" fills the unit form for you. Recent lookups are remembered on that computer.
