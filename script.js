@@ -2089,12 +2089,9 @@ async function refreshWorkRequests(){
     if(error || !data){ box.innerHTML = '<span class="meta">Photos could not be loaded.</span>'; return; }
     box.innerHTML = data.filter(d => d && d.signedUrl).map(d => `<a href="${esc(d.signedUrl)}" target="_blank" rel="noopener"><img src="${esc(d.signedUrl)}" alt="Photo from the customer" loading="lazy"></a>`).join('') || '<span class="meta">Photos could not be loaded.</span>';
   });
+  // Declining needs a reason: the customer is emailed it. See openDeclineRequest (safety.js).
   list.querySelectorAll('.wreq-decline-btn').forEach(btn=>{
-    btn.onclick = async ()=>{
-      const { error } = await sb.from('work_requests').update({ status:'declined', reviewed_at:new Date().toISOString() }).eq('id', Number(btn.dataset.id));
-      if(error){ alert('Could not decline: ' + error.message); return; }
-      refreshWorkRequests();
-    };
+    btn.onclick = ()=> { if(typeof openDeclineRequest === 'function') openDeclineRequest(Number(btn.dataset.id), refreshWorkRequests); };
   });
   list.querySelectorAll('.wreq-accept-btn').forEach(btn=>{
     btn.onclick = ()=>{

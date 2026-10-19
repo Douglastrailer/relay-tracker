@@ -2453,3 +2453,9 @@ body:has(.offline-bar) main{ padding-bottom:calc(var(--gutter) + 72px + var(--of
 .nav-sub.active{ color:var(--accent); border-bottom-color:var(--accent); background:none; }
 .nav-sub-badge{ display:inline-block; min-width:20px; padding:0 6px; margin-left:4px; border-radius:999px; background:var(--accent); color:#fff; font-size:.72rem; font-weight:800; }
 @media (max-width:760px){ .nav-subtabs{ overflow-x:auto; flex-wrap:nowrap; } .nav-sub{ white-space:nowrap; } }
+
+/* invoice view and the subscription table */
+.inv-head{ display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+.subs-table td{ vertical-align:middle; }
+.subs-table input[type="date"]{ min-height:40px; }
+.badge.pending{ background:#FFF4E5; color:#8A5A00; }

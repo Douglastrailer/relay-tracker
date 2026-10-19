@@ -119,10 +119,11 @@ function initPlansUI(){
     const ov = document.getElementById('admin-overview');
     // Billing lives on its own Subscriptions tab now, not on the Overview.
     const subsPanel = document.getElementById('admin-subs');
-    if(subsPanel && !document.getElementById('adminPlansBox')) subsPanel.insertAdjacentHTML('beforeend', '<div class="section" id="adminPlansBox"></div>');
+    // The old billing box duplicated the Subscriptions screen; that screen is now the one place for billing.
     if(ov && !document.getElementById('adminUsageBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminUsageBox"></div>');
     if(typeof renderShopUsage === 'function') renderShopUsage();
     if(typeof renderSubscriptions === 'function') renderSubscriptions();
+    if(typeof renderAdminSettings === 'function') renderAdminSettings();
     if(ov && !document.getElementById('adminPlansBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminPlansBox"></div>');
     renderAdminPlans();
   }

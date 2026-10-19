@@ -147,3 +147,29 @@ async function renderShopUsage(){
       <td>${r.last_work_order ? esc(new Date(r.last_work_order).toLocaleDateString()) + (Number(r.quiet_days) > 14 ? ` <span class="meta">(${esc(String(r.quiet_days))} days ago)</span>` : '') : '<span class="meta">never</span>'}</td></tr>`).join('')}
     </tbody></table></div>`;
 }
+
+// ---------- Declining a service request: the reason is required, and the customer is emailed it ----------
+const DECLINE_REASONS = ['We are fully booked right now', 'We cannot reach that location', 'We do not service that type of vehicle', 'Please call us to talk it through'];
+function openDeclineRequest(requestId, onDone){
+  const body = document.createElement('div');
+  body.innerHTML = `<div class="card rec-form"><div class="rec-form-head"><h3>Decline this request</h3></div>
+    <p class="meta">The customer is emailed straight away with this reason, so keep it short and kind.</p>
+    <div class="job-actions" id="drQuick" style="flex-wrap:wrap;">${DECLINE_REASONS.map(r => `<button type="button" class="ghost-btn" data-reason="${esc(r)}">${esc(r)}</button>`).join('')}</div>
+    <div class="field"><label for="drReason">Reason for the customer</label><textarea id="drReason" rows="3" maxlength="300" placeholder="e.g. We are fully booked this week — please try us again next Monday."></textarea></div>
+    <p class="form-error" id="drErr"></p>
+    <div class="job-actions"><button type="button" id="drSend">Decline and email the customer</button></div></div>`;
+  if(typeof openFormSheet === 'function') openFormSheet('Decline request', [body]);
+  body.querySelectorAll('[data-reason]').forEach(b => b.onclick = () => { body.querySelector('#drReason').value = b.dataset.reason; body.querySelector('#drReason').focus(); });
+  body.querySelector('#drSend').onclick = async () => {
+    const reason = (body.querySelector('#drReason').value || '').trim();
+    if(reason.length < 3){ body.querySelector('#drErr').textContent = 'Write a short reason for the customer first.'; return; }
+    const btn = body.querySelector('#drSend'); btn.disabled = true; btn.textContent = 'Sending…';
+    const { error } = await sb.rpc('respond_to_request', { p_request: requestId, p_action: 'decline', p_reason: reason });
+    btn.disabled = false; btn.textContent = 'Decline and email the customer';
+    if(error){ body.querySelector('#drErr').textContent = error.message; return; }
+    if(typeof notifyKick === 'function') notifyKick();
+    if(typeof closeFormSheet === 'function') closeFormSheet();
+    if(typeof recordsToast === 'function') recordsToast('Declined — the customer has been emailed the reason');
+    if(typeof onDone === 'function') onDone();
+  };
+}
