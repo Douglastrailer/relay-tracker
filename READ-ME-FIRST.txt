@@ -1,8 +1,8 @@
-RelayFleet website - complete set (the safety net)
+RelayFleet website - complete set (speed)
 
 ORDER:
- 1. Run migration 0037_safety_net.sql in the Supabase SQL Editor (needs 0036).
+ 1. Run migration 0038_performance.sql in the Supabase SQL Editor (indexes only - no data changes, safe any time).
  2. Upload ALL files in this folder to GitHub and commit. Refresh with Cmd+Shift+R.
 
-New: Recently removed (put things back) in Settings; Past due invoices with weekly reminders on the Dashboard; Join duplicate customers; a "Tell Relay" button on every screen; Shop activity for the Relay admin.
+What changed: all 40 scripts now download in parallel with the page instead of one after another; the shop and admin dashboards load their data together instead of in sequence; platform-wide lists are capped; 10 new indexes for queries that were scanning whole tables.
 No Edge Function changes.

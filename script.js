@@ -299,12 +299,14 @@ async function populateFleetSelect(){
 }
 
 async function fetchAllProfiles(){
-  const { data, error } = await sb.from('profiles').select('id, name, active, company, org_id, role, email, phone').order('created_at', { ascending:true });
+  // Capped: the admin list is paged in the UI, so pulling every account on the platform
+  // into the browser is never needed. The exact total comes from a count-only query.
+  const { data, error } = await sb.from('profiles').select('id, name, active, company, org_id, role, email, phone').order('created_at', { ascending:true }).limit(1000);
   if(error){ console.error('fetchAllProfiles', error); return []; }
   return data || [];
 }
 async function fetchAllOrganizations(){
-  const { data, error } = await sb.from('organizations').select('id, name, status, created_at');
+  const { data, error } = await sb.from('organizations').select('id, name, status, created_at').limit(1000);
   if(error){ console.error('fetchAllOrganizations', error); return []; }
   return data || [];
 }
@@ -605,7 +607,8 @@ async function fetchLocation(mechanicId){
 async function fetchLocationsFor(mechanicIds){
   const map = {};
   if(!mechanicIds || mechanicIds.length === 0) return map;
-  const { data, error } = await sb.from('locations').select('mechanic_id, lat, lng, updated_at, status').in('mechanic_id', mechanicIds);
+  if(!mechanicIds || !mechanicIds.length) return {};
+  const { data, error } = await sb.from('locations').select('mechanic_id, lat, lng, updated_at, status').in('mechanic_id', mechanicIds.slice(0, 500));
   if(error){ console.error('fetchLocationsFor', error); return map; }
   (data || []).forEach(row=>{
     map[row.mechanic_id] = { lat:row.lat, lng:row.lng, updatedAt:new Date(row.updated_at).getTime(), status:row.status };
@@ -2673,8 +2676,8 @@ function renderAnalytics(jobs, mechanics, mechName){
 }
 
 async function refreshShopData(){
-  const mechanics = await fetchOrgMechanics();
-  const active = await fetchActiveJobs({ orgId: session.orgId });
+  // Mechanics and jobs do not depend on each other: load them together, not one after the other.
+  const [mechanics, active] = await Promise.all([fetchOrgMechanics(), fetchActiveJobs({ orgId: session.orgId })]);
   const locByMechanic = await fetchLocationsFor(mechanics.map(m=>m.id));
 
   let liveCount = 0;
@@ -2865,15 +2868,20 @@ async function refreshAdminData(){
   if(typeof renderAdminShopMap === 'function') renderAdminShopMap();
   if(typeof initPlansUI === 'function') initPlansUI();   // Billing section (it only ran for shops before)
   if(typeof renderAdminPlans === 'function') renderAdminPlans();
-  const profiles = await fetchAllProfiles();
-  const orgs = await fetchAllOrganizations();
+  // Accounts, shops, active jobs and the completed count are independent: load them together.
+  const [profiles, orgs, activeJobs, completeRes] = await Promise.all([
+    fetchAllProfiles(),
+    fetchAllOrganizations(),
+    fetchActiveJobs(),
+    sb.from('jobs').select('*', { count:'exact', head:true }).in('status', DONE_STATUSES)
+  ]);
   const mechanics = profiles.filter(p=>p.role==='mechanic');
   const orgName = id => (orgs.find(o=>o.id===id) || {}).name || '—';
   const locByMechanic = await fetchLocationsFor(mechanics.map(m=>m.id));
 
   // Fleet managers can belong to multiple shops now — build the full list
   // per fleet manager instead of just showing their first/primary one.
-  const { data: allFleetLinks } = await sb.from('fleet_shop_links').select('fleet_id, org_id');
+  const { data: allFleetLinks } = await sb.from('fleet_shop_links').select('fleet_id, org_id').limit(5000);
   const fleetShopsById = {};
   (allFleetLinks || []).forEach(l=>{
     if(!fleetShopsById[l.fleet_id]) fleetShopsById[l.fleet_id] = [];
@@ -2886,12 +2894,11 @@ async function refreshAdminData(){
     const loc = locByMechanic[m.id];
     if(loc && Date.now() - loc.updatedAt < 30000) liveCount++;
   }
-  const activeJobs = await fetchActiveJobs();
   // Exact counts via a head-only query — gets the real total without
   // downloading every row, which matters once job history is in the
   // thousands. This is what Phase 15 of the audit asks for: efficient
   // aggregation instead of scanning the whole table into the browser.
-  const { count: completeCount } = await sb.from('jobs').select('*', { count:'exact', head:true }).in('status', DONE_STATUSES);
+  const completeCount = completeRes.count;
   document.getElementById('adminStats').innerHTML = `
     <div class="stat-box"><b>${profiles.length}</b><span>Total accounts</span></div>
     <div class="stat-box"><b>${liveCount}</b><span>Mechanics live now</span></div>
