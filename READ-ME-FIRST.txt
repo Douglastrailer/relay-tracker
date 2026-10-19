@@ -1,8 +1,6 @@
-RelayFleet website - complete set (speed)
+RelayFleet website - layout and placement
 
-ORDER:
- 1. Run migration 0038_performance.sql in the Supabase SQL Editor (indexes only - no data changes, safe any time).
- 2. Upload ALL files in this folder to GitHub and commit. Refresh with Cmd+Shift+R.
+Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R.
+No database or Edge Function changes in this update.
 
-What changed: all 40 scripts now download in parallel with the page instead of one after another; the shop and admin dashboards load their data together instead of in sequence; platform-wide lists are capped; 10 new indexes for queries that were scanning whole tables.
-No Edge Function changes.
+What changed: only ONE thing floats now (Ask Natasha) - "Tell Relay" moved into the ... menu; one layer order for the whole app so nothing covers anything else; the saved-on-this-phone bar pushes the button and messages up instead of hiding behind them; every screen keeps clear space at the bottom and right so no button hides under Natasha; one shape for every section heading; one spacing rhythm for every panel.

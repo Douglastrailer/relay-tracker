@@ -109,13 +109,16 @@ function offlineFlushSoon(ms){ clearTimeout(offlineSoon); offlineSoon = setTimeo
 function offlineRenderBanner(){
   const n = offlineCount(), off = typeof navigator !== 'undefined' && navigator.onLine === false;
   let bar = document.getElementById('offlineBar');
-  if(!n && !off){ if(bar) bar.remove(); return; }
+  if(!n && !off){ if(bar) bar.remove(); document.body.classList.remove('has-offline-bar'); document.documentElement.style.removeProperty('--offline-bar-h'); return; }
   if(!bar){
     bar = document.createElement('div'); bar.id = 'offlineBar'; bar.className = 'offline-bar'; bar.setAttribute('role', 'status');
     document.body.appendChild(bar);
     bar.addEventListener('click', (e) => { if(e.target.closest('[data-offline-send]')) offlineFlush(); });
   }
   bar.classList.toggle('is-off', off);
+  // tell the page the bar is there, so the floating button and toasts move up instead of hiding behind it
+  document.body.classList.add('has-offline-bar');
+  requestAnimationFrame(() => document.documentElement.style.setProperty('--offline-bar-h', bar.offsetHeight ? bar.offsetHeight + 'px' : '48px'));
   const what = n === 1 ? '1 thing' : n + ' things';
   bar.innerHTML = off
     ? `<span>No signal. ${n ? what + ' saved on this phone — they will send when you are back in range.' : 'Your work is saved on this phone.'}</span>`

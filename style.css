@@ -2350,8 +2350,89 @@ input:focus-visible, select:focus-visible, textarea:focus-visible{ outline-offse
 #mfaPrompt h3{ margin:0 0 4px; }
 
 /* safety net */
-.feedback-btn{ position:fixed; right:14px; bottom:76px; z-index:55; min-height:40px; padding:6px 16px; border:1px solid var(--line-strong); border-radius:999px; background:var(--panel); color:var(--ink-soft); font:inherit; font-size:.85rem; font-weight:700; box-shadow:0 4px 14px rgba(14,42,49,.12); cursor:pointer; }
-.feedback-btn:hover, .feedback-btn:focus-visible{ border-color:var(--accent); color:var(--accent); }
 .rec-row-static{ display:flex; gap:12px; align-items:center; justify-content:space-between; padding:10px 14px; border:1px solid var(--line); border-radius:var(--r-md); background:var(--panel); margin-bottom:6px; }
 .rec-subhead{ margin:14px 0 6px; font-size:.95rem; }
-@media (max-width:760px){ .feedback-btn{ bottom:auto; top:70px; right:10px; } }
+@media (max-width:760px){ }
+
+/* ============================================================
+   LAYOUT ORDER — one rule for the whole app, so nothing collides.
+   Floating things sit in ONE stack in the bottom-right corner, in a fixed order,
+   and every overlay uses a layer from this list instead of inventing a number.
+   Only Natasha floats on her own: she is the one primary action (one per screen).
+   ============================================================ */
+:root{
+  --z-bar: 1200;        /* the saved-on-this-phone bar */
+  --z-fab: 1250;        /* Natasha — the single floating action */
+  --z-panel: 1300;      /* a panel she opens */
+  --z-toast: 1400;      /* short messages */
+  --z-sheet: 2900;      /* the blurred form sheet */
+  --z-viewer: 3000;     /* full-screen PDF viewer */
+  --gutter: 20px;       /* the one distance from the screen edge */
+  --stack-gap: 10px;
+}
+/* the corner stack: items sit above one another, never on top of one another */
+.assist-fab{ right:var(--gutter) !important; bottom:var(--gutter) !important; z-index:var(--z-fab) !important; }
+.assist-panel{ right:var(--gutter) !important; z-index:var(--z-panel) !important; }
+/* The bar is a sibling in the page, so this works whether or not any script has run:
+   if an offline bar exists anywhere, the floating button and toasts sit above it. */
+body:has(.offline-bar) .assist-fab{ bottom:calc(var(--gutter) + var(--offline-bar-h, 56px)) !important; }
+body:has(.offline-bar) .records-toast, body:has(.offline-bar) .complete-toast{ bottom:calc(24px + var(--offline-bar-h, 56px)); }
+body.has-offline-bar .assist-fab{ bottom:calc(var(--gutter) + var(--offline-bar-h, 56px)) !important; }   /* older browsers without :has */
+.offline-bar{ z-index:var(--z-bar) !important; }
+.records-toast, .complete-toast{ z-index:var(--z-toast) !important; }
+body.has-offline-bar .records-toast, body.has-offline-bar .complete-toast{ bottom:calc(24px + var(--offline-bar-h, 48px)); }
+.form-overlay{ z-index:var(--z-sheet) !important; }
+.pdf-overlay{ z-index:var(--z-viewer) !important; }
+
+/* "Tell Relay" is no longer a floating button: it lives in the ⋯ menu with the other account items */
+
+/* ============================================================
+   SECTION HEADS — one shape everywhere: title on the left, a quiet
+   detail next to it, actions pushed to the right.
+   ============================================================ */
+.section-head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.section-head h2, .section-head h3{ margin:0; }
+.section-head > .meta{ color:var(--ink-soft); font-size:.85rem; }
+.section-head > button, .section-head > select, .section-head > a.ghost-btn,
+.section-head > .ghost-btn, .section-head > .text-btn{ margin-left:auto; }
+.section-head > button ~ button, .section-head > button ~ select{ margin-left:0; }   /* a second action sits beside the first */
+
+/* ============================================================
+   SPACING — every panel and section uses the same rhythm, so pages
+   that were built at different times line up with each other.
+   ============================================================ */
+.dash-panel > .section, .fleet-panel > .section{ margin-bottom:20px; }
+.dash-panel > .section:last-child, .fleet-panel > .section:last-child{ margin-bottom:0; }
+.section > p.meta:first-of-type{ margin-top:-4px; }
+.job-actions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px; }
+.rec-toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+.rec-toolbar > input[type="search"]{ flex:1 1 260px; }
+.rec-toolbar > button:last-child{ margin-left:auto; }
+
+/* ============================================================
+   BUTTONS — three kinds only. Primary (one per area), secondary, and
+   a plain text action. The old names are kept so nothing breaks.
+   ============================================================ */
+.btn-ghost, .lx-btn-ghost-light{ min-height:44px; padding:8px 16px; border:1px solid var(--line-strong); border-radius:var(--r-md); background:var(--panel); color:var(--ink); font:inherit; font-weight:600; cursor:pointer; }
+.btn-ghost:hover, .ghost-btn:hover{ border-color:var(--accent); color:var(--accent); }
+.text-btn{ min-height:40px; }
+
+/* an item in the ⋯ menu — the same shape as the others there */
+.menu-item{ display:block; width:100%; text-align:left; min-height:44px; padding:10px 12px; border:none; background:none; color:var(--ink); font:inherit; cursor:pointer; }
+.menu-item:hover, .menu-item:focus-visible{ background:var(--accent-soft); color:var(--accent); }
+
+/* A floating button covers whatever is underneath it, so the page keeps a clear strip
+   at the bottom. Without this the last row of any screen sits under Natasha. */
+body.in-app main, body.has-sidebar main{ padding-bottom:calc(var(--gutter) + 72px); }
+body:has(.offline-bar) main{ padding-bottom:calc(var(--gutter) + 72px + var(--offline-bar-h, 56px)); }
+/* Scrolling brings different rows under the button, so a bottom gap is not enough:
+   tables and lists keep a clear channel down the right edge where the button sits. */
+.cw-wrap, .rec-list, .inv-row, .job-actions{ padding-right:4px; }
+/* a card that sits in the bottom-right corner keeps its text out from under the button too */
+.dash-panel > .section:last-child, .fleet-panel > .section:last-child{ padding-bottom:12px; }
+@media (min-width:761px){ .dash-panel .section:last-child p:last-child, .dash-panel .section:last-child .meta:last-child{ padding-right:96px; } }
+@media (min-width:761px){
+  .cw-table td:last-child, .cw-table th:last-child{ padding-right:84px; }
+}
+.section-head{ padding-right:4px; }
+@media (max-width:760px){ body.in-app main, body.has-sidebar main{ padding-bottom:calc(var(--gutter) + 64px); } }

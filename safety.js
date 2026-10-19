@@ -95,31 +95,35 @@ function openMergeCustomers(keepId){
 
 // ---------- Tell Relay ----------
 function initFeedbackUI(){
-  if(!session || !session.id || document.getElementById('feedbackBtn')) return;
+  if(!session || !session.id) return;
+  // It belongs with the other account items in the ⋯ menu, not floating over the work.
+  const menu = document.getElementById('menuLang') || document.getElementById('logoutBtn');
+  if(!menu || document.getElementById('feedbackBtn')) return;
   const btn = document.createElement('button');
-  btn.type = 'button'; btn.id = 'feedbackBtn'; btn.className = 'feedback-btn'; btn.textContent = 'Tell Relay';
-  btn.title = 'Something wrong, confusing or missing? Tell us.';
-  document.body.appendChild(btn);
-  btn.onclick = () => {
-    const body = document.createElement('div');
-    body.innerHTML = `<div class="card rec-form"><div class="rec-form-head"><h3>Tell Relay</h3></div>
-      <p class="meta">Something broken, confusing or missing? A sentence is plenty. We read every one.</p>
-      <div class="field"><label for="fbMsg">What happened?</label><textarea id="fbMsg" rows="4" maxlength="2000"></textarea></div>
-      <p class="form-error" id="fbErr"></p>
-      <div class="job-actions"><button type="button" id="fbSend">Send</button></div></div>`;
-    if(typeof openFormSheet === 'function') openFormSheet('Tell Relay', [body]);
-    const ta = body.querySelector('#fbMsg'); if(ta) ta.focus();
-    body.querySelector('#fbSend').onclick = async () => {
-      const msg = (body.querySelector('#fbMsg').value || '').trim();
-      if(msg.length < 2){ body.querySelector('#fbErr').textContent = 'Write a little more.'; return; }
-      const b = body.querySelector('#fbSend'); b.disabled = true; b.textContent = 'Sending…';
-      const page = (document.querySelector('.dash-tab.active') || {}).title || document.title;
-      const { error } = await sb.rpc('send_feedback', { p_message: msg, p_page: page });
-      b.disabled = false; b.textContent = 'Send';
-      if(error){ body.querySelector('#fbErr').textContent = error.message; return; }
-      if(typeof closeFormSheet === 'function') closeFormSheet();
-      if(typeof recordsToast === 'function') recordsToast('Thank you — that reached Relay');
-    };
+  btn.type = 'button'; btn.id = 'feedbackBtn'; btn.className = 'menu-item';
+  btn.textContent = 'Tell Relay'; btn.title = 'Something wrong, confusing or missing? Tell us.';
+  menu.parentNode.insertBefore(btn, menu.id === 'menuLang' ? menu : menu);
+  btn.onclick = () => openFeedbackSheet();
+}
+function openFeedbackSheet(){
+  const body = document.createElement('div');
+  body.innerHTML = `<div class="card rec-form"><div class="rec-form-head"><h3>Tell Relay</h3></div>
+    <p class="meta">Something broken, confusing or missing? A sentence is plenty. We read every one.</p>
+    <div class="field"><label for="fbMsg">What happened?</label><textarea id="fbMsg" rows="4" maxlength="2000"></textarea></div>
+    <p class="form-error" id="fbErr"></p>
+    <div class="job-actions"><button type="button" id="fbSend">Send</button></div></div>`;
+  if(typeof openFormSheet === 'function') openFormSheet('Tell Relay', [body]);
+  const ta = body.querySelector('#fbMsg'); if(ta) ta.focus();
+  body.querySelector('#fbSend').onclick = async () => {
+    const msg = (body.querySelector('#fbMsg').value || '').trim();
+    if(msg.length < 2){ body.querySelector('#fbErr').textContent = 'Write a little more.'; return; }
+    const b = body.querySelector('#fbSend'); b.disabled = true; b.textContent = 'Sending…';
+    const page = (document.querySelector('.dash-tab.active') || {}).title || document.title;
+    const { error } = await sb.rpc('send_feedback', { p_message: msg, p_page: page });
+    b.disabled = false; b.textContent = 'Send';
+    if(error){ body.querySelector('#fbErr').textContent = error.message; return; }
+    if(typeof closeFormSheet === 'function') closeFormSheet();
+    if(typeof recordsToast === 'function') recordsToast('Thank you — that reached Relay');
   };
 }
 
