@@ -298,6 +298,7 @@ async function renderAdminSettings(){
       <div class="rec-grid">
         <div class="field"><label for="pfName">Company name on invoices</label><input id="pfName" required maxlength="120" value="${esc(settings.legal_name || '')}"></div>
         <div class="field"><label for="pfEmail">Billing email</label><input id="pfEmail" type="email" maxlength="120" value="${esc(settings.email || '')}"></div>
+        <div class="field"><label for="pfAlert">Email me new feedback at</label><input id="pfAlert" type="email" maxlength="120" value="${esc(settings.alert_email || '')}" placeholder="the billing email, if left empty"></div>
         <div class="field rec-span"><label for="pfAddress">Address</label><input id="pfAddress" maxlength="200" value="${esc(settings.address || '')}"></div>
         <div class="field"><label for="pfPhone">Phone</label><input id="pfPhone" maxlength="40" value="${esc(settings.phone || '')}"></div>
         <div class="field"><label for="pfDue">Default days to pay</label><input id="pfDue" type="number" min="0" max="90" value="${settings.default_due_days == null ? 14 : settings.default_due_days}"></div>
@@ -314,7 +315,7 @@ async function renderAdminSettings(){
       p_legal_name: box.querySelector('#pfName').value, p_address: box.querySelector('#pfAddress').value || null,
       p_email: box.querySelector('#pfEmail').value || null, p_phone: box.querySelector('#pfPhone').value || null,
       p_payment_instructions: box.querySelector('#pfPay').value || null, p_default_due_days: Number(box.querySelector('#pfDue').value) || 14,
-      p_default_note: box.querySelector('#pfNote').value || null });
+      p_default_note: box.querySelector('#pfNote').value || null, p_alert_email: box.querySelector('#pfAlert').value || null });
     btn.disabled = false;
     if(error){ box.querySelector('#pfErr').textContent = error.message; return; }
     subState.settings = null; recordsToast('Details saved');

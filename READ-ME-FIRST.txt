@@ -1,12 +1,7 @@
-RelayFleet website - VIN lookup for everyone
+RelayFleet website - reply to feedback from Relay, and alerts for new notes
 
-Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R. On phones, close Relay and reopen it.
-No database or Edge Function changes.
-
-What changed: VIN lookup is now available to every account.
-- Shop staff: VIN lookup in the menu (as before).
-- Admin: a VIN lookup tab in the admin menu.
-- Fleet customers: a VIN lookup tab in the fleet portal menu.
-- Mechanics: a VIN lookup button on their screen; it opens in the slide-up sheet.
-Shop staff also see whether the VIN is one of their units and can add it; everyone sees the vehicle details and safety recalls.
-The "Free, from the U.S. NHTSA vehicle database" line under the heading has been removed.
+ORDER:
+ 1. Run migration 0041_feedback_replies.sql in the Supabase SQL Editor (needs 0040).
+ 2. Create the Edge Function relay-feedback (two files: index.ts and feedback-core.ts).
+ 3. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
+ 4. Admin > Settings: fill in "Email me new feedback at" (or leave it empty to use the billing email).

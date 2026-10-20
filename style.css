@@ -2480,3 +2480,12 @@ body:has(.offline-bar) main{ padding-bottom:calc(var(--gutter) + 72px + var(--of
 .vin-search button[type="submit"]:hover{ filter:brightness(1.08); }
 .vin-search button[type="submit"]:disabled{ opacity:.6; cursor:default; }
 .vin-search input::placeholder{ letter-spacing:normal; font-family:inherit; }
+
+/* Feedback notes (admin) */
+.fb-note{ margin-bottom:10px; }
+.fb-note.is-handled{ opacity:.72; }
+.fb-head{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+.fb-msg{ white-space:pre-wrap; margin:10px 0 0; font-size:1rem; line-height:1.5; }
+
+.fb-reply{ margin:10px 0 0 14px; padding:8px 12px; border-left:3px solid var(--accent); background:var(--accent-soft); border-radius:0 var(--r-md) var(--r-md) 0; }
+.fb-quote{ margin:0 0 12px; padding:10px 14px; border-left:3px solid var(--line-strong); background:var(--bg, #F3F5F7); white-space:pre-wrap; }

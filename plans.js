@@ -124,6 +124,7 @@ function initPlansUI(){
     if(typeof renderShopUsage === 'function') renderShopUsage();
     if(typeof renderSubscriptions === 'function') renderSubscriptions();
     if(typeof renderAdminSettings === 'function') renderAdminSettings();
+    if(typeof renderAdminFeedback === 'function') renderAdminFeedback();   // also fills the count on the Feedback tab
     if(ov && !document.getElementById('adminPlansBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminPlansBox"></div>');
     renderAdminPlans();
   }

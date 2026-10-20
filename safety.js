@@ -121,9 +121,11 @@ function openFeedbackSheet(){
     if(msg.length < 2){ body.querySelector('#fbErr').textContent = 'Write a little more.'; return; }
     const b = body.querySelector('#fbSend'); b.disabled = true; b.textContent = 'Sending…';
     const page = (document.querySelector('.dash-tab.active') || {}).title || document.title;
-    const { error } = await sb.rpc('send_feedback', { p_message: msg, p_page: page });
+    const { data: noteId, error } = await sb.rpc('send_feedback', { p_message: msg, p_page: page });
     b.disabled = false; b.textContent = 'Send';
     if(error){ body.querySelector('#fbErr').textContent = error.message; return; }
+    // tell Relay by email; if that fails the note is still saved and shows in Admin → Feedback
+    if(noteId) sb.functions.invoke('relay-feedback', { body: { action: 'alert', feedbackId: noteId } }).catch(() => {});
     if(typeof closeFormSheet === 'function') closeFormSheet();
     if(typeof recordsToast === 'function') recordsToast('Thank you — that reached Relay');
   };
@@ -171,5 +173,99 @@ function openDeclineRequest(requestId, onDone){
     if(typeof closeFormSheet === 'function') closeFormSheet();
     if(typeof recordsToast === 'function') recordsToast('Declined — the customer has been emailed the reason');
     if(typeof onDone === 'function') onDone();
+  };
+}
+
+// ---------- For Relay: reading and answering "Tell Relay" notes ----------
+// Every note from a shop owner, office staff, mechanic or fleet customer lands here.
+// Reply opens your own email app, addressed to them with their note quoted, so the
+// conversation continues in your inbox. "Mark handled" moves it out of the open list.
+const fbState = { filter: 'open', rows: [], people: {}, shops: {}, replies: {} };
+async function renderAdminFeedback(){
+  const box = document.getElementById('adminFeedbackBox');
+  if(!box || !session || session.role !== 'admin') return;
+  if(!fbState.rows.length) box.innerHTML = '<div class="section-head"><h2>Feedback</h2></div><p class="meta">Loading…</p>';
+  const { data, error } = await sb.from('feedback').select('id, org_id, profile_id, role, page, message, handled, created_at').order('created_at', { ascending: false }).limit(300);
+  if(error || !data){ box.innerHTML = `<div class="section-head"><h2>Feedback</h2></div><p class="form-error">${esc(error ? error.message : 'Could not load feedback.')}</p>`; return; }
+  fbState.rows = data;
+  const pids = [...new Set(data.map(r => r.profile_id).filter(Boolean))], oids = [...new Set(data.map(r => r.org_id).filter(Boolean))];
+  const [pr, or] = await Promise.all([
+    pids.length ? sb.from('profiles').select('id, name, email, phone, role, company').in('id', pids) : Promise.resolve({ data: [] }),
+    oids.length ? sb.from('organizations').select('id, name').in('id', oids) : Promise.resolve({ data: [] })]);
+  (pr.data || []).forEach(p => fbState.people[p.id] = p);
+  fbState.replies = {};
+  if(data.length){
+    const { data: reps } = await sb.from('feedback_replies').select('id, feedback_id, body, sent_to, created_at').in('feedback_id', data.map(r => r.id)).order('created_at', { ascending: true });
+    (reps || []).forEach(x => (fbState.replies[x.feedback_id] = fbState.replies[x.feedback_id] || []).push(x));
+  }
+  (or.data || []).forEach(o => fbState.shops[o.id] = o.name);
+  const open = data.filter(r => !r.handled);
+  const shown = fbState.filter === 'open' ? open : fbState.filter === 'handled' ? data.filter(r => r.handled) : data;
+  fbPaintBadge(open.length);
+  const roleName = r => ({ shop: 'Shop staff', mechanic: 'Mechanic', fleet: 'Fleet customer', admin: 'Relay' })[r] || r || '';
+  const when = t => new Date(t).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  box.innerHTML = `<div class="section-head"><h2>Feedback</h2><span class="meta">${open.length} open · ${data.length} in total</span></div>
+    <div class="fd-dates" role="group" aria-label="Show">
+      ${[['open', `Open (${open.length})`], ['handled', `Handled (${data.length - open.length})`], ['all', 'All']].map(([k, l]) => `<button type="button" class="fd-chip${fbState.filter === k ? ' active' : ''}" data-fbfilter="${k}" aria-pressed="${fbState.filter === k}">${esc(l)}</button>`).join('')}
+    </div>
+    <p class="form-error" id="fbAdminErr"></p>
+    ${shown.length ? `<div class="rec-list">${shown.map(r => {
+      const p = fbState.people[r.profile_id] || {};
+      const shop = fbState.shops[r.org_id] || p.company || '';
+      const name = p.name || 'Someone';
+      return `<div class="card fb-note${r.handled ? ' is-handled' : ''}">
+        <div class="fb-head"><div><b>${esc(name)}</b> <span class="meta">${esc(roleName(r.role))}${shop ? ' · ' + esc(shop) : ''}</span>
+          <div class="meta">${esc(when(r.created_at))}${r.page ? ' · on ' + esc(r.page) : ''}${p.email ? ' · ' + esc(p.email) : ''}${p.phone ? ' · ' + esc(p.phone) : ''}</div></div>
+          ${r.handled ? '<span class="badge arrived"><span class="bd"></span>Handled</span>' : '<span class="badge waiting"><span class="bd"></span>Open</span>'}</div>
+        <p class="fb-msg">${esc(r.message)}</p>
+        ${(fbState.replies[r.id] || []).map(x => `<div class="fb-reply"><div class="meta">Relay replied ${esc(when(x.created_at))} · to ${esc(x.sent_to)}</div><p class="fb-msg">${esc(x.body)}</p></div>`).join('')}
+        <div class="job-actions">
+          <button type="button" data-fbreply="${r.id}">Reply</button>
+          ${p.phone ? `<a class="ghost-btn" href="tel:${esc(p.phone)}">Call</a>` : ''}
+          <button type="button" class="text-btn" data-fbtoggle="${r.id}" data-handled="${r.handled ? 1 : 0}">${r.handled ? 'Reopen' : 'Mark handled'}</button>
+        </div></div>`;
+    }).join('')}</div>` : `<div class="empty-note">${fbState.filter === 'open' ? 'No open feedback. Everything has been handled.' : 'Nothing here yet.'}</div>`}`;
+  box.querySelectorAll('[data-fbfilter]').forEach(b => b.onclick = () => { fbState.filter = b.dataset.fbfilter; renderAdminFeedback(); });
+  box.querySelectorAll('[data-fbreply]').forEach(b => b.onclick = () => openFeedbackReply(Number(b.dataset.fbreply)));
+  box.querySelectorAll('[data-fbtoggle]').forEach(b => b.onclick = async () => {
+    const handled = b.dataset.handled !== '1';
+    b.disabled = true;
+    const { error: e2 } = await sb.from('feedback').update({ handled }).eq('id', Number(b.dataset.fbtoggle));
+    b.disabled = false;
+    if(e2){ const el = document.getElementById('fbAdminErr'); if(el) el.textContent = e2.message; return; }
+    if(typeof recordsToast === 'function') recordsToast(handled ? 'Marked handled' : 'Reopened');
+    renderAdminFeedback();
+  });
+}
+function fbPaintBadge(n){
+  const b = document.getElementById('feedbackBadge'); if(!b) return;
+  const want = n ? String(n) : '';
+  if(b.textContent !== want) b.textContent = want;
+  b.classList.toggle('hidden', !n);
+}
+
+// Replying from inside Relay: the email goes out under Relay's name and the reply is kept with the note.
+function openFeedbackReply(id){
+  const r = fbState.rows.find(x => x.id === id); if(!r) return;
+  const p = fbState.people[r.profile_id] || {};
+  const body = document.createElement('div');
+  body.innerHTML = `<div class="card rec-form"><div class="rec-form-head"><h3>Reply to ${esc(p.name || 'this note')}</h3></div>
+    <p class="meta">They wrote:</p><blockquote class="fb-quote">${esc(r.message)}</blockquote>
+    <div class="field"><label for="fbrText">Your reply</label><textarea id="fbrText" rows="6" maxlength="4000" placeholder="Hi ${esc(p.name || '')}, thanks for letting us know…"></textarea></div>
+    <p class="meta">Emailed from Relay${p.email ? ' to ' + esc(p.email) : ''}. Their answer comes back to your inbox. The note is marked handled.</p>
+    <p class="form-error" id="fbrErr"></p>
+    <div class="job-actions"><button type="button" id="fbrSend">Send reply</button></div></div>`;
+  if(typeof openFormSheet === 'function') openFormSheet('Reply', [body]);
+  body.querySelector('#fbrSend').onclick = async () => {
+    const text = (body.querySelector('#fbrText').value || '').trim();
+    if(text.length < 2){ body.querySelector('#fbrErr').textContent = 'Write a reply first.'; return; }
+    const btn = body.querySelector('#fbrSend'); btn.disabled = true; btn.textContent = 'Sending…';
+    const { data, error } = await sb.functions.invoke('relay-feedback', { body: { action: 'reply', feedbackId: id, message: text } });
+    btn.disabled = false; btn.textContent = 'Send reply';
+    const why = (error && (error.message || String(error))) || (data && data.error);
+    if(why){ body.querySelector('#fbrErr').textContent = why; return; }   // nothing was saved; the text stays so they can retry
+    if(typeof closeFormSheet === 'function') closeFormSheet();
+    if(typeof recordsToast === 'function') recordsToast('Reply sent' + (data && data.to ? ' to ' + data.to : ''));
+    renderAdminFeedback();
   };
 }
