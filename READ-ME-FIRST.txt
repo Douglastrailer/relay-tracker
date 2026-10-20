@@ -1,7 +1,7 @@
-RelayFleet website - reply to feedback from Relay, and alerts for new notes
+RelayFleet website - professional invoices
 
 ORDER:
- 1. Run migration 0041_feedback_replies.sql in the Supabase SQL Editor (needs 0040).
- 2. Create the Edge Function relay-feedback (two files: index.ts and feedback-core.ts).
+ 1. Run migration 0042_invoice_terms.sql (needs 0041).
+ 2. Update the five Edge Functions from the "invoice-functions" folder (see its READ-ME).
  3. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
- 4. Admin > Settings: fill in "Email me new feedback at" (or leave it empty to use the billing email).
+ 4. Settings > Company & rates: write your "Warranty & terms on every invoice".

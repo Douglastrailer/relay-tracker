@@ -1874,7 +1874,7 @@ function initInvoicesUI(){
 // ================= billing profile UI =================
 async function fetchBillingProfile(){
   const { data, error } = await sb.from('organizations')
-    .select('name, billing_email, billing_phone, billing_address, payment_instructions, logo_path, review_link, default_tax_rate, labor_rate')
+    .select('name, billing_email, billing_phone, billing_address, payment_instructions, logo_path, review_link, default_tax_rate, labor_rate, invoice_terms')
     .eq('id', session.orgId).single();
   if(error){ console.error('fetchBillingProfile', error); return null; }
   return data;
@@ -1893,6 +1893,7 @@ async function populateBillingForm(){
   document.getElementById('billingPhone').value = profile.billing_phone || '';
   document.getElementById('billingAddress').value = profile.billing_address || '';
   document.getElementById('billingPaymentInstructions').value = profile.payment_instructions || '';
+  { const it = document.getElementById('billingInvoiceTerms'); if(it) it.value = profile.invoice_terms || ''; }
   document.getElementById('billingReviewLink').value = profile.review_link || '';
   const tr = document.getElementById('billingTaxRate'); if(tr) tr.value = profile.default_tax_rate != null ? Number(profile.default_tax_rate) : '';
   const lr = document.getElementById('billingLaborRate'); if(lr) lr.value = profile.labor_rate != null ? Number(profile.labor_rate) : '';
@@ -1933,6 +1934,7 @@ async function saveBillingProfile(){
     billing_phone: document.getElementById('billingPhone').value.trim() || null,
     billing_address: document.getElementById('billingAddress').value.trim() || null,
     payment_instructions: document.getElementById('billingPaymentInstructions').value.trim() || null,
+    ...(document.getElementById('billingInvoiceTerms') ? { invoice_terms: document.getElementById('billingInvoiceTerms').value.trim() || null } : {}),
     review_link: document.getElementById('billingReviewLink').value.trim() || null,
     ...billingRatesUpdate(),
     ...logoPathUpdate,
