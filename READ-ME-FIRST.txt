@@ -1,7 +1,8 @@
-RelayFleet website - professional invoices
+RelayFleet website - Russian for shop screens (draft)
 
-ORDER:
- 1. Run migration 0042_invoice_terms.sql (needs 0041).
- 2. Update the five Edge Functions from the "invoice-functions" folder (see its READ-ME).
- 3. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
- 4. Settings > Company & rates: write your "Warranty & terms on every invoice".
+Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R.
+No database or Edge Function changes.
+
+What changed: the Russian dictionary now covers about 97% of the visible text on the shop screens and sidebar (measured). Dates follow the chosen language. Invoices and emails are unchanged (English).
+
+NOT YET DONE: messages that appear only with real data (alerts, toasts, error messages) are mostly still English. A native Russian reviewer should check relay-ru-review.csv before this is treated as final.

@@ -79,3 +79,6 @@ function relayLangInit(){
   return saved !== 'en' ? relayLangSet(saved, { persist: false }) : Promise.resolve('en');
 }
 { const lo = document.getElementById('logoutBtn'); if(lo) lo.addEventListener('click', () => { relayLangSet('en', { persist: false }); }); }   // the sign-in page is always English
+
+// the browser-format locale for the language chosen in the menu (dates and numbers follow it)
+function relayLangLocale(){ return ({ en:'en-US', es:'es-ES', ru:'ru-RU', pt:'pt-BR', fr:'fr-FR' })[relayLang] || 'en-US'; }

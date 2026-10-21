@@ -20,7 +20,7 @@ async function renderTodayTiles(active, mechanics, liveCount){
   const box = document.getElementById('todayTiles');
   if(!box) return;
   const d = document.getElementById('todayDate');
-  if(d) d.textContent = new Date().toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+  if(d) d.textContent = new Date().toLocaleDateString(typeof relayLangLocale === 'function' ? relayLangLocale() : undefined, { weekday:'long', month:'long', day:'numeric' });
   const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
   const inShop = active.filter(j => j.job_type === 'inshop').length;
   const roadside = active.filter(j => j.job_type === 'mobile').length;
