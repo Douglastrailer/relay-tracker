@@ -1167,10 +1167,15 @@ if(sb){
       appEntered = false;
     }
   });
-  sb.auth.getSession().then(({ data }) => {
-    if(data.session && !appEntered && !inRecoveryFlow) onAuthed(data.session.user.id);
-  });
-}
+  // Wait for the saved session before showing anything, so a refresh goes straight to the
+  // person's own screen (no landing or sign-in flash). A timeout guarantees the page never sticks.
+  sb.auth.getSession().then(async ({ data }) => {
+    if(data.session && !appEntered && !inRecoveryFlow){ try { await onAuthed(data.session.user.id); } catch(_){} }
+    bootDone();
+  }).catch(bootDone);
+  setTimeout(bootDone, 6000);
+} else { bootDone(); }
+function bootDone(){ document.body.classList.remove('booting'); }
 
 document.getElementById('recoverySubmitBtn').onclick = async ()=>{
   const newPass = document.getElementById('recoveryNewPass').value;
@@ -1325,9 +1330,26 @@ function setupRealtimeSync(){
         : session.orgId ? { filter: 'org_id=eq.' + session.orgId } : {}), refreshCurrentView);
   // Mechanic positions (audit fix, 0028): shop staff and mechanics get only their own shop's;
   // the platform admin gets all; fleets get their joined shops' (below) — never the whole platform.
+  // Service requests: the owner's Requests list and count update the moment a request arrives,
+  // with a short notice — no page refresh needed.
+  if(session.role === 'shop' && session.orgId){
+    const onRequestChange = () => {
+      refreshRequestCount();
+      const panel = document.getElementById('shop-requests');
+      if(panel && !panel.classList.contains('hidden') && typeof refreshWorkRequests === 'function') refreshWorkRequests();
+    };
+    realtimeChannel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'work_requests', filter: 'org_id=eq.' + session.orgId }, (payload) => {
+      onRequestChange();
+      const who = payload && payload.new ? (payload.new.company_name || payload.new.customer_name || 'a customer') : 'a customer';
+      if(typeof recordsToast === 'function') recordsToast('New service request from ' + who);
+    });
+    realtimeChannel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'work_requests', filter: 'org_id=eq.' + session.orgId }, onRequestChange);
+  }
   if(session.role === 'admin') realtimeChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, handleLocationPing);
   else if(session.role !== 'fleet' && session.orgId) realtimeChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'locations', filter: 'org_id=eq.' + session.orgId }, handleLocationPing);
   realtimeChannel.subscribe();
+  // safety net: the request count is re-checked each minute while the app is open
+  if(session.role === 'shop' && typeof everyWhileVisible === 'function') everyWhileVisible(() => { if(typeof refreshRequestCount === 'function') refreshRequestCount(); }, 60000);
   // Fleets: mechanics of the shops they've joined (looked up once).
   if(session.role === 'fleet'){
     sb.from('fleet_shop_links').select('org_id').eq('fleet_id', session.id).then(({ data }) => {

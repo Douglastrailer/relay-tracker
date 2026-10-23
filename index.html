@@ -12,12 +12,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=95"/>
+<link rel="stylesheet" href="style.css?v=96"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
 </head>
-<body>
+<body class="booting">
+<div id="bootSplash" role="status" aria-label="Loading Relay"><span class="bs-mark">Relay</span></div>
 
 <div class="topbar">
   <div class="topbar-inner">
@@ -1002,7 +1003,7 @@
     <div id="unitBody"></div>
   </div>
 </div>
-<script src="script.js?v=82" defer></script>
+<script src="script.js?v=83" defer></script>
 <script src="ro.js?v=17" defer></script>
 <script src="insp.js?v=4" defer></script>
 <script src="est.js?v=12" defer></script>

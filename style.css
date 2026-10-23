@@ -2489,3 +2489,9 @@ body:has(.offline-bar) main{ padding-bottom:calc(var(--gutter) + 72px + var(--of
 
 .fb-reply{ margin:10px 0 0 14px; padding:8px 12px; border-left:3px solid var(--accent); background:var(--accent-soft); border-radius:0 var(--r-md) var(--r-md) 0; }
 .fb-quote{ margin:0 0 12px; padding:10px 14px; border-left:3px solid var(--line-strong); background:var(--bg, #F3F5F7); white-space:pre-wrap; }
+
+/* First paint: a plain loading screen, so the landing page never flashes before the app appears */
+#bootSplash{ display:none; }
+body.booting #bootSplash{ display:flex; position:fixed; inset:0; align-items:center; justify-content:center; background:#F3F5F7; z-index:9999; }
+body.booting #bootSplash .bs-mark{ font-family:'Archivo',sans-serif; font-weight:800; font-size:1.8rem; color:#0D5C6E; letter-spacing:.01em; }
+body.booting > *:not(#bootSplash):not(script):not(style):not(link){ display:none !important; }

@@ -1,14 +1,9 @@
-RelayFleet website - Natasha inventory, mechanic language, Russian on the job screens
+RelayFleet website - live service requests, and no landing flash on refresh
 
-Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R; on phones close and reopen.
-
-NEEDS: replace the assistant Edge Function with assistant-function/index.ts (one file). No database changes.
+ORDER:
+ 1. Run migration 0043_live_requests_and_fast_start.sql in the Supabase SQL Editor (needs 0042).
+ 2. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R; on phones close and reopen.
 
 What changed:
-- Natasha can now answer about stock (find parts, low stock, below zero, reorder list, part usage, slow movers, cores owed), customers, units, estimates and completed work. Fleet customers still see only their own trucks and repairs.
-- Natasha proposes a reorder; confirming it opens the Low stock tab, and nothing is ordered for you.
-- Natasha answers in the language chosen in the app.
-- Mechanics have a language picker on their own screen.
-- The mechanic job screen is in Russian.
-
-NOT VERIFIED on live data: the inventory answers use the same database functions as the Inventory screens; please ask Natasha "what should we order?" and compare with Inventory > Low stock.
+- When a customer submits a request, the owner sees the Requests list and the count update at once, with a short notice naming the company. Accepted or declined requests update too. A one-minute check keeps the count current while the app is open.
+- Refreshing the app shows a plain loading screen, then the person\x27s own screen. The landing page no longer flashes first.
