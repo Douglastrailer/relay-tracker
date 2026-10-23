@@ -31,13 +31,13 @@ async function loadWoTechs(job){
     const pid = document.getElementById('woTechAdd').value;
     if(!pid) return;
     const { error } = await sb.from('job_technicians').insert([{ job_id: job.id, profile_id: pid }]);
-    if(error){ alert(error.message); return; }
+    if(error){ relayFail(error.message); return; }
     recordsToast('Technician added'); loadWoTechs(job); if(typeof refreshCurrentView === 'function') refreshCurrentView();
   };
   box.querySelectorAll('[data-rmtech]').forEach(b => b.onclick = async () => {
-    if(!confirm('Remove this technician from the work order? Their recorded time stays.')) return;
+    if(!(await relayConfirm({ message: 'Remove this technician from the work order? Their recorded time stays.' }))) return;
     const { error } = await sb.from('job_technicians').delete().eq('job_id', job.id).eq('profile_id', b.dataset.rmtech);
-    if(error){ alert(error.message); return; }
+    if(error){ relayFail(error.message); return; }
     loadWoTechs(job); if(typeof refreshCurrentView === 'function') refreshCurrentView();
   });
 }

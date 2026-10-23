@@ -70,9 +70,9 @@ function renderDispatchSide(){
     ${call ? `<div class="job-actions"><button type="button" class="ghost-btn" id="dispOpen">Open work order</button></div>` : ''}`;
   side.querySelectorAll('[data-assign]').forEach(b => b.onclick = async () => {
     const m = mechs.find(x => x.id === b.dataset.assign);
-    if(!confirm(`Assign ${call.ro_number || 'this call'} to ${m.name}?`)) return;
+    if(!(await relayConfirm({ message: `Assign ${call.ro_number || 'this call'} to ${m.name}?` }))) return;
     const { error } = await sb.from('jobs').update({ mechanic_id: m.id, updated_at: new Date().toISOString() }).eq('id', call.id);
-    if(error){ alert('Could not assign: ' + error.message); return; }
+    if(error){ relayFail(error, 'Could not assign'); return; }
     if(typeof notifyKick === 'function') notifyKick();
     recordsToast('Assigned to ' + m.name + ' — waiting for them to accept');
     refreshDispatch();
@@ -115,12 +115,12 @@ function acceptBlockHtml(job){
 document.addEventListener('click', async (e) => {
   const a = e.target.closest('[data-accept]');
   if(a){ a.disabled = true; const { error } = await sb.rpc('respond_to_assignment', { p_job: Number(a.dataset.accept), p_accept: true }); a.disabled = false;
-    if(error){ alert(error.message); return; } recordsToast('Job accepted'); if(typeof renderMechJobs === 'function') renderMechJobs(); if(typeof renderWorkScreen === 'function' && typeof workJobId !== 'undefined' && workJobId) renderWorkScreen(); return; }
+    if(error){ relayFail(error.message); return; } recordsToast('Job accepted'); if(typeof renderMechJobs === 'function') renderMechJobs(); if(typeof renderWorkScreen === 'function' && typeof workJobId !== 'undefined' && workJobId) renderWorkScreen(); return; }
   const d = e.target.closest('[data-decline]');
   if(d){ const reason = prompt('Why can\'t you take this job? (The shop will see this.)');
     if(reason === null) return;
     const { error } = await sb.rpc('respond_to_assignment', { p_job: Number(d.dataset.decline), p_accept: false, p_reason: reason });
-    if(error){ alert(error.message); return; } recordsToast('The shop has been told'); if(typeof renderMechJobs === 'function') renderMechJobs(); }
+    if(error){ relayFail(error.message); return; } recordsToast('The shop has been told'); if(typeof renderMechJobs === 'function') renderMechJobs(); }
 });
 
 // ================= Notification center =================

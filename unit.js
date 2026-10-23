@@ -151,7 +151,7 @@ function renderUnitHistory(){
     const d = parseInt(document.getElementById('uhDays').value, 10), m = parseInt(document.getElementById('uhMiles').value, 10);
     const row = { service_interval_days: Number.isFinite(d) && d > 0 ? d : null, service_interval_miles: Number.isFinite(m) && m > 0 ? m : null };
     const { error } = await sb.from('units').update(row).eq('id', u.id);
-    if(error){ alert('Could not save: ' + error.message); return; }
+    if(error){ relayFail(error, 'Could not save'); return; }
     Object.assign(u, row); recordsToast('Service interval saved'); renderUnitHistory();
   };
   body.querySelectorAll('.uh-insp').forEach(b => b.onclick = () => openInspection(Number(b.dataset.insp)));
@@ -203,7 +203,7 @@ async function loadRoWarranty(job, opts){
     const note = prompt(decision === 'warranty' ? 'Note (optional): why it is covered' : 'Note (optional): why it is not covered');
     if(note === null) return;
     const { error } = await sb.rpc('decide_warranty', { p_job: job.id, p_decision: decision, p_note: note });
-    if(error){ alert(error.message); return; }
+    if(error){ relayFail(error.message); return; }
     recordsToast(decision === 'warranty' ? 'Marked as warranty claim' : 'Marked not warranty');
     openRepairOrder(job.id);
   };
@@ -213,10 +213,10 @@ async function loadRoWarranty(job, opts){
   const save = document.getElementById('wSave');
   if(save) save.onclick = async () => {
     const m = parseInt(document.getElementById('wMonths').value, 10), mi = parseInt(document.getElementById('wMiles').value, 10);
-    if((Number.isFinite(m) && (m < 0 || m > 120)) || (Number.isFinite(mi) && (mi < 0 || mi > 1000000))){ alert('Months must be 0–120 and miles 0–1,000,000.'); return; }
+    if((Number.isFinite(m) && (m < 0 || m > 120)) || (Number.isFinite(mi) && (mi < 0 || mi > 1000000))){ relayNotice('Months must be 0–120 and miles 0–1,000,000.', { kind: 'info' }); return; }
     const { error } = await sb.from('jobs').update({ warranty_months: Number.isFinite(m) && m > 0 ? m : null, warranty_miles: Number.isFinite(mi) && mi > 0 ? mi : null,
       warranty_terms: document.getElementById('wTerms').value.trim() || null }).eq('id', job.id);
-    if(error){ alert('Could not save: ' + error.message); return; }
+    if(error){ relayFail(error, 'Could not save'); return; }
     recordsToast('Warranty saved');
   };
 }

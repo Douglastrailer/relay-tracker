@@ -2,8 +2,8 @@
 // open without a signal. Always asks the network first, so an upload to
 // GitHub reaches everyone right away; the saved copy is used only when
 // there is no connection. Never stores Supabase data or other sites.
-const CACHE = 'relay-shell-v61';
-const SHELL = ['/', '/index.html', '/vin.js', '/subs.js', '/nav.js', '/safety.js', '/offline.js', '/account.js', '/terms.html', '/privacy.html', '/lang.js', '/completed.js', '/docs.js', '/lang-es.js', '/lang-ru.js', '/lang-pt.js', '/lang-fr.js', '/pwa.js', '/style.css', '/script.js', '/ro.js', '/insp.js', '/est.js', '/tech.js', '/fleet.js', '/unit.js',
+const CACHE = 'relay-shell-v62';
+const SHELL = ['/', '/index.html', '/ui-dialogs.js', '/vin.js', '/subs.js', '/nav.js', '/safety.js', '/offline.js', '/account.js', '/terms.html', '/privacy.html', '/lang.js', '/completed.js', '/docs.js', '/lang-es.js', '/lang-ru.js', '/lang-pt.js', '/lang-fr.js', '/pwa.js', '/style.css', '/script.js', '/ro.js', '/insp.js', '/est.js', '/tech.js', '/fleet.js', '/unit.js',
                '/inv.js', '/analytics.js', '/comms.js', '/roles.js', '/shop.js', '/ops.js', '/dispatch.js', '/r4.js', '/assist.js', '/landing.js', '/scan.js', '/r6.js', '/profit.js', '/loc.js', '/voice.js', '/pdfview.js', '/map.js', '/sheet.js', '/parts.js', '/migrate.js', '/training.js', '/ux.js', '/natasha.js', '/plans.js', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (e) => {

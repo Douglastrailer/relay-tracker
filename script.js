@@ -126,10 +126,10 @@ let draggedJobId = null;
 // so a phone with no drag gets exactly the same behaviour, including Undo.
 async function moveJobToColumn(jobId, jobType, currentStatus, column){
   const targetStatus = kanbanDropStatus(jobType, currentStatus, column);
-  if(!targetStatus){ alert(column === 'invoiced' ? 'Open the work order and create the invoice from it.' : "That move isn't allowed for this job."); return false; }
+  if(!targetStatus){ relayNotice(column === 'invoiced' ? 'Open the work order and create the invoice from it.' : "That move isn't allowed for this job.", { kind: 'info' }); return false; }
   if(targetStatus === currentStatus) return false;
   const { error } = await sb.from('jobs').update({ status: targetStatus, updated_at: new Date().toISOString() }).eq('id', jobId);
-  if(error){ alert('Could not move the job: ' + error.message); return false; }
+  if(error){ relayFail(error, 'Could not move the job'); return false; }
   if(typeof notifyKick === 'function') notifyKick();
   refreshShopData();
   if(typeof undoToast === 'function') undoToast('Moved to ' + statusLabel(targetStatus), async () => {
@@ -473,7 +473,7 @@ function openThread(jobId, box){
     const result = await addJobComment(jobId, val);
     send.disabled = false;
     if(result.ok){ input.value = ''; delete commentDrafts[jobId]; renderCommentList(jobId); }
-    else if(result.blocked){ alert("Message not sent — you may be posting too quickly, or you may no longer have access to this job. Wait a moment and try again, or refresh if it keeps happening."); }
+    else if(result.blocked){ relayNotice("Message not sent — you may be posting too quickly, or you may no longer have access to this job. Wait a moment and try again, or refresh if it keeps happening.", { kind: 'error' }); }
   };
   send.onclick = submit;
   input.onkeydown = (e)=>{ if(e.key === 'Enter') submit(); };
@@ -546,14 +546,14 @@ function openAttachmentThread(jobId, box){
   input.onchange = async ()=>{
     const file = input.files[0];
     if(!file) return;
-    if(file.size > 10*1024*1024){ alert('That file is too big — 10MB max.'); input.value=''; return; }
+    if(file.size > 10*1024*1024){ relayNotice('That file is too big — 10MB max.', { kind: 'info' }); input.value=''; return; }
     const photoType = (typeSelect && typeSelect.value) || 'general';
     // Phone photos are 3–10 MB; shrink them (1600 px, JPEG) before upload.
     let upload = file;
     if(/^image\//.test(file.type) && typeof compressImage === 'function'){ try { upload = await compressImage(file); } catch(e){ upload = file; } }
     const path = `${jobId}/${Date.now()}-${upload.name || file.name}`;
     const { error: upErr } = await sb.storage.from('job-attachments').upload(path, upload);
-    if(upErr){ alert('Upload failed: ' + upErr.message); input.value=''; return; }
+    if(upErr){ relayFail(upErr, 'Upload failed'); input.value=''; return; }
     const { error: metaErr } = await sb.from('job_attachments').insert([{ job_id:jobId, uploader_id:session.id, file_path:path, file_name:upload.name || file.name, file_type:upload.type || file.type, photo_type:photoType }]);
     if(metaErr) console.error('job_attachments insert failed', metaErr);
     input.value = '';
@@ -926,7 +926,7 @@ document.getElementById('signupSubmit').onclick = async (e)=>{
     onAuthed(data.session.user.id);
   } else {
     authError.textContent = '';
-    alert('Account created! Check your email to confirm it, then log in.');
+    relayNotice('Account created! Check your email to confirm it, then log in.', { kind: 'info' });
     showAuthForm('login');
   }
   btn.disabled = false;
@@ -983,7 +983,7 @@ document.getElementById('forgotPassBtn').onclick = async ()=>{
   if(!email){ authError.textContent = 'Enter your email above first, then tap "Forgot password?" again.'; return; }
   const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
   authError.textContent = error ? error.message : '';
-  if(!error) alert('Password reset email sent — check your inbox (and spam folder).');
+  if(!error) relayNotice('Password reset email sent — check your inbox (and spam folder).', { kind: 'info' });
 };
 
 document.getElementById('completeProfileSubmit').onclick = async (e)=>{
@@ -1039,19 +1039,19 @@ document.getElementById('editCompanyBtn').onclick = async ()=>{
   const newName = prompt('Enter your new company / shop name:', session.orgName || '');
   if(!newName || !newName.trim()) return;
   const { error } = await sb.from('organizations').update({ name: newName.trim() }).eq('id', session.orgId);
-  if(error){ alert('Could not update company name: ' + error.message); return; }
+  if(error){ relayFail(error, 'Could not update company name'); return; }
   session.orgName = newName.trim();
   document.getElementById('whoOrg').textContent = session.orgName || '';
-  alert('Company name updated.');
+  relayNotice('Company name updated.', { kind: 'info' });
 };
 
 document.getElementById('changePassBtn').onclick = async ()=>{
   moreMenu.classList.add('hidden');
   const newPass = prompt('Enter a new password (at least 8 characters):');
   if(!newPass) return;
-  if(newPass.length < 8){ alert('Password must be at least 8 characters.'); return; }
+  if(newPass.length < 8){ relayNotice('Password must be at least 8 characters.', { kind: 'info' }); return; }
   const { error } = await sb.auth.updateUser({ password: newPass });
-  alert(error ? 'Could not change password: ' + error.message : 'Password updated.');
+  if(error) relayFail(error, 'Could not change password'); else relayNotice('Password updated.', { kind: 'success' });
 };
 
 document.getElementById('logoutBtn').onclick = async ()=>{
@@ -1554,7 +1554,7 @@ async function renderMechJobs(){
       card.querySelectorAll('.job-actions button[data-s]').forEach(btn=>{
         btn.onclick = async ()=>{
           const { error } = await sb.from('jobs').update({ status: btn.dataset.s, updated_at: new Date().toISOString() }).eq('id', jobId);
-          if(error){ alert(error.message); return; }
+          if(error){ relayFail(error.message); return; }
           if(!error){
             if(btn.dataset.s === 'complete') showCompleteToast(job);
             renderMechJobs();
@@ -1599,7 +1599,7 @@ async function loadInviteCode(){
 
 document.getElementById('regenerateInviteBtn').onclick = async ()=>{
   if(!session || !session.orgId) return;
-  if(!confirm('This will make the current invite code stop working immediately. Continue?')) return;
+  if(!(await relayConfirm({ message: 'This will make the current invite code stop working immediately. Continue?' }))) return;
   await rotateInviteCode(session.orgId);
   loadInviteCode();
 };
@@ -1682,8 +1682,8 @@ async function createInvoice(){
   const notes = document.getElementById('invNotes').value.trim();
   const items = collectInvoiceItemRows();
   const kind = selectedInvoiceKind;
-  if(!customerName){ alert('Enter a customer name.'); return; }
-  if(!items.length){ alert('Add at least one line item with a description, quantity, and price.'); return; }
+  if(!customerName){ relayNotice('Enter a customer name.', { kind: 'info' }); return; }
+  if(!items.length){ relayNotice('Add at least one line item with a description, quantity, and price.', { kind: 'info' }); return; }
 
   const btn = document.getElementById('createInvoiceBtn');
   btn.disabled = true; btn.textContent = 'Saving…';
@@ -1701,14 +1701,14 @@ async function createInvoice(){
   }]).select().single();
 
   if(error){
-    alert(`Could not create ${kind}: ` + error.message);
+    relayFail(error, `Could not create ${kind}`);
     btn.disabled = false; setInvoiceFormKind(kind);
     return;
   }
 
   const itemRows = items.map(it => ({ invoice_id: invoice.id, description: it.description, quantity: it.quantity, unit_price: it.unit_price, sort_order: it.sort_order }));
   const { error: itemErr } = await sb.from('invoice_items').insert(itemRows);
-  if(itemErr) alert(`${kind === 'estimate' ? 'Estimate' : 'Invoice'} was created, but the line items failed to save: ` + itemErr.message);
+  if(itemErr) relayFail(itemErr, `${kind === 'estimate' ? 'Estimate' : 'Invoice'} was created, but its line items did not save`);
 
   resetInvoiceForm();
   if(typeof docNewClose === 'function') docNewClose();   // the form lives in a sheet now
@@ -1717,23 +1717,23 @@ async function createInvoice(){
 }
 
 async function sendInvoiceEmail(invoiceId, email){
-  if(!email || !email.includes('@')){ alert('Enter a valid email address first.'); return; }
+  if(!email || !email.includes('@')){ relayNotice('Enter a valid email address first.', { kind: 'info' }); return; }
   const { data, error } = await sb.functions.invoke('send-invoice-email', { body: { invoiceId, recipientEmail: email } });
-  if(error){ alert('Could not send: ' + error.message); return; }
-  if(data && data.error){ alert('Could not send: ' + data.error); return; }
+  if(error){ relayFail(error, 'Could not send'); return; }
+  if(data && data.error){ relayFail(data.error, 'Could not send'); return; }
   refreshInvoices();
 }
 
 async function markInvoicePaid(invoiceId){
   const { error } = await sb.from('invoices').update({ status:'paid', paid_at:new Date().toISOString() }).eq('id', invoiceId);
-  if(error){ alert('Could not update: ' + error.message); return; }
+  if(error){ relayFail(error, 'Could not update'); return; }
   if(typeof notifyKick === 'function') notifyKick();   // send the paid receipt now instead of waiting for the schedule
   refreshInvoices();
 }
 
 async function updateEstimateStatus(invoiceId, newStatus){
   const { error } = await sb.from('invoices').update({ status:newStatus }).eq('id', invoiceId);
-  if(error){ alert('Could not update: ' + error.message); return; }
+  if(error){ relayFail(error, 'Could not update'); return; }
   refreshInvoices();
 }
 
@@ -1742,37 +1742,37 @@ async function updateEstimateStatus(invoiceId, newStatus){
 // source_estimate_id, and marks the estimate itself as converted so it
 // can't be converted twice.
 async function convertEstimateToInvoice(estimateId){
-  if(!confirm('Convert this estimate into an invoice? Lines the customer declined are left out.')) return;
+  if(!(await relayConfirm({ message: 'Convert this estimate into an invoice? Lines the customer declined are left out.' }))) return;
   const { data, error } = await sb.rpc('convert_estimate_to_invoice', { p_estimate: estimateId });
-  if(error){ alert('Could not create the invoice: ' + error.message); return; }
+  if(error){ relayFail(error, 'Could not create the invoice'); return; }
   refreshInvoices();
   if(typeof openEstimateEditor === 'function') openEstimateEditor(Number(data));
 }
 
 async function sendReviewRequest(invoiceId, email){
-  if(!email || !email.includes('@')){ alert('Enter a valid email address first.'); return; }
+  if(!email || !email.includes('@')){ relayNotice('Enter a valid email address first.', { kind: 'info' }); return; }
   // Phase 9: invoices on a repair order use the tracked review flow (one per job, opens recorded).
   const { data: inv } = await sb.from('invoices').select('doc_number, job_id').eq('id', invoiceId).maybeSingle();
   if(inv && inv.job_id){
     let { error } = await sb.rpc('request_review', { p_job: inv.job_id, p_email: email, p_resend: false });
-    if(error && /already/.test(error.message) && confirm('A review was already requested for this job. Send another?')){
+    if(error && /already/.test(error.message) && await relayConfirm({ message: 'A review was already requested for this job. Send another?', confirmText: 'Send another' })){
       ({ error } = await sb.rpc('request_review', { p_job: inv.job_id, p_email: email, p_resend: true }));
     } else if(error && /already/.test(error.message)) return;
-    if(error){ alert('Could not send the review request: ' + error.message); return; }
+    if(error){ relayFail(error, 'Could not send the review request'); return; }
     if(typeof notifyKick === 'function') notifyKick();
-    alert('Review request sent.');
+    relayNotice('Review request sent.', { kind: 'info' });
     return;
   }
   const { data, error } = await sb.functions.invoke('send-review-request', { body: { invoiceId, recipientEmail: email } });
-  if(error){ alert('Could not send the review request: ' + error.message); return; }
-  if(data && data.error){ alert('Could not send the review request: ' + data.error); return; }
-  alert('Review request sent.');
+  if(error){ relayFail(error, 'Could not send the review request'); return; }
+  if(data && data.error){ relayFail(data.error, 'Could not send the review request'); return; }
+  relayNotice('Review request sent.', { kind: 'info' });
 }
 
 async function deleteInvoiceDraft(invoiceId){
-  if(!confirm('Delete this draft? This cannot be undone.')) return;
+  if(!(await relayConfirm({ message: 'Delete this draft? This cannot be undone.' }))) return;
   const { error } = await sb.from('invoices').delete().eq('id', invoiceId);
-  if(error){ alert('Could not delete: ' + error.message); return; }
+  if(error){ relayFail(error, 'Could not delete'); return; }
   refreshInvoices();
 }
 
@@ -1944,10 +1944,10 @@ async function saveBillingProfile(){
   const file = fileInput.files[0];
   let logoPathUpdate = {};
   if(file){
-    if(file.size > 3*1024*1024){ alert('Logo is too big — 3MB max.'); btn.disabled=false; btn.textContent='Save billing info'; return; }
+    if(file.size > 3*1024*1024){ relayNotice('Logo is too big — 3MB max.', { kind: 'info' }); btn.disabled=false; btn.textContent='Save billing info'; return; }
     const path = `${session.orgId}/${Date.now()}-${file.name}`;
     const { error: upErr } = await sb.storage.from('shop-logos').upload(path, file);
-    if(upErr){ alert('Logo upload failed: ' + upErr.message); btn.disabled=false; btn.textContent='Save billing info'; return; }
+    if(upErr){ relayFail(upErr, 'Logo upload failed'); btn.disabled=false; btn.textContent='Save billing info'; return; }
     logoPathUpdate = { logo_path: path };
   }
 
@@ -1963,12 +1963,12 @@ async function saveBillingProfile(){
   }).eq('id', session.orgId);
 
   btn.disabled = false; btn.textContent = 'Save billing info';
-  if(error){ alert('Could not save: ' + error.message); return; }
+  if(error){ relayFail(error, 'Could not save'); return; }
   fileInput.value = '';
   populateBillingForm();
   cachedReviewLink = document.getElementById('billingReviewLink').value.trim() || null;
   if(typeof refreshInvoices === 'function') refreshInvoices();
-  alert('Billing info saved.');
+  relayNotice('Billing info saved.', { kind: 'info' });
 }
 
 // ================= inventory (price list) =================
@@ -1998,9 +1998,9 @@ async function refreshInventory(){
   list.innerHTML = items.length ? items.map(inventoryItemCardHtml).join('') : '<div class="empty-note">No items yet — add your common services and parts on the right.</div>';
   list.querySelectorAll('.inv-item-delete-btn').forEach(btn=>{
     btn.onclick = async ()=>{
-      if(!confirm('Remove this from your price list?')) return;
+      if(!(await relayConfirm({ message: 'Remove this from your price list?' }))) return;
       const { error } = await sb.from('inventory_items').update({ active:false }).eq('id', Number(btn.dataset.id));
-      if(error){ alert('Could not remove: ' + error.message); return; }
+      if(error){ relayFail(error, 'Could not remove'); return; }
       refreshInventory();
       populateInventoryPicker();
     };
@@ -2012,8 +2012,8 @@ async function addInventoryItem(){
   const description = document.getElementById('invItemDesc').value.trim();
   const priceRaw = document.getElementById('invItemPrice').value;
   const price = parseFloat(priceRaw);
-  if(!name){ alert('Enter a name.'); return; }
-  if(priceRaw === '' || isNaN(price) || price < 0){ alert('Enter a valid price (0 or more).'); return; }
+  if(!name){ relayNotice('Enter a name.', { kind: 'info' }); return; }
+  if(priceRaw === '' || isNaN(price) || price < 0){ relayNotice('Enter a valid price (0 or more).', { kind: 'info' }); return; }
 
   const btn = document.getElementById('addInventoryItemBtn');
   btn.disabled = true; btn.textContent = 'Adding…';
@@ -2021,7 +2021,7 @@ async function addInventoryItem(){
     org_id: session.orgId, name, description: description || null, unit_price: price, created_by: session.id,
   }]);
   btn.disabled = false; btn.textContent = 'Add to price list';
-  if(error){ alert('Could not add item: ' + error.message); return; }
+  if(error){ relayFail(error, 'Could not add item'); return; }
 
   document.getElementById('invItemName').value = '';
   document.getElementById('invItemDesc').value = '';
@@ -2136,7 +2136,7 @@ async function refreshWorkRequests(){
       }
 
       document.querySelector('[data-target="shop-jobs"]').click();
-      alert('Request details filled into the New Job form, including location and service type — just assign a mechanic and create the job.');
+      relayNotice('Request details filled into the New Job form, including location and service type — just assign a mechanic and create the job.', { kind: 'info' });
     };
   });
 }
@@ -2476,8 +2476,8 @@ function initShopView(){
     const issue = document.getElementById('njIssue').value.trim();
     const mechanicId = document.getElementById('njMechanic').value;
     const jobType = selectedJobType;
-    if(!customer || !vehicle || !mechanicId){ alert('Fill in customer, unit, and mechanic.'); return; }
-    if(jobType === 'mobile' && !chosenPin){ alert('Set a breakdown location (address or pin) for a mobile job.'); return; }
+    if(!customer || !vehicle || !mechanicId){ relayNotice('Fill in customer, unit, and mechanic.', { kind: 'info' }); return; }
+    if(jobType === 'mobile' && !chosenPin){ relayNotice('Set a breakdown location (address or pin) for a mobile job.', { kind: 'info' }); return; }
 
     const createBtn = document.getElementById('createJobBtn');
     createBtn.disabled = true;
@@ -2486,7 +2486,7 @@ function initShopView(){
     // VIN from the form: saved to the unit (blanks only); never blocks creating the work order
     const vinIn = document.getElementById('njVin');
     if(vinIn && vinIn.value.trim() && rec && rec.unitId && typeof applyVinToUnit === 'function') await applyVinToUnit(rec.unitId, vinIn.value, window.njVinDecoded);
-    if(rec.error){ createBtn.disabled = false; alert(rec.error); return; }
+    if(rec.error){ createBtn.disabled = false; relayFail(rec.error); return; }
     const drivableVal = (document.getElementById('njDrivable') || {}).value;
     const fleetSel = document.getElementById('njFleet');
     const payload = {
@@ -2504,8 +2504,8 @@ function initShopView(){
     const { data, error } = await sb.from('jobs').insert([payload]).select();
     createBtn.disabled = false;
     if(error){
-      if(error.code === '42501') alert("Could not create the job — you may be creating jobs too quickly, or the assigned mechanic may no longer be on your team. Wait a moment and try again, or refresh and check the mechanic list.");
-      else alert('Could not create job: ' + error.message);
+      if(error.code === '42501') relayNotice("Could not create the job — you may be creating jobs too quickly, or the assigned mechanic may no longer be on your team. Wait a moment and try again, or refresh and check the mechanic list.", { kind: 'error', title: "Couldn't create the job" });
+      else relayFail(error, 'Could not create job');
       return;
     }
     if(typeof notifyKick === 'function') notifyKick();
@@ -2980,7 +2980,7 @@ async function refreshAdminData(){
         const newRole = row.querySelector('.arole-select').value;
         const company = row.querySelector('.acompany-input').value.trim();
         const { error } = await sb.from('profiles').update({ role:newRole, company: newRole==='fleet' ? company : null }).eq('id', id);
-        if(error) alert('Could not update: ' + error.message); else refreshAdminData();
+        if(error) relayFail(error, 'Could not update'); else refreshAdminData();
       };
     });
   }
@@ -3026,12 +3026,12 @@ async function refreshAdminData(){
       const orgId = card.dataset.org;
       card.querySelector('.rq-approve').onclick = async ()=>{
         const { error } = await sb.from('organizations').update({ status:'approved' }).eq('id', orgId);
-        if(error) alert('Could not approve: ' + error.message); else refreshAdminData();
+        if(error) relayFail(error, 'Could not approve'); else refreshAdminData();
       };
       card.querySelector('.rq-reject').onclick = async ()=>{
-        if(!confirm('Reject this company\'s request? They will see a rejection message when they log in.')) return;
+        if(!(await relayConfirm({ message: 'Reject this company\'s request? They will see a rejection message when they log in.' }))) return;
         const { error } = await sb.from('organizations').update({ status:'rejected' }).eq('id', orgId);
-        if(error) alert('Could not reject: ' + error.message); else refreshAdminData();
+        if(error) relayFail(error, 'Could not reject'); else refreshAdminData();
       };
     });
   }
@@ -3061,7 +3061,7 @@ async function refreshAdminData(){
   list.querySelectorAll('.j-delete').forEach(btn=>{
     btn.onclick = async ()=>{
       const jobId = Number(btn.closest('.job-card').dataset.job);
-      if(!confirm('Delete this job?')) return;
+      if(!(await relayConfirm({ message: 'Delete this job?' }))) return;
       const { error } = await sb.from('jobs').delete().eq('id', jobId);
       if(!error) refreshAdminData();
     };

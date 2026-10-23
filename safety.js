@@ -70,7 +70,7 @@ async function renderOverdueBox(){
 function openMergeCustomers(keepId){
   const list = (typeof recordsCustomers !== 'undefined' ? recordsCustomers : []).filter(c => c.active);
   const keep = list.find(c => c.id === keepId) || list[0];
-  if(!keep){ alert('Add some customers first.'); return; }
+  if(!keep){ relayNotice('Add some customers first.', { kind: 'info' }); return; }
   const others = list.filter(c => c.id !== keep.id);
   const body = document.createElement('div');
   body.innerHTML = `<div class="card rec-form"><div class="rec-form-head"><h3>Join a duplicate into ${esc(keep.company_name)}</h3></div>
@@ -84,7 +84,7 @@ function openMergeCustomers(keepId){
   body.querySelector('#mergeGo').onclick = async () => {
     const from = Number(body.querySelector('#mergeFrom').value);
     const name = (others.find(c => c.id === from) || {}).company_name || 'that customer';
-    if(!confirm(`Join "${name}" into "${keep.company_name}"? Their units, work orders and invoices move across.`)) return;
+    if(!(await relayConfirm({ message: `Join "${name}" into "${keep.company_name}"? Their units, work orders and invoices move across.` }))) return;
     const btn = body.querySelector('#mergeGo'); btn.disabled = true; btn.textContent = 'Joining…';
     const { data, error } = await sb.rpc('merge_customers', { p_keep: keep.id, p_merge: from });
     btn.disabled = false; btn.textContent = 'Join them';

@@ -60,7 +60,7 @@ async function loadRoEstimates(job, opts){
     const reason = prompt('Why is repair going ahead without customer approval? (This is recorded.)');
     if(reason === null) return;
     const { error } = await sb.rpc('override_job_authorization', { p_job: job.id, p_reason: reason });
-    if(error){ alert(error.message); return; }
+    if(error){ relayFail(error.message); return; }
     recordsToast('Override recorded');
     openRepairOrder(job.id);
   };
@@ -79,7 +79,7 @@ async function newEstimateForJob(job, opts){   // opts.open === false: create th
     payment_terms: c.payment_terms || 'due_on_receipt',
     tax_rate: c.tax_exempt ? 0 : Number((orgRes.data || {}).default_tax_rate || 0)
   }]).select('id').single();
-  if(error){ alert('Could not start an estimate: ' + error.message); return null; }
+  if(error){ relayFail(error, 'Could not start an estimate'); return null; }
   if(opts && opts.open === false) return data.id;
   openEstimateEditor(data.id, true);
   return data.id;
@@ -277,14 +277,14 @@ function wireEditor(editable){
   on('estCopy', async () => { const tok = estCurrent.doc.approval_token; await copyText(approvalLink(tok)); recordsToast('Approval link copied — paste it in a text or WhatsApp'); });
   on('estPhone', recordPhoneApproval);
   on('estRevise', async () => {
-    if(!confirm('Revise this estimate? The customer\'s link will stop working until you send the new version.')) return;
+    if(!(await relayConfirm({ message: 'Revise this estimate? The customer\'s link will stop working until you send the new version.' }))) return;
     const id = estCurrent.doc.id;
     const { error } = await sb.rpc('revise_estimate', { p_invoice: id });
     if(error){ showEstError(error.message); return; }
     afterChange(id);
   });
   on('estConvert', async () => {
-    if(!confirm('Create an invoice from the approved lines?')) return;
+    if(!(await relayConfirm({ message: 'Create an invoice from the approved lines?' }))) return;
     const estId = estCurrent.doc.id;
     const { data, error } = await sb.rpc('convert_estimate_to_invoice', { p_estimate: estId });
     if(error){ showEstError(error.message); return; }
@@ -342,7 +342,7 @@ function addRecommendedLines(){
     estCurrent.lines.push({ item_type: 'labor', description: r.description, quantity: 1, unit_price: Number(estCurrent.org.labor_rate || 0), taxable: false, recommended_repair_id: r.id });
   });
 }
-function showEstError(msg){ const e = document.getElementById('estError'); if(e) e.textContent = msg; else alert(msg); }
+function showEstError(msg){ const e = document.getElementById('estError'); if(e) e.textContent = msg; else relayNotice(msg, { kind: 'error' }); }
 
 async function saveEstimate(){
   if(!estCurrent) return false;
@@ -392,7 +392,7 @@ async function sendEstimate(){
 
 async function emailDoc(id, email){
   const { data, error } = await sb.functions.invoke('send-invoice-email', { body: { invoiceId: id, recipientEmail: email } });
-  if(error || (data && data.error)){ alert('Saved, but the email could not be sent: ' + (error ? error.message : data.error)); return false; }
+  if(error || (data && data.error)){ relayNotice('The estimate is saved, but the email did not go out. Try sending it again.', { kind: 'error', detail: error ? error.message : data.error }); return false; }
   recordsToast('Emailed to ' + email);
   return true;
 }

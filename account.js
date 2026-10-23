@@ -109,7 +109,7 @@ async function renderMfaBox(){
   };
   const offBtn = document.getElementById('mfaOff');
   if(offBtn) offBtn.onclick = async () => {
-    if(!confirm('Turn off two-step sign-in? Your account will be protected by your password alone.')) return;
+    if(!(await relayConfirm({ message: 'Turn off two-step sign-in? Your account will be protected by your password alone.' }))) return;
     err(''); offBtn.disabled = true;
     for(const f of on){ const { error: e3 } = await sb.auth.mfa.unenroll({ factorId: f.id }); if(e3){ err(e3.message); offBtn.disabled = false; return; } }
     if(typeof recordsToast === 'function') recordsToast('Two-step sign-in is off');

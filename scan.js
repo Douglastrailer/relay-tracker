@@ -138,7 +138,7 @@ async function receiveScan(force){
   if(error){
     btn.disabled = false; btn.textContent = `Receive ${picked.length} line${picked.length === 1 ? '' : 's'} into stock`;
     if(/^DUPLICATE: /.test(error.message)){
-      if(confirm(error.message.replace(/^DUPLICATE: /, '') + '\n\nReceive it again anyway? Stock will be added a second time.')) return receiveScan(true);
+      if(await relayConfirm({ message: error.message.replace(/^DUPLICATE: /, '') + '\n\nReceive it again anyway? Stock will be added a second time.', confirmText: 'Receive again', danger: true })) return receiveScan(true);
       return;
     }
     err.textContent = error.message; return;

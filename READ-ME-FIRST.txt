@@ -1,9 +1,12 @@
-RelayFleet website - live service requests, and no landing flash on refresh
+RelayFleet website - in-app messages instead of browser pop-ups
 
-ORDER:
- 1. Run migration 0043_live_requests_and_fast_start.sql in the Supabase SQL Editor (needs 0042).
- 2. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R; on phones close and reopen.
+Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R; on phones close and reopen.
+No database or Edge Function changes.
 
 What changed:
-- When a customer submits a request, the owner sees the Requests list and the count update at once, with a short notice naming the company. Accepted or declined requests update too. A one-minute check keeps the count current while the app is open.
-- Refreshing the app shows a plain loading screen, then the person\x27s own screen. The landing page no longer flashes first.
+- Every browser pop-up (alert and confirm, 148 in total) is replaced by an in-app message or question that matches Relay.
+- Database and connection errors are written in plain words, saying what to do next. The technical detail is kept under "Technical detail (for support)".
+- Questions that would delete or cancel have a safe button focused, so pressing Enter does not delete by accident.
+- The app\x27s own clear messages, such as "This job is already invoiced", are shown as they are.
+
+PLEASE REVIEW: relay-messages-review.csv lists every message. Mark any that are not accurate or could be clearer.

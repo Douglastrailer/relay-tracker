@@ -23,7 +23,7 @@ function undoToast(msg, undo){
   t.querySelector('span').textContent = msg; t.classList.add('show');
   clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 7000);
   t.querySelector('.undo-btn').onclick = async () => { t.classList.remove('show'); clearTimeout(t._h);
-    try { const err = await undo(); if(err) alert("Couldn't undo: " + err); else recordsToast('Undone'); } catch(e){ alert("Couldn't undo: " + (e.message || e)); } };
+    try { const err = await undo(); if(err) relayFail(err, "Couldn't undo"); else recordsToast('Undone'); } catch(e){ relayFail(e, "Couldn't undo"); } };
 }
 function recordsToast(msg){
   let t = document.getElementById('recordsToast');
@@ -223,7 +223,7 @@ async function saveUnit(existing){
   if(!number){ err.textContent = 'Unit number is required.'; return; }
   const vinRaw = nullIfBlank(document.getElementById('ufVin').value);
   const vin = vinRaw ? (typeof cleanVin === 'function' ? cleanVin(vinRaw) : vinRaw) : null;   // no spaces/dashes; drops the extra leading "I" some VIN barcodes add
-  if(vin && vin.length !== 17 && !confirm('A VIN is normally exactly 17 characters. Save "' + vin + '" anyway?')) return;
+  if(vin && vin.length !== 17 && !(await relayConfirm({ message: 'A VIN is normally exactly 17 characters. Save "' + vin + '" anyway?', confirmText: 'Save anyway' }))) return;
   const row = {
     unit_number: number,
     unit_type: document.getElementById('ufType').value,
@@ -460,12 +460,12 @@ async function roUpdateStatus(job){
   const sel = document.getElementById('roStatus');
   const status = sel.value;
   if(status === job.status) return;
-  if(status === 'en_route' && job.job_type === 'inshop'){ alert('In-shop jobs don\'t travel, so they can\'t be "Heading there".'); return; }
-  if(status === 'cancelled' && !confirm('Cancel this work order? It will leave the board.')) return;
+  if(status === 'en_route' && job.job_type === 'inshop'){ relayNotice('In-shop jobs don\'t travel, so they can\'t be "Heading there".', { kind: 'info' }); return; }
+  if(status === 'cancelled' && !(await relayConfirm({ message: 'Cancel this work order? It will leave the board.', confirmText: 'Cancel work order', cancelText: 'Keep it', danger: true }))) return;
   const btn = document.getElementById('roStatusSave'); btn.disabled = true;
   const { error } = await sb.from('jobs').update({ status, updated_at: new Date().toISOString() }).eq('id', job.id);
   btn.disabled = false;
-  if(error){ alert('Could not update the status: ' + error.message); return; }
+  if(error){ relayFail(error, 'Could not update the status'); return; }
   { const prev = job.status, id = job.id;
     undoToast('Status updated to ' + statusLabel(status), async () => {
       const { error: e } = await sb.from('jobs').update({ status: prev, updated_at: new Date().toISOString() }).eq('id', id);
@@ -546,9 +546,9 @@ function wireWoActions(job, opts){
   on('woUnitHist', () => openUnitHistory(job.unit_id));
   on('woActUpdate', () => { showWoTab('messages'); const d = document.querySelector('#roComms2 details.comm-compose'); if(d){ d.open = true; const sub = document.getElementById('commSubject'); if(sub) sub.focus(); } });
   on('woActComplete', async () => {
-    if(!confirm('Mark this work order complete?')) return;
+    if(!(await relayConfirm({ message: 'Mark this work order complete?' }))) return;
     const { error } = await sb.from('jobs').update({ status: 'complete', updated_at: new Date().toISOString() }).eq('id', job.id);
-    if(error){ alert(error.message); return; }
+    if(error){ relayFail(error.message); return; }
     if(typeof notifyKick === 'function') notifyKick();
     recordsToast('Work order completed');
     openRepairOrder(job.id); if(typeof refreshCurrentView === 'function') refreshCurrentView();
@@ -557,9 +557,9 @@ function wireWoActions(job, opts){
   window.__woJob = job;   // for "Draft with Natasha"
   on('woActInvoice', () => { if(typeof generateInvoiceFromWork === 'function') generateInvoiceFromWork(job); });
   on('woActDelete', async () => {
-    if(!confirm(`Delete ${job.ro_number || 'this work order'}? This cannot be undone.`)) return;
+    if(!(await relayConfirm({ message: `Delete ${job.ro_number || 'this work order'}? This cannot be undone.` }))) return;
     const { error } = await sb.from('jobs').delete().eq('id', job.id);
-    if(error){ alert('Could not delete: ' + error.message); return; }
+    if(error){ relayFail(error, 'Could not delete'); return; }
     closeRepairOrder(); if(typeof refreshCurrentView === 'function') refreshCurrentView();
   });
   on('woEditBtn', async () => {
@@ -571,11 +571,11 @@ function wireWoActions(job, opts){
       const customer = box.querySelector('.ej-customer').value.trim(), vehicle = box.querySelector('.ej-vehicle').value.trim();
       const mechanic_id = box.querySelector('.ej-mechanic').value;
       const fleetSel = box.querySelector('.ej-fleet'); const fleet_profile_id = fleetSel && fleetSel.value ? fleetSel.value : null;
-      if(!customer || !vehicle || !mechanic_id){ alert('Customer, unit and technician are required.'); return; }
+      if(!customer || !vehicle || !mechanic_id){ relayNotice('Customer, unit and technician are required.', { kind: 'info' }); return; }
       const rec = await resolveCustomerAndUnit(customer, vehicle, null);
-      if(rec.error){ alert(rec.error); return; }
+      if(rec.error){ relayFail(rec.error); return; }
       const { error } = await sb.from('jobs').update({ customer, vehicle, customer_id: rec.customerId, unit_id: rec.unitId, mechanic_id, fleet_profile_id, updated_at: new Date().toISOString() }).eq('id', job.id);
-      if(error){ alert('Could not save: ' + error.message); return; }
+      if(error){ relayFail(error, 'Could not save'); return; }
       if(typeof notifyKick === 'function') notifyKick();
       recordsToast('Work order updated');
       openRepairOrder(job.id); if(typeof refreshCurrentView === 'function') refreshCurrentView();

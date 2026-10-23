@@ -112,7 +112,7 @@ function renderContacts(c, contacts){
       recordsToast(k ? 'Contact saved' : 'Contact added'); openCustomerProfile(c.id);
     };
     const del = document.getElementById('ckDel');
-    if(del) del.onclick = async () => { if(!confirm('Remove this contact?')) return; const { error } = await sb.from('customer_contacts').delete().eq('id', k.id); if(error){ alert(error.message); return; } openCustomerProfile(c.id); };
+    if(del) del.onclick = async () => { if(!(await relayConfirm({ message: 'Remove this contact?' }))) return; const { error } = await sb.from('customer_contacts').delete().eq('id', k.id); if(error){ relayFail(error.message); return; } openCustomerProfile(c.id); };
   };
   const add = document.getElementById('cpAddContact'); if(add) add.onclick = () => form(null);
   box.querySelectorAll('[data-kedit]').forEach(b => b.onclick = () => form(contacts.find(k => k.id === Number(b.dataset.kedit))));
@@ -157,9 +157,9 @@ async function loadInvoicePayments(doc){
     openEstimateEditor(doc.id);
   };
   box.querySelectorAll('[data-pdel]').forEach(b => b.onclick = async () => {
-    if(!confirm('Delete this payment? The invoice balance goes back up.')) return;
+    if(!(await relayConfirm({ message: 'Delete this payment? The invoice balance goes back up.' }))) return;
     const { error } = await sb.from('payments').delete().eq('id', Number(b.dataset.pdel));
-    if(error){ alert(error.message); return; }
+    if(error){ relayFail(error.message); return; }
     openEstimateEditor(doc.id);
   });
 }
@@ -178,9 +178,9 @@ async function renderClockCard(){
       <button type="button" class="ghost-btn" id="clockOutBtn">Clock out</button></div>`;
     clockTimer = setInterval(() => { const d = document.getElementById('clockDur'); if(d) d.textContent = fmt(); else clearInterval(clockTimer); }, 30000);
     document.getElementById('clockOutBtn').onclick = async () => {
-      if(!confirm('Clock out? Any running job timer stops too.')) return;
+      if(!(await relayConfirm({ message: 'Clock out? Any running job timer stops too.' }))) return;
       const { error } = await sb.rpc('clock_out');
-      if(error){ alert(error.message); return; }
+      if(error){ relayFail(error.message); return; }
       recordsToast('Clocked out'); renderClockCard(); if(typeof renderMechJobs === 'function') renderMechJobs();
     };
   } else {
@@ -188,7 +188,7 @@ async function renderClockCard(){
       <button type="button" class="clock-in-btn" id="clockInBtn">Clock in</button></div>`;
     document.getElementById('clockInBtn').onclick = async () => {
       const { error } = await sb.rpc('clock_in');
-      if(error){ alert(error.message); return; }
+      if(error){ relayFail(error.message); return; }
       recordsToast('Clocked in'); renderClockCard();
     };
   }
@@ -248,7 +248,7 @@ async function renderAttendance(from, to, entries, mechanics){
   };
   const add = document.getElementById('attAdd'); if(add) add.onclick = () => form(null);
   box.querySelectorAll('[data-sedit]').forEach(b => b.onclick = () => form(shifts.find(s => s.id === Number(b.dataset.sedit))));
-  box.querySelectorAll('[data-sdel]').forEach(b => b.onclick = async () => { if(!confirm('Delete this shift?')) return; const { error } = await sb.from('time_clock').delete().eq('id', Number(b.dataset.sdel)); if(error){ alert(error.message); return; } refreshTimePage(); });
+  box.querySelectorAll('[data-sdel]').forEach(b => b.onclick = async () => { if(!(await relayConfirm({ message: 'Delete this shift?' }))) return; const { error } = await sb.from('time_clock').delete().eq('id', Number(b.dataset.sdel)); if(error){ relayFail(error.message); return; } refreshTimePage(); });
 }
 
 // ================= Shop floor (TV) =================
@@ -323,7 +323,7 @@ async function loadWoBay(job){
   const s = document.getElementById('woBaySave');
   if(s) s.onclick = async () => {
     const { error } = await sb.from('jobs').update({ bay_id: Number(document.getElementById('woBay').value) || null }).eq('id', job.id);
-    if(error){ alert(error.message); return; }
+    if(error){ relayFail(error.message); return; }
     recordsToast('Bay saved');
   };
 }

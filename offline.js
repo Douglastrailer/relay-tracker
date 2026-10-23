@@ -94,7 +94,7 @@ async function offlineFlush(){
   } finally { offlineSending = false; }
   offlineRenderBanner();
   if(refused.length && typeof alert === 'function'){
-    alert('Some work saved on your phone could not be sent:\n\n' + refused.map(r => '• ' + r.label + ' — ' + r.message).join('\n') + '\n\nOpen the job and check it.');
+    relayNotice('Some work saved on your phone could not be sent:\n\n' + refused.map(r => '• ' + r.label + ' — ' + r.message).join('\n') + '\n\nOpen the job and check it.', { kind: 'error', title: 'Not everything was sent' });
   }
   if(sent){
     if(typeof renderMechJobs === 'function') try { renderMechJobs(); } catch(_){}

@@ -62,9 +62,9 @@ async function loadRoComms(job, opts){
   };
   const rb = document.getElementById('commReview');
   if(rb) rb.onclick = async () => {
-    if(rev && !confirm('A review was already requested for this job. Send another?')) return;
+    if(rev && !(await relayConfirm({ message: 'A review was already requested for this job. Send another?', confirmText: 'Send another' }))) return;
     const { error } = await sb.rpc('request_review', { p_job: job.id, p_email: null, p_resend: !!rev });
-    if(error){ alert(error.message); return; }
+    if(error){ relayFail(error.message); return; }
     recordsToast('Review request queued'); notifyKick(); loadRoComms(job, opts);
   };
 }

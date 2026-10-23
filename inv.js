@@ -60,7 +60,7 @@ function invErr(msg){
   const sheet = document.getElementById('formSheet');
   const inSheet = sheet && !sheet.classList.contains('hidden') ? sheet.querySelector('#invErr') : null;
   const e = inSheet || document.getElementById('invPanelErr') || document.getElementById('invErr');
-  if(e) e.textContent = msg; else if(msg) alert(msg);
+  if(e) e.textContent = msg; else if(msg) relayNotice(msg, { kind: 'error' });
 }
 
 // ---------------- Parts & prices ----------------
@@ -148,9 +148,9 @@ function renderParts(){
     else if(b.dataset.hist) openHistory(Number(b.dataset.hist));
     else if(b.dataset.usage) openUsage(Number(b.dataset.usage));
     else if(b.dataset.del){
-      if(!confirm('Remove this from your parts and price list? Its history is kept.')) return;
+      if(!(await relayConfirm({ message: 'Remove this from your parts and price list? Its history is kept.' }))) return;
       const { error } = await sb.from('inventory_items').update({ active:false }).eq('id', Number(b.dataset.del));
-      if(error){ alert(error.message); return; }
+      if(error){ relayFail(error.message); return; }
       load(false); if(typeof populateInventoryPicker === 'function') populateInventoryPicker();
     }
   });
@@ -246,18 +246,18 @@ async function openHistory(id){
 
 async function reorderLowStock(){
   const low = invState.items.filter(i => (invState.onhand[i.id] || {}).low);
-  if(!low.length){ alert('Nothing is low on stock right now.'); return; }
-  if(!confirm(`Create draft purchase orders for ${low.length} low part${low.length === 1 ? '' : 's'}? One per vendor; you can edit them before ordering.`)) return;
+  if(!low.length){ relayNotice('Nothing is low on stock right now.', { kind: 'info' }); return; }
+  if(!(await relayConfirm({ message: `Create draft purchase orders for ${low.length} low part${low.length === 1 ? '' : 's'}? One per vendor; you can edit them before ordering.` }))) return;
   const byVendor = {};
   low.forEach(i => { (byVendor[i.vendor_id || 0] = byVendor[i.vendor_id || 0] || []).push(i); });
   let made = 0;
   for(const [vid, items] of Object.entries(byVendor)){
     const { data: po, error } = await sb.from('purchase_orders').insert([{ org_id: session.orgId, vendor_id: Number(vid) || null, notes: 'Low-stock reorder', created_by: session.id }]).select('id').single();
-    if(error){ alert(error.message); return; }
+    if(error){ relayFail(error.message); return; }
     // Order enough to get back to twice the minimum.
     const lines = items.map(i => ({ po_id: po.id, item_id: i.id, unit_cost: i.cost, qty_ordered: Math.max(1, Math.ceil(Number(i.min_qty) * 2 - Number((invState.onhand[i.id] || {}).on_hand || 0))) }));
     const { error: e2 } = await sb.from('purchase_order_lines').insert(lines);
-    if(e2){ alert(e2.message); return; }
+    if(e2){ relayFail(e2, 'Could not save'); return; }
     made++;
   }
   recordsToast(made + ' draft purchase order' + (made === 1 ? '' : 's') + ' created');
@@ -314,7 +314,7 @@ function openPO(id){
   box.querySelectorAll('[data-rmline]').forEach(b => b.onclick = async () => { const { error } = await sb.from('purchase_order_lines').delete().eq('id', Number(b.dataset.rmline)); if(error){ invErr(error.message); return; } reopen(); });
   on('#poOrdered', async () => { if(!lines.length){ invErr('Add at least one line first.'); return; } const e = await saveHeader(); if(e){ invErr(e.message); return; }
     const { error } = await sb.from('purchase_orders').update({ status:'ordered' }).eq('id', po.id); if(error){ invErr(error.message); return; } recordsToast('Marked ordered'); reopen(); });
-  on('#poCancel', async () => { if(!confirm('Cancel this purchase order?')) return; const { error } = await sb.from('purchase_orders').update({ status:'cancelled' }).eq('id', po.id); if(error){ invErr(error.message); return; } reopen(); });
+  on('#poCancel', async () => { if(!(await relayConfirm({ message: 'Cancel this purchase order?' }))) return; const { error } = await sb.from('purchase_orders').update({ status:'cancelled' }).eq('id', po.id); if(error){ invErr(error.message); return; } reopen(); });
   box.querySelectorAll('[data-recv]').forEach(b => b.onclick = async () => {
     const lid = Number(b.dataset.recv), q = parseFloat(box.querySelector(`[data-rq="${lid}"]`).value), cRaw = box.querySelector(`[data-rc="${lid}"]`).value;
     b.disabled = true;
@@ -423,7 +423,7 @@ async function loadRoParts(job, opts){
   const add = document.getElementById('ppAdd');
   if(add) add.onclick = async () => {
     { const it0 = pick(); if(it0 && typeof fitmentFor === 'function'){ const f = lastFit && lastFit.id === it0.id ? lastFit.f : await fitmentFor(it0.id, job.unit_id);
-        if(f && f.verdict === 'mismatch' && !confirm("This part doesn't match this unit:\n" + (f.reason || '') + "\n\nAdd it anyway?")) return; } }
+        if(f && f.verdict === 'mismatch' && !(await relayConfirm({ message: "This part doesn't match this unit:\n" + (f.reason || '') + "\n\nAdd it anyway?", confirmText: 'Add anyway' }))) return; } }
     const txt = document.getElementById('ppSearch').value.trim().toLowerCase();
     const it = its.find(i => (i.name + (i.part_number ? ' (' + i.part_number + ')' : '')).toLowerCase() === txt) || its.find(i => i.part_number && i.part_number.toLowerCase() === txt) || its.find(i => i.name.toLowerCase() === txt);
     const err = document.getElementById('ppErr'); err.textContent = '';
@@ -439,7 +439,7 @@ async function loadRoParts(job, opts){
     const q = prompt(`How many to return to stock? (up to ${b.dataset.max})`, b.dataset.max);
     if(q === null) return;
     const { error } = await sb.rpc('return_part', { p_job_part: Number(b.dataset.ret), p_qty: parseFloat(q) });
-    if(error){ alert(error.message); return; }
+    if(error){ relayFail(error.message); return; }
     recordsToast('Returned to stock'); loadRoParts(job, opts);
   });
 }
@@ -541,7 +541,7 @@ async function renderCount(){
     if(!counts.length){ invErr('Type at least one count first.'); return; }
     if(counts.some(c => !(c.counted >= 0))){ invErr('A count cannot be below zero.'); return; }
     const changed = counts.filter(c => { const r = countState.rows.find(x => x.item_id === c.item_id); return r && Number(r.expected) !== c.counted; }).length;
-    if(!confirm(`Save this count? ${changed} part${changed === 1 ? '' : 's'} will change, out of ${counts.length} counted.`)) return;
+    if(!(await relayConfirm({ message: `Save this count? ${changed} part${changed === 1 ? '' : 's'} will change, out of ${counts.length} counted.` }))) return;
     const btn = document.getElementById('cntSave'); btn.disabled = true; btn.textContent = 'Saving…';
     const { data, error } = await sb.rpc('apply_count_session', { p_location: Number(countState.location), p_counts: counts, p_note: 'Stock count' });
     btn.disabled = false; btn.textContent = 'Save the count';
@@ -641,7 +641,7 @@ function openPriceChange(){
   };
   document.getElementById('pcApply').onclick = async () => {
     const a = args();
-    if(!confirm('Change these prices? This updates your price list for new estimates and invoices. Work already written keeps its prices.')) return;
+    if(!(await relayConfirm({ message: 'Change these prices? This updates your price list for new estimates and invoices. Work already written keeps its prices.' }))) return;
     const btn = document.getElementById('pcApply'); btn.disabled = true; btn.textContent = 'Applying…';
     const { data, error } = await sb.rpc('apply_price_change', a);
     btn.textContent = 'Apply';

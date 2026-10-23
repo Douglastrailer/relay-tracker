@@ -92,7 +92,7 @@ function wireSubscriptions(box){
   });
   box.querySelectorAll('[data-toggle]').forEach(b => b.onclick = async () => {
     const turnOn = b.dataset.active === '0';
-    if(!turnOn && !confirm('Stop this shop? It keeps its history and can be started again, but it cannot create new work while stopped.')) return;
+    if(!turnOn && !(await relayConfirm({ message: 'Stop this shop? It keeps its history and can be started again, but it cannot create new work while stopped.', confirmText: 'Stop shop', danger: true }))) return;
     const { error } = await sb.rpc('set_shop_subscription', { p_org: b.dataset.toggle, p_price: null, p_paid_through: null, p_active: turnOn });
     if(error){ subErr('subErr', error.message); return; }
     recordsToast(turnOn ? 'Started' : 'Stopped'); renderSubscriptions();
@@ -142,13 +142,13 @@ async function openShopBilling(orgId){
   body.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openEditInvoice(Number(b.dataset.edit), h.invoices.find(x => x.id === Number(b.dataset.edit)), reload));
   body.querySelectorAll('[data-email]').forEach(b => b.onclick = () => emailSubInvoice(Number(b.dataset.email), orgId, body.querySelector('#sbErr')));
   body.querySelectorAll('[data-paid]').forEach(b => b.onclick = async () => {
-    if(!confirm('Mark this invoice as paid? The shop\'s paid-through date moves to the end of its period.')) return;
+    if(!(await relayConfirm({ message: 'Mark this invoice as paid? The shop\'s paid-through date moves to the end of its period.' }))) return;
     const { error: e2 } = await sb.rpc('mark_subscription_paid', { p_invoice: Number(b.dataset.paid), p_paid_on: null });
     if(e2){ body.querySelector('#sbErr').textContent = e2.message; return; }
     recordsToast('Marked paid'); reload();
   });
   body.querySelectorAll('[data-void]').forEach(b => b.onclick = async () => {
-    if(!confirm('Void this invoice? Use this when it was raised by mistake. It stays in the history, marked void.')) return;
+    if(!(await relayConfirm({ message: 'Void this invoice? Use this when it was raised by mistake. It stays in the history, marked void.' }))) return;
     const { error: e2 } = await sb.rpc('void_subscription_invoice', { p_invoice: Number(b.dataset.void) });
     if(e2){ body.querySelector('#sbErr').textContent = e2.message; return; }
     recordsToast('Voided'); reload();

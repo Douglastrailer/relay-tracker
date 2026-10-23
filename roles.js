@@ -79,7 +79,7 @@ async function renderRolesPanel(){
   });
   box.querySelectorAll('[data-staff-active]').forEach(b => b.onclick = async () => {
     const on = b.dataset.on === 'true';
-    if(on && !confirm('Deactivate this person? They are signed out and cannot use Relay until reactivated.')) return;
+    if(on && !(await relayConfirm({ message: 'Deactivate this person? They are signed out and cannot use Relay until reactivated.', confirmText: 'Deactivate', danger: true }))) return;
     const { error } = await sb.from('profiles').update({ active: !on }).eq('id', b.dataset.staffActive);
     if(error){ document.getElementById('rolesErr').textContent = error.message; return; }
     renderRolesPanel();

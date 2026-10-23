@@ -14,7 +14,7 @@
     const b = e.target.closest('.nav-install');
     if(!b) return;
     if(deferred){ deferred.prompt(); try { await deferred.userChoice; } catch(_){} deferred = null; show(false); return; }
-    if(isIOS) alert('To install Relay on your iPhone or iPad:\n\n1. Tap the Share button (square with an arrow) at the bottom of Safari.\n2. Tap "Add to Home Screen".\n3. Tap "Add".');
+    if(isIOS) relayNotice('To install Relay on your iPhone or iPad:\n\n1. Tap the Share button (square with an arrow) at the bottom of Safari.\n2. Tap "Add to Home Screen".\n3. Tap "Add".', { kind: 'info' });
   });
   // iPhone/iPad never fire the install prompt; offer the steps instead.
   document.addEventListener('DOMContentLoaded', () => { if(isIOS && !standalone) show(true); });

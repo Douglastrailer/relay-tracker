@@ -96,7 +96,7 @@ async function renderWorkScreen(){
   }, 1000);
 }
 async function doWorkAction(job, action, btn, opts){
-  if(action === 'complete' && !(opts && opts.confirmed) && !confirm('Mark this job complete?')) return;   // voice asks its own question first
+  if(action === 'complete' && !(opts && opts.confirmed) && !(await relayConfirm({ message: 'Mark this job complete?', confirmText: 'Mark complete' }))) return;   // voice asks its own question first
   document.querySelectorAll('#workBody .work-btn').forEach(b => b.disabled = true);
   // In a dead zone this is saved on the phone and sent when the signal returns.
   const res = typeof offlineRun === 'function'
@@ -140,7 +140,7 @@ function initWorkUI(){
   const sel = document.getElementById('mechStatus');
   if(sel) sel.addEventListener('change', async () => {
     const { error } = await sb.from('profiles').update({ availability: sel.value }).eq('id', session.id);
-    if(error) alert('Could not update your status: ' + error.message);
+    if(error) relayFail(error, 'Could not update your status');
   });
   syncAvailabilitySelect();
 }
@@ -228,9 +228,9 @@ async function refreshTimePage(){
     </div>`).join('')}</div>` : '<div class="empty-note">No time recorded in this period.</div>';
   box.querySelectorAll('[data-edit-time]').forEach(b => b.onclick = () => openTimeForm(Number(b.dataset.editTime)));
   box.querySelectorAll('[data-del-time]').forEach(b => b.onclick = async () => {
-    if(!confirm('Delete this time entry? This is recorded in the activity log.')) return;
+    if(!(await relayConfirm({ message: 'Delete this time entry? This is recorded in the activity log.' }))) return;
     const { error } = await sb.from('time_entries').delete().eq('id', Number(b.dataset.delTime));
-    if(error){ alert(error.message); return; }
+    if(error){ relayFail(error.message); return; }
     refreshTimePage();
   });
   if(typeof renderAttendance === 'function') renderAttendance(from, to, timeEntries, timeMechanics);

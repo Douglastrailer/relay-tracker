@@ -313,7 +313,7 @@ async function generateInvoiceFromWork(job){
   const approved = (docs || []).filter(d => d.kind === 'estimate' && d.status === 'approved').pop();
   if(approved){
     const { data, error } = await sb.rpc('convert_estimate_to_invoice', { p_estimate: approved.id });
-    if(error){ alert('Could not create the invoice: ' + error.message); return; }
+    if(error){ relayFail(error, 'Could not create the invoice'); return; }
     if(typeof notifyKick === 'function') notifyKick();
     openEstimateEditor(Number(data) || approved.id);
     return;
@@ -332,7 +332,7 @@ async function generateInvoiceFromWork(job){
     payment_terms: c.payment_terms || 'due_on_receipt',
     tax_rate: c.tax_exempt ? 0 : Number(o.default_tax_rate || 0)
   }]).select('id').single();
-  if(error){ alert('Could not create the invoice: ' + error.message); return; }
+  if(error){ relayFail(error, 'Could not create the invoice'); return; }
   const lines = [];
   const laborH = timeRes.data ? Math.round(Number(timeRes.data.labor_minutes || 0) / 15) / 4 : 0;
   if(laborH > 0) lines.push({ invoice_id: inv.id, item_type: 'labor', description: 'Labor' + (job.complaint ? ' — ' + job.complaint.slice(0, 80) : ''), quantity: laborH, unit_price: Number(o.labor_rate || 0), taxable: false });
@@ -343,7 +343,7 @@ async function generateInvoiceFromWork(job){
   });
   if(lines.length){
     const { error: e2 } = await sb.from('invoice_items').insert(lines);
-    if(e2) alert('The invoice was created, but its lines could not be added: ' + e2.message);
+    if(e2) relayFail(e2, 'The invoice was created, but its lines could not be added');
   }
   openEstimateEditor(inv.id);
 }

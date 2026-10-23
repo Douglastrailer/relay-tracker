@@ -61,7 +61,7 @@ async function loadRoInspections(job, opts){
       ${opts.canWork ? `<div class="insp-start"><input id="recNewText" maxlength="500" placeholder="Add a recommended repair"><button type="button" id="recAddBtn">Add</button></div>` : ''}`;
     recBox.querySelectorAll('.rec-rep-status').forEach(sel => sel.onchange = async () => {
       const { error } = await sb.from('recommended_repairs').update({ status: sel.value }).eq('id', Number(sel.dataset.rec));
-      if(error){ alert('Could not update: ' + error.message); return; }
+      if(error){ relayFail(error, 'Could not update'); return; }
       recordsToast('Marked ' + REC_STATUS_LABELS[sel.value].toLowerCase());
     });
     const add = document.getElementById('recAddBtn');
@@ -72,7 +72,7 @@ async function loadRoInspections(job, opts){
       add.disabled = true;
       const { error } = await sb.from('recommended_repairs').insert([{ job_id: job.id, description: text }]);
       add.disabled = false;
-      if(error){ alert('Could not add: ' + error.message); return; }
+      if(error){ relayFail(error, 'Could not add'); return; }
       input.value = '';
       recordsToast('Recommended repair added');
       loadRoInspections(job, opts);
@@ -81,11 +81,11 @@ async function loadRoInspections(job, opts){
   const start = document.getElementById('inspStartBtn');
   if(start) start.onclick = async () => {
     const tid = Number(document.getElementById('inspTemplate').value);
-    if(!tid){ alert('Pick a checklist first.'); return; }
+    if(!tid){ relayNotice('Pick a checklist first.', { kind: 'info' }); return; }
     start.disabled = true;
     const { data, error } = await sb.rpc('start_inspection', { p_job: job.id, p_template: tid });
     start.disabled = false;
-    if(error){ alert('Could not start the inspection: ' + error.message); return; }
+    if(error){ relayFail(error, 'Could not start the inspection'); return; }
     openInspection(Number(data));
   };
 }
@@ -204,21 +204,21 @@ function wireItemEditor(el){
     it.result = r; it.recommend = recommend;
     paintItem(el, it);
     const { error } = await sb.from('inspection_items').update({ result: r, recommend }).eq('id', id);
-    if(error){ Object.assign(it, prev); paintItem(el, it); alert('Could not save: ' + error.message); }
+    if(error){ Object.assign(it, prev); paintItem(el, it); relayFail(error, 'Could not save'); }
   });
   const note = el.querySelector('.insp-note');
   note.onchange = async () => {
     const it = inspCurrent.items.find(x => x.id === id);
     it.notes = note.value.trim() || null;
     const { error } = await sb.from('inspection_items').update({ notes: it.notes }).eq('id', id);
-    if(error) alert('Could not save the note: ' + error.message);
+    if(error) relayFail(error, 'Could not save the note');
   };
   const rec = el.querySelector('.insp-rec');
   rec.onchange = async () => {
     const it = inspCurrent.items.find(x => x.id === id);
     it.recommend = rec.checked;
     const { error } = await sb.from('inspection_items').update({ recommend: it.recommend }).eq('id', id);
-    if(error){ rec.checked = !rec.checked; it.recommend = rec.checked; alert('Could not save: ' + error.message); }
+    if(error){ rec.checked = !rec.checked; it.recommend = rec.checked; relayFail(error, 'Could not save'); }
   };
   const file = el.querySelector('.insp-file');
   file.onchange = () => uploadItemMedia(id, file);
@@ -246,17 +246,17 @@ function updateInspProgress(){
 
 async function saveInspectionField(fields){
   const { error } = await sb.from('inspections').update(fields).eq('id', inspCurrent.insp.id);
-  if(error){ alert('Could not save: ' + error.message); return; }
+  if(error){ relayFail(error, 'Could not save'); return; }
   Object.assign(inspCurrent.insp, fields);
 }
 
 async function markRestGood(){
   const blanks = inspCurrent.items.filter(i => !i.result);
   if(!blanks.length) return;
-  if(!confirm(`Mark the ${blanks.length} unchecked item${blanks.length === 1 ? '' : 's'} as Good?`)) return;
+  if(!(await relayConfirm({ message: `Mark the ${blanks.length} unchecked item${blanks.length === 1 ? '' : 's'} as Good?` }))) return;
   const { error } = await sb.from('inspection_items').update({ result: 'good', recommend: false })
     .eq('inspection_id', inspCurrent.insp.id).is('result', null);
-  if(error){ alert('Could not save: ' + error.message); return; }
+  if(error){ relayFail(error, 'Could not save'); return; }
   blanks.forEach(i => { i.result = 'good'; i.recommend = false; });
   document.querySelectorAll('#inspBody .insp-item').forEach(el => paintItem(el, inspCurrent.items.find(x => x.id === Number(el.dataset.item))));
 }
@@ -265,7 +265,7 @@ async function completeInspection(){
   const btn = document.getElementById('inspComplete');
   btn.disabled = true;
   const { data, error } = await sb.rpc('complete_inspection', { p_inspection: inspCurrent.insp.id });
-  if(error){ updateInspProgress(); alert(error.message); return; }
+  if(error){ updateInspProgress(); relayFail(error.message); return; }
   const n = Number(data) || 0;
   recordsToast(n ? `Inspection complete — ${n} recommended repair${n === 1 ? '' : 's'} added` : 'Inspection complete');
   const jobId = inspCurrent.job.id;
@@ -292,10 +292,10 @@ async function uploadItemMedia(itemId, input){
   let file = input.files[0];
   if(!file) return;
   const isVideo = /^video\//.test(file.type);
-  if(isVideo && file.size > MAX_VIDEO_BYTES){ alert('That video is over 50 MB. Record a shorter clip.'); input.value = ''; return; }
+  if(isVideo && file.size > MAX_VIDEO_BYTES){ relayNotice('That video is over 50 MB. Record a shorter clip.', { kind: 'info' }); input.value = ''; return; }
   if(!isVideo){
     file = await compressImage(file);
-    if(file.size > 10 * 1024 * 1024){ alert('That photo is too big (10 MB max).'); input.value = ''; return; }
+    if(file.size > 10 * 1024 * 1024){ relayNotice('That photo is too big (10 MB max).', { kind: 'info' }); input.value = ''; return; }
   }
   const thumbs = document.querySelector(`[data-thumbs="${itemId}"]`);
   if(thumbs) thumbs.insertAdjacentHTML('beforeend', '<span class="insp-uploading">Uploading…</span>');
@@ -303,10 +303,10 @@ async function uploadItemMedia(itemId, input){
   const safeName = file.name.replace(/[^\w.\-]+/g, '_').slice(-80);
   const path = `${jobId}/${Date.now()}-${safeName}`;
   const { error: upErr } = await sb.storage.from('job-attachments').upload(path, file);
-  if(upErr){ alert('Upload failed: ' + upErr.message); input.value = ''; loadInspectionThumbs(); return; }
+  if(upErr){ relayFail(upErr, 'Upload failed'); input.value = ''; loadInspectionThumbs(); return; }
   const { data, error } = await sb.from('job_attachments').insert([{ job_id: jobId, uploader_id: session.id, file_path: path, file_name: safeName, file_type: file.type, photo_type: 'general', inspection_item_id: itemId }]).select('id, file_path, file_name, file_type, inspection_item_id');
   input.value = '';
-  if(error){ alert('The file uploaded but could not be linked: ' + error.message); return; }
+  if(error){ relayFail(error, 'The file uploaded but could not be linked'); return; }
   (inspCurrent.photos[itemId] = inspCurrent.photos[itemId] || []).push(data[0]);
   loadInspectionThumbs();
 }
@@ -355,9 +355,9 @@ function renderInspectionReport(){
   document.getElementById('inspPrint').onclick = () => { document.body.classList.add('printing-insp'); window.print(); setTimeout(() => document.body.classList.remove('printing-insp'), 500); };
   const reopen = document.getElementById('inspReopen');
   if(reopen) reopen.onclick = async () => {
-    if(!confirm('Reopen this inspection so it can be corrected? Recommendations already approved or declined stay as they are.')) return;
+    if(!(await relayConfirm({ message: 'Reopen this inspection so it can be corrected? Recommendations already approved or declined stay as they are.' }))) return;
     const { error } = await sb.from('inspections').update({ status: 'in_progress' }).eq('id', insp.id);
-    if(error){ alert('Could not reopen: ' + error.message); return; }
+    if(error){ relayFail(error, 'Could not reopen'); return; }
     openInspection(insp.id);
   };
 }

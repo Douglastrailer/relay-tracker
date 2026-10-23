@@ -117,7 +117,7 @@ let assistRec = null;
 function assistVoice(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const btn = document.getElementById('assistMic');
-  if(!SR){ alert('Voice input isn\'t available in this browser. Try Chrome or Safari.'); return; }
+  if(!SR){ relayNotice('Voice input isn\'t available in this browser. Try Chrome or Safari.', { kind: 'info' }); return; }
   if(assistRec){ assistRec.stop(); return; }
   assistRec = new SR(); assistRec.lang = 'en-US'; assistRec.interimResults = true;
   const input = document.getElementById('assistInput');

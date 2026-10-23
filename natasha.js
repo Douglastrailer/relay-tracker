@@ -62,18 +62,18 @@ async function natashaDraftEstimate(job, btn){
     const { data, error } = await sb.functions.invoke('assistant', { body: { mode:'draft_estimate', job_id: job.id } });
     let msg = data && data.error;
     if(error){ msg = error.message; try { const b = error.context && typeof error.context.json === 'function' ? await error.context.clone().json() : null; if(b && b.error) msg = b.error; } catch(_){} }
-    if(msg){ alert(msg); return reset(); }
-    if(!data.lines || !data.lines.length){ alert('Natasha couldn\'t suggest any lines from this diagnosis.' + (data.note ? '\n\n' + data.note : '')); return reset(); }
+    if(msg){ relayNotice(msg, { kind: 'info', title: 'Natasha' }); return reset(); }
+    if(!data.lines || !data.lines.length){ relayNotice('Natasha couldn\'t suggest any lines from this diagnosis.' + (data.note ? '\n\n' + data.note : ''), { kind: 'info', title: 'Natasha' }); return reset(); }
     const id = await newEstimateForJob(job, { open:false });
     if(!id) return reset();
     const { error: e2 } = await sb.rpc('replace_invoice_items', { p_invoice: id, p_items: data.lines.map(l => ({ description: l.description, quantity: l.quantity, unit_price: l.unit_price, item_type: l.item_type, taxable: l.taxable, recommended_repair_id: null })) });
-    if(e2){ alert('The draft was created but its lines could not be saved: ' + e2.message); }
+    if(e2){ relayFail(e2, 'The draft was created but its lines could not be saved'); }
     reset();
     if(typeof showWoTab === 'function') showWoTab('billing');
     await openEstimateEditor(id);
     const note = [data.note, (data.dropped || []).length ? 'Left out (not in your parts list or unclear): ' + data.dropped.join(', ') + '.' : ''].filter(Boolean).join(' ');
     recordsToast('Draft estimate ready — review it before sending');
     if(note){ const box = document.getElementById('estErr') || document.getElementById('estBody'); if(box) box.insertAdjacentHTML('afterbegin', `<div class="nat-note"><b>Natasha:</b> ${esc(note)}</div>`); }
-  } catch(e){ alert(e.message || String(e)); reset(); }
+  } catch(e){ relayFail(e, 'Natasha could not answer'); reset(); }
 }
 document.addEventListener('click', (e) => { const b = e.target.closest('#woActDraft'); if(b && window.__woJob) natashaDraftEstimate(window.__woJob, b); });

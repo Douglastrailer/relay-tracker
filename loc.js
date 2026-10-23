@@ -75,7 +75,7 @@ async function loadWoLocation(job){
     const id = Number(document.getElementById('woLoc').value);
     if(id === job.location_id) return;
     const { error } = await sb.from('jobs').update({ location_id: id, bay_id: null }).eq('id', job.id);
-    if(error){ alert(error.message); return; }
+    if(error){ relayFail(error.message); return; }
     job.location_id = id; recordsToast('Moved to ' + shopLocName(id)); if(typeof refreshCurrentView === 'function') refreshCurrentView();
   };
 }
