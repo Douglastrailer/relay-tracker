@@ -1,8 +1,14 @@
-RelayFleet website - Russian for shop screens (draft)
+RelayFleet website - Natasha inventory, mechanic language, Russian on the job screens
 
-Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R.
-No database or Edge Function changes.
+Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R; on phones close and reopen.
 
-What changed: the Russian dictionary now covers about 97% of the visible text on the shop screens and sidebar (measured). Dates follow the chosen language. Invoices and emails are unchanged (English).
+NEEDS: replace the assistant Edge Function with assistant-function/index.ts (one file). No database changes.
 
-NOT YET DONE: messages that appear only with real data (alerts, toasts, error messages) are mostly still English. A native Russian reviewer should check relay-ru-review.csv before this is treated as final.
+What changed:
+- Natasha can now answer about stock (find parts, low stock, below zero, reorder list, part usage, slow movers, cores owed), customers, units, estimates and completed work. Fleet customers still see only their own trucks and repairs.
+- Natasha proposes a reorder; confirming it opens the Low stock tab, and nothing is ordered for you.
+- Natasha answers in the language chosen in the app.
+- Mechanics have a language picker on their own screen.
+- The mechanic job screen is in Russian.
+
+NOT VERIFIED on live data: the inventory answers use the same database functions as the Inventory screens; please ask Natasha "what should we order?" and compare with Inventory > Low stock.

@@ -64,6 +64,7 @@ async function relayLangSet(code, opts){
   if(!i18nActive){ i18nActive = true; i18nObserver.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: I18N_ATTRS }); }
   i18nTree(document.body);
   const sel = document.getElementById('langSelect'); if(sel && sel.value !== code) sel.value = code;
+  const mSelSync = document.getElementById('mechLangSelect'); if(mSelSync && mSelSync.value !== code) mSelSync.value = code;
   return code;
 }
 // called when someone signs in: only shop staff and mechanics get the picker
@@ -71,6 +72,10 @@ function relayLangInit(){
   const ok = typeof session !== 'undefined' && session && (session.role === 'shop' || session.role === 'mechanic');
   const box = document.getElementById('menuLang'), sel = document.getElementById('langSelect');
   if(box) box.classList.toggle('hidden', !ok);
+  // mechanics have no ⋯ menu, so their own profile area carries the same picker
+  const mBox = document.getElementById('mechLangBox'), mSel = document.getElementById('mechLangSelect');
+  if(mBox) mBox.classList.toggle('hidden', !(typeof session !== 'undefined' && session && session.role === 'mechanic'));
+  if(mSel){ if(!mSel.options.length) mSel.innerHTML = Object.entries(RELAY_LANGS).map(([k, v]) => `<option value="${k}">${v}</option>`).join(''); mSel.onchange = () => relayLangSet(mSel.value); }
   if(!ok || !sel) return Promise.resolve('en');
   if(!sel.options.length) sel.innerHTML = Object.entries(RELAY_LANGS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
   sel.onchange = () => relayLangSet(sel.value);

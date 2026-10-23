@@ -7,7 +7,7 @@
 
 let assistMsgs = [];          // conversation sent to the assistant (text only)
 let assistBusy = false;
-const ASSIST_SUGGEST = { shop:['Jobs waiting for parts', 'Unpaid invoices', 'Open road calls', 'Who is available?'],
+const ASSIST_SUGGEST = { shop:['Jobs waiting for parts', 'Unpaid invoices', 'Open road calls', 'Who is available?', 'Low stock items', 'What should we order?', 'Parts used this month'],
   mechanic:['My open jobs', 'Jobs waiting for parts', 'Open road calls'], fleet:['Which of my trucks are in the shop?', 'What do I owe?', 'Recent repairs'] };
 const assistSuggest = () => ASSIST_SUGGEST[session && ['mechanic','fleet'].includes(session.role) ? session.role : 'shop'];
 
@@ -51,6 +51,13 @@ async function assistConfirm(i){
   const m = assistMsgs[i], a = m.action, x = a.input || {};
   const done = (t) => { a.done = t; assistRender(); };
   try {
+    if(a.tool === 'propose_reorder'){
+      // Opens Inventory on the Low stock tab; the person creates the purchase orders there.
+      const t = document.querySelector('.dash-tab[data-target="shop-inventory"]'); if(t) t.click();
+      if(typeof invState !== 'undefined'){ invState.tab = 'reorder'; if(typeof refreshInventoryV2 === 'function') refreshInventoryV2(); }
+      done('Opened Low stock');
+      return;
+    }
     if(a.tool === 'propose_new_work_order'){
       // Opens the normal form, filled in; the person checks it and clicks Create.
       const t = document.querySelector('.dash-tab[data-target="shop-jobs"]'); if(t) t.click();
@@ -90,7 +97,9 @@ async function assistAsk(q){
   assistBusy = true; assistRender();
   const history = assistMsgs.filter(m => m.content).slice(-12).map(m => ({ role: m.role, content: m.content }));
   try {
-    const { data, error } = await sb.functions.invoke('assistant', { body: { messages: history } });
+    // the language the person chose in the app, so Natasha answers in it
+    const lang = (typeof relayLang !== 'undefined' && relayLang) || 'en';
+    const { data, error } = await sb.functions.invoke('assistant', { body: { messages: history, lang } });
     // On an error status, Supabase only says "non-2xx"; the real reason is in the response body.
     let msg = data && data.error;
     if(error){
