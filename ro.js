@@ -331,6 +331,7 @@ async function openRepairOrder(jobId){
       <div class="wo-actions">
         ${isAssignedMech && !closed ? `<button type="button" class="work-open wo-act-primary" data-job="${job.id}">Open work screen</button>` : ''}
         ${isShop ? `<button type="button" class="ghost-btn" id="woActUpdate">Send update</button>` : ''}
+        ${isShop ? `<button type="button" class="ghost-btn" id="woActTrack">Share live tracking</button>` : ''}
         ${(isShop || isAssignedMech) && !closed && job.status !== 'complete' ? `<button type="button" class="ghost-btn" id="woActComplete">Complete job</button>` : ''}
         ${billing && !closed && !['complete'].includes(job.status) ? `<button type="button" class="ghost-btn" id="woActEstimate">Create estimate</button>` : ''}
         ${billing && !closed && !['complete'].includes(job.status) ? `<button type="button" class="ghost-btn nat-draft" id="woActDraft" title="Natasha drafts it from the complaint and diagnosis, using your parts and labor rate">Draft with Natasha</button>` : ''}

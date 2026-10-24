@@ -1,12 +1,13 @@
-RelayFleet website - in-app messages instead of browser pop-ups
+RelayFleet website - shop setup, live tracking links
 
-Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R; on phones close and reopen.
-No database or Edge Function changes.
+ORDER:
+ 1. Run migration 0044_tracking_and_setup.sql in the Supabase SQL Editor (needs 0043).
+ 2. Upload ALL website files (including track.html) to GitHub and commit. Refresh with Cmd+Shift+R.
+
+NOTE: every existing shop owner or office member will see the setup panel at next sign-in until setup is finished.
+No Edge Function changes.
 
 What changed:
-- Every browser pop-up (alert and confirm, 148 in total) is replaced by an in-app message or question that matches Relay.
-- Database and connection errors are written in plain words, saying what to do next. The technical detail is kept under "Technical detail (for support)".
-- Questions that would delete or cancel have a safe button focused, so pressing Enter does not delete by accident.
-- The app\x27s own clear messages, such as "This job is already invoiced", are shown as they are.
-
-PLEASE REVIEW: relay-messages-review.csv lists every message. Mark any that are not accurate or could be clearer.
+- Shops must add a location (address and map pin) and choose customer updates before using Relay. Until then the app is blurred behind a setup panel.
+- Each work order has "Share live tracking": copy the link, email it to the customer on the job, or stop sharing.
+- track.html is the public page the customer opens. It needs no account.

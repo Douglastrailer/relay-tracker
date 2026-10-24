@@ -2510,3 +2510,22 @@ body.booting > *:not(#bootSplash):not(script):not(style):not(link){ display:none
 .relay-dlg-actions button:focus-visible{ outline:3px solid var(--accent-soft); outline-offset:2px; }
 .relay-dlg-ok, .relay-dlg-yes{ background:var(--accent) !important; border-color:var(--accent) !important; color:#fff !important; }
 .relay-dlg-yes.is-danger{ background:var(--danger) !important; border-color:var(--danger) !important; }
+
+/* Shop setup: the panel that blurs the app until setup is finished */
+.setup-gate{ position:fixed; inset:0; z-index:4500; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(14,42,49,.28); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); }
+.setup-gate.is-minimized{ display:none; }
+.setup-card{ background:var(--panel); color:var(--ink); border-radius:var(--r-lg); box-shadow:0 22px 60px rgba(14,42,49,.3); width:min(560px,100%); max-height:calc(100vh - 40px); overflow:auto; padding:24px; border-top:4px solid var(--accent); }
+.setup-card h2{ margin:0 0 6px; font-size:1.3rem; }
+.setup-step{ border:1px solid var(--line); border-radius:var(--r-md); padding:14px; margin-top:14px; }
+.setup-step.is-done{ border-color:var(--live, #2f8f5b); }
+.setup-step-head{ display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+.setup-num{ width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:.85rem; flex:none; }
+.setup-step.is-done .setup-num{ background:var(--live, #2f8f5b); }
+.setup-events{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:8px 14px; margin-top:10px; }
+.setup-check{ display:flex; gap:8px; align-items:center; font-size:.92rem; min-height:36px; }
+.setup-check input{ width:18px; height:18px; }
+.setup-bar{ position:fixed; top:0; left:0; right:0; z-index:4400; display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap; padding:10px 14px; background:var(--accent); color:#fff; font-weight:600; }
+.setup-bar button{ min-height:36px; padding:4px 14px; border-radius:999px; border:1px solid #fff; background:transparent; color:#fff; font:inherit; font-weight:700; cursor:pointer; }
+body.setup-blocked .dash-tabs, body.setup-blocked main{ pointer-events:none; }
+/* Share live tracking */
+#trkLink{ font-family:ui-monospace,monospace; font-size:.85rem; }

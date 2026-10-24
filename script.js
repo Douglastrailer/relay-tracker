@@ -1392,7 +1392,7 @@ function enterApp(){
   }
 
   if(session.role === 'mechanic'){ document.getElementById('mechanicView').classList.remove('hidden'); initMechanicView(); }
-  else if(session.role === 'shop'){ document.getElementById('shopView').classList.remove('hidden'); initShopView(); }
+  else if(session.role === 'shop'){ document.getElementById('shopView').classList.remove('hidden'); initShopView(); if(typeof checkShopSetupGate === 'function') checkShopSetupGate(); }
   else if(session.role === 'admin'){ document.getElementById('adminView').classList.remove('hidden'); initAdminView(); }
   else { document.getElementById('fleetView').classList.remove('hidden'); initFleetView(); }
 
