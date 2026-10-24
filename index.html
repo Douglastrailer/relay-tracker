@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=101"/>
+<link rel="stylesheet" href="style.css?v=102"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -333,7 +333,7 @@
             <select id="suRole">
               <option value="shop">Shop owner (setting up a new company)</option>
               <option value="mechanic">Mechanic (joining an existing company)</option>
-              <option value="fleet">Fleet manager (joining an existing company)</option>
+              <option value="fleet">Fleet manager (no code needed)</option>
             </select>
           </div>
           <div class="field" id="suShopNameField">
@@ -362,7 +362,7 @@
             <select id="cpRole">
               <option value="shop">Shop owner (setting up a new company)</option>
               <option value="mechanic">Mechanic (joining an existing company)</option>
-              <option value="fleet">Fleet manager (joining an existing company)</option>
+              <option value="fleet">Fleet manager (no code needed)</option>
             </select>
           </div>
           <div class="field" id="cpShopNameField">
@@ -860,10 +860,10 @@
     <div class="fleet-panel hidden" id="fp-shops">
       <div class="card" style="margin-bottom:22px;">
       <h3 style="font-family:var(--font-display); font-size:0.92rem; margin-bottom:6px;">Your shops</h3>
-      <p style="font-size:0.8rem; color:var(--ink-soft); margin-bottom:10px;">If your units are serviced by more than one shop, join each one using their invite code — you'll see all your units in one place below.</p>
+      <p style="font-size:0.8rem; color:var(--ink-soft); margin-bottom:10px;">Find a shop under <b>Find shops</b>, then ask it for its fleet code to become a regular customer. Join as many shops as you use — you'll see all your units in one place.</p>
       <div id="fleetShopList" style="margin-bottom:12px;"></div>
       <div class="address-search">
-        <input type="text" id="fleetAddShopCode" placeholder="Enter another shop's invite code" aria-label="Shop invite code">
+        <input type="text" id="fleetAddShopCode" placeholder="Enter the shop's fleet code (starts with F)" aria-label="Shop fleet code" autocapitalize="characters">
         <button type="button" id="fleetAddShopBtn">Join</button>
       </div>
       <div class="auth-error" id="fleetAddShopError"></div>
@@ -1006,7 +1006,7 @@
 <script src="ui-dialogs.js?v=2" defer></script>
 <script src="setup-gate.js?v=2" defer></script>
 <script src="track-share.js?v=1" defer></script>
-<script src="script.js?v=87" defer></script>
+<script src="script.js?v=88" defer></script>
 <script src="ro.js?v=19" defer></script>
 <script src="insp.js?v=4" defer></script>
 <script src="est.js?v=12" defer></script>

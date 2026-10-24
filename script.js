@@ -853,12 +853,38 @@ document.addEventListener('click', (e) => {   // show / hide password
 function updateRoleFields(prefix){
   const role = document.getElementById(prefix+'Role').value;
   document.getElementById(prefix+'ShopNameField').classList.toggle('hidden', role !== 'shop');
-  document.getElementById(prefix+'InviteField').classList.toggle('hidden', role === 'shop');
+  document.getElementById(prefix+'InviteField').classList.toggle('hidden', role !== 'mechanic');   // fleets need no code
   document.getElementById(prefix+'CompanyField').classList.toggle('hidden', role !== 'fleet');
 }
 document.getElementById('suRole').onchange = ()=> updateRoleFields('su');
 document.getElementById('cpRole').onchange = ()=> updateRoleFields('cp');
 updateRoleFields('su'); updateRoleFields('cp');
+
+// Creates the new person's profile at sign-up. The database checks every case:
+//  - shop owner: creates the shop, then becomes its owner (only for a shop they just created)
+//  - mechanic: joins through join_shop_as_staff, which checks the invite code and uses it up
+//  - fleet manager: signs up with no code and belongs to no shop; they join shops later with a fleet code
+async function createSignupProfile(user, f){
+  if(f.role === 'shop'){
+    if(!f.shopName) return { error: 'Enter your company / shop name.' };
+    let orgId = signupCreatedOrg && signupCreatedOrg.name.toLowerCase() === f.shopName.toLowerCase() ? signupCreatedOrg.orgId : null;
+    if(!orgId){
+      const { data, error } = await sb.from('organizations').insert([{ name: f.shopName }]).select('id');
+      if(error || !data || !data[0]) return { error: 'Could not create your company' + (error ? ': ' + friendlyError(error).message : '.') };
+      orgId = data[0].id; signupCreatedOrg = { name: f.shopName, orgId };
+    }
+    const { error } = await sb.from('profiles').insert([{ id: user.id, name: f.name, role: 'shop', org_id: orgId, active: true, email: f.email, phone: f.phone }]);
+    return error ? { error: 'Account created, but profile setup failed: ' + friendlyError(error).message } : {};
+  }
+  if(f.role === 'mechanic'){
+    if(!f.inviteCode) return { error: 'Enter the invite code from your shop owner.' };
+    const { error } = await sb.rpc('join_shop_as_staff', { p_code: f.inviteCode, p_name: f.name, p_email: f.email, p_phone: f.phone });
+    return error ? { error: friendlyError(error).message } : {};
+  }
+  // fleet manager: no shop, no code
+  const { error } = await sb.from('profiles').insert([{ id: user.id, name: f.name, role: 'fleet', company: f.company, org_id: null, active: true, email: f.email, phone: f.phone }]);
+  return error ? { error: 'Account created, but profile setup failed: ' + friendlyError(error).message } : {};
+}
 
 // resolves { orgId, error } for a signup based on role + shop name / invite code
 function generateInviteCode(){
@@ -876,24 +902,6 @@ async function rotateInviteCode(orgId){
 // If profile setup fails after the company was created, clicking the button
 // again must not create a second company: reuse the first one this session.
 let signupCreatedOrg = null; // { name, orgId }
-async function resolveOrgForSignup(role, shopName, inviteCode){
-  if(role === 'shop'){
-    if(!shopName) return { error: 'Enter your company / shop name.' };
-    if(signupCreatedOrg && signupCreatedOrg.name.toLowerCase() === shopName.toLowerCase()){
-      return { orgId: signupCreatedOrg.orgId, joinedViaInvite: false };
-    }
-    const { data, error } = await sb.from('organizations').insert([{ name: shopName }]).select();
-    if(error) return { error: 'Could not create your company: ' + error.message };
-    signupCreatedOrg = { name: shopName, orgId: data[0].id };
-    return { orgId: data[0].id, joinedViaInvite: false };
-  } else {
-    if(!inviteCode) return { error: 'Enter the invite code from your shop owner.' };
-    const { data, error } = await sb.rpc('lookup_org_by_invite_code', { code: inviteCode.trim().toUpperCase() });
-    const org = data && data[0];
-    if(error || !org) return { error: 'Invite code not found or already used — ask your shop owner for a fresh one.' };
-    return { orgId: org.org_id, joinedViaInvite: true };
-  }
-}
 
 document.getElementById('signupSubmit').onclick = async (e)=>{
   const btn = e.target; btn.disabled = true;
@@ -914,15 +922,8 @@ document.getElementById('signupSubmit').onclick = async (e)=>{
   if(error){ authError.textContent = error.message; btn.disabled=false; return; }
 
   if(data.session && data.user){
-    const orgResult = await resolveOrgForSignup(role, shopName, inviteCode);
-    if(orgResult.error){ authError.textContent = orgResult.error; btn.disabled=false; return; }
-    const { error: profileErr } = await sb.from('profiles').insert([{ id:data.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true, email, phone }]);
-    if(profileErr){ authError.textContent = 'Account created, but profile setup failed: ' + profileErr.message; btn.disabled=false; return; }
-    if(role === 'fleet'){
-      const { error: linkErr } = await sb.from('fleet_shop_links').insert([{ fleet_id:data.user.id, org_id:orgResult.orgId }]);
-      if(linkErr) console.error('fleet_shop_links insert failed on signup', linkErr); // recoverable via "Join another shop" in their dashboard
-    }
-    if(orgResult.joinedViaInvite) rotateInviteCode(orgResult.orgId);
+    const made = await createSignupProfile(data.user, { role, name, email, phone, shopName, inviteCode, company });
+    if(made.error){ authError.textContent = made.error; btn.disabled=false; return; }
     onAuthed(data.session.user.id);
   } else {
     authError.textContent = '';
@@ -997,18 +998,10 @@ document.getElementById('completeProfileSubmit').onclick = async (e)=>{
   authError.textContent = '';
   if(!name || !phone || (role==='fleet' && !company)){ authError.textContent = 'Fill in all required fields.'; btn.disabled=false; return; }
 
-  const orgResult = await resolveOrgForSignup(role, shopName, inviteCode);
-  if(orgResult.error){ authError.textContent = orgResult.error; btn.disabled=false; return; }
-
   const { data: userData, error: getUserErr } = await sb.auth.getUser();
   if(getUserErr || !userData || !userData.user){ authError.textContent = 'Something went wrong confirming your session — please refresh and try again.'; btn.disabled=false; return; }
-  const { error } = await sb.from('profiles').insert([{ id:userData.user.id, name, role, company: role==='fleet'?company:null, org_id:orgResult.orgId, active:true, email:userData.user.email, phone }]);
-  if(error){ authError.textContent = error.message; btn.disabled=false; return; }
-  if(role === 'fleet'){
-    const { error: linkErr } = await sb.from('fleet_shop_links').insert([{ fleet_id:userData.user.id, org_id:orgResult.orgId }]);
-    if(linkErr) console.error('fleet_shop_links insert failed on signup', linkErr); // recoverable via "Join another shop" in their dashboard
-  }
-  if(orgResult.joinedViaInvite) rotateInviteCode(orgResult.orgId);
+  const made = await createSignupProfile(userData.user, { role, name, email: userData.user.email, phone, shopName, inviteCode, company });
+  if(made.error){ authError.textContent = made.error; btn.disabled=false; return; }
   await onAuthed(userData.user.id);
   btn.disabled = false;
 };
@@ -2610,7 +2603,6 @@ async function resolveCustomerAndUnit(customerName, unitNumber, unitType){
 async function renderTeamList(){
   const members = await fetchOrgMembers();
   const mechanics = members.filter(m=>m.role==='mechanic');
-  const fleets = members.filter(m=>m.role==='fleet');
   const box = document.getElementById('teamList');
 
   function rowHtml(m){
@@ -2628,9 +2620,9 @@ async function renderTeamList(){
   box.innerHTML = `
     <div class="team-subhead">Mechanics</div>
     ${mechanics.length ? mechanics.map(rowHtml).join('') : '<div class="empty-note">No mechanics have signed up yet.</div>'}
-    <div class="team-subhead">Fleet managers</div>
-    ${fleets.length ? fleets.map(rowHtml).join('') : '<div class="empty-note">No fleet managers have signed up yet.</div>'}
+    <div id="fleetCustomersBox"></div>
   `;
+  renderFleetCustomers();
 
   box.querySelectorAll('.team-skills-btn').forEach(btn=>{
     btn.onclick = ()=>{ const m = mechanics.find(x=>x.id===btn.dataset.id); if(m && typeof openSkillsEditor === 'function') openSkillsEditor(m); };
@@ -2784,16 +2776,11 @@ document.getElementById('fleetAddShopBtn').onclick = async ()=>{
   errBox.textContent = '';
   if(!code){ errBox.textContent = 'Enter an invite code.'; return; }
 
-  const { data: orgRows, error: orgErr } = await sb.rpc('lookup_org_by_invite_code', { code });
-  const org = orgRows && orgRows[0];
-  if(orgErr || !org){ errBox.textContent = 'Invite code not found — double check it with that shop.'; return; }
-
-  const { error: linkErr } = await sb.from('fleet_shop_links').insert([{ fleet_id: session.id, org_id: org.org_id }]);
-  if(linkErr){
-    errBox.textContent = linkErr.code === '23505' ? 'You\'ve already joined that shop.' : 'Could not join: ' + linkErr.message;
-    return;
-  }
-  await rotateInviteCode(org.id);
+  // the shop's FLEET code (separate from its staff code); the database checks it and limits guesses
+  const { data, error } = await sb.rpc('fleet_join_shop', { p_code: code });
+  if(error){ errBox.textContent = friendlyError(error, 'Could not join').message; return; }
+  if(data && data.error){ errBox.textContent = data.error; return; }
+  if(typeof recordsToast === 'function') recordsToast('You are now a regular customer of ' + ((data && data.shop) || 'the shop'));
   codeInput.value = '';
   loadFleetShops();
   refreshFleetData();
@@ -3139,3 +3126,43 @@ async function refreshAdminData(){
     else{ root.setAttribute('data-theme','dark'); knob.innerHTML = icon('moon', 14); localStorage.setItem('relay_theme','dark'); }
   };
 })();
+
+
+// ---------- Team & time: the shop's regular fleet customers ----------
+// Fleet accounts belong to the fleet manager, not to the shop: the shop never switches them on or off.
+// The owner can remove a fleet from the regular customers, and shares the fleet code that adds new ones.
+async function renderFleetCustomers(){
+  const box = document.getElementById('fleetCustomersBox'); if(!box || !session || session.role !== 'shop') return;
+  const isOwner = session.staffRole === 'owner';
+  const { data, error } = await sb.rpc('shop_fleet_customers');
+  if(error || !data){ box.innerHTML = '<div class="team-subhead">Regular fleet customers</div>' + (error && /Only the shop owner or office/.test(error.message) ? '' : `<p class="form-error">${esc(friendlyError(error, 'Could not load your fleet customers').message)}</p>`); return; }
+  const fleets = data.fleets || [];
+  const day = v => v ? new Date(v).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+  box.innerHTML = `<div class="team-subhead">Regular fleet customers</div>
+    <p class="meta">Fleet managers open their own Relay account, find you under Find shops, and become your regular customer with your fleet code. You can remove a fleet from this list; their own account stays theirs.</p>
+    ${isOwner ? `<div class="fleet-code-box"><div><span class="meta">Your fleet code</span><b class="mono" id="fleetCodeVal">${esc(data.fleet_code || '')}</b></div>
+      <div class="job-actions" style="margin-top:0;"><button type="button" class="ghost-btn" id="fleetCodeCopy">Copy</button><button type="button" class="text-btn" id="fleetCodeNew">Make a new code</button></div></div>
+      <p class="meta">Share it only with fleets you want as customers. It is separate from the mechanic invite code, so a fleet can never use it to join your team.</p>` : ''}
+    <p class="form-error" id="fleetCustErr"></p>
+    ${fleets.length ? fleets.map(f => `<div class="team-row">
+        <div><div class="tname">${esc(f.company || f.name || 'Fleet')}</div>
+        <div class="tstatus">${esc([f.name && f.company ? f.name : '', f.email, f.phone].filter(Boolean).join(' · '))}${f.since ? ' — customer since ' + esc(day(f.since)) : ''}</div></div>
+        ${isOwner ? `<button type="button" class="text-btn danger" data-fleetremove="${esc(f.fleet_id)}" data-name="${esc(f.company || f.name || 'this fleet')}">Remove</button>` : ''}
+      </div>`).join('') : '<div class="empty-note">No regular fleet customers yet.</div>'}`;
+  const err = m => { const e = document.getElementById('fleetCustErr'); if(e) e.textContent = m || ''; };
+  const copy = document.getElementById('fleetCodeCopy');
+  if(copy) copy.onclick = async () => { try { await navigator.clipboard.writeText(data.fleet_code); recordsToast('Fleet code copied'); } catch(_){ err('Could not copy automatically. Select the code and copy it.'); } };
+  const nw = document.getElementById('fleetCodeNew');
+  if(nw) nw.onclick = async () => {
+    if(!(await relayConfirm({ message: 'Make a new fleet code? The old code stops working. Fleets that already joined stay your customers.', confirmText: 'Make a new code' }))) return;
+    const { data: code, error: e2 } = await sb.rpc('new_fleet_invite_code');
+    if(e2){ err(friendlyError(e2, 'Could not make a new code').message); return; }
+    recordsToast('New fleet code ready'); renderFleetCustomers();
+  };
+  box.querySelectorAll('[data-fleetremove]').forEach(b => b.onclick = async () => {
+    if(!(await relayConfirm({ message: 'Remove ' + b.dataset.name + ' from your regular customers? They keep their own Relay account, but no longer see your shop\'s work and invoices. They can join again with your fleet code.', confirmText: 'Remove', danger: true }))) return;
+    const { error: e3 } = await sb.rpc('remove_fleet_customer', { p_fleet: b.dataset.fleetremove });
+    if(e3){ err(friendlyError(e3, 'Could not remove the fleet').message); return; }
+    recordsToast('Removed from your regular customers'); renderFleetCustomers();
+  });
+}

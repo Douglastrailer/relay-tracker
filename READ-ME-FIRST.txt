@@ -1,12 +1,13 @@
-RelayFleet website - shop setup panel, fixed
+RelayFleet website - fleet accounts and a sign-up security fix
 
-ORDER:
- 1. Run migration 0045_setup_required.sql in the Supabase SQL Editor (needs 0044).
+ORDER (both together, the same day):
+ 1. Run migration 0046_fleet_accounts_and_signup_security.sql in the Supabase SQL Editor (needs 0045).
  2. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
 
+Why together: after 0046 the database only lets mechanics join through the new checked sign-up, which this website uses. The old website would show an error to a new mechanic.
+
 What changed:
-- The location form is now inside the setup panel: address, Find on map, a map to place or drag the pin, optional phone. No need to leave the panel.
-- The app behind the panel cannot be used at all until setup is finished.
-- If the setup check fails on refresh, it keeps retrying, so the app is not left open by accident.
-- The database itself refuses new work orders, estimates and invoices until setup is finished.
-- New look: a centred card on desktop, full screen on a phone.
+- SECURITY FIX: a new user could attach themselves to any shop as a mechanic and read its work orders and team contacts. Now the database checks the invite code.
+- Fleet managers sign up with no code. They find shops under Find shops and join with the shop\x27s fleet code (starts with F).
+- Team & time: "Regular fleet customers" with the fleet code (owner), Copy, Make a new code, and Remove. Shops no longer switch fleet accounts on or off.
+- Existing fleets keep every shop they use today.

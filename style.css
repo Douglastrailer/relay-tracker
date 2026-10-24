@@ -2561,3 +2561,7 @@ body.setup-open{ overflow:hidden; }
 }
 /* Share live tracking */
 #trkLink{ font-family:ui-monospace,monospace; font-size:.85rem; }
+
+/* Team & time: the fleet code */
+.fleet-code-box{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding:12px 14px; border:1px solid var(--line); border-radius:var(--r-md); background:var(--panel); margin:8px 0 6px; }
+.fleet-code-box b{ display:block; font-size:1.2rem; letter-spacing:.08em; }
