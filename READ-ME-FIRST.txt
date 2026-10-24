@@ -1,13 +1,12 @@
-RelayFleet website - shop setup, live tracking links
+RelayFleet website - shop setup panel, fixed
 
 ORDER:
- 1. Run migration 0044_tracking_and_setup.sql in the Supabase SQL Editor (needs 0043).
- 2. Upload ALL website files (including track.html) to GitHub and commit. Refresh with Cmd+Shift+R.
-
-NOTE: every existing shop owner or office member will see the setup panel at next sign-in until setup is finished.
-No Edge Function changes.
+ 1. Run migration 0045_setup_required.sql in the Supabase SQL Editor (needs 0044).
+ 2. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
 
 What changed:
-- Shops must add a location (address and map pin) and choose customer updates before using Relay. Until then the app is blurred behind a setup panel.
-- Each work order has "Share live tracking": copy the link, email it to the customer on the job, or stop sharing.
-- track.html is the public page the customer opens. It needs no account.
+- The location form is now inside the setup panel: address, Find on map, a map to place or drag the pin, optional phone. No need to leave the panel.
+- The app behind the panel cannot be used at all until setup is finished.
+- If the setup check fails on refresh, it keeps retrying, so the app is not left open by accident.
+- The database itself refuses new work orders, estimates and invoices until setup is finished.
+- New look: a centred card on desktop, full screen on a phone.
