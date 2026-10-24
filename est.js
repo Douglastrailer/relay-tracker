@@ -77,7 +77,7 @@ async function newEstimateForJob(job, opts){   // opts.open === false: create th
     customer_name: c.company_name || job.customer, customer_email: c.billing_email || c.email || null,
     customer_address: c.billing_address || null, unit_number: job.vehicle || null,
     payment_terms: c.payment_terms || 'due_on_receipt',
-    tax_rate: c.tax_exempt ? 0 : Number((orgRes.data || {}).default_tax_rate || 0)
+    tax_rate: c.tax_exempt ? 0 : Number(locRate(job.location_id, 'tax_rate') ?? ((orgRes.data || {}).default_tax_rate || 0))
   }]).select('id').single();
   if(error){ relayFail(error, 'Could not start an estimate'); return null; }
   if(opts && opts.open === false) return data.id;
@@ -96,7 +96,10 @@ async function openEstimateEditor(docId, suggestRecs){
   const [linesRes, jobRes, orgRes, priceRes] = await Promise.all([
     sb.from('invoice_items').select('id, description, quantity, unit_price, item_type, taxable, recommended_repair_id, customer_decision, sort_order').eq('invoice_id', docId).order('sort_order').order('id'),
     doc.job_id ? sb.from('jobs').select('id, ro_number, customer, vehicle, warranty_claim_status').eq('id', doc.job_id).maybeSingle() : Promise.resolve({ data:null }),
-    sb.from('organizations').select('labor_rate, default_tax_rate').eq('id', doc.org_id).maybeSingle(),
+    sb.from('organizations').select('labor_rate, default_tax_rate').eq('id', doc.org_id).maybeSingle().then(r => {
+      if(r && r.data){ const lr = locRate(doc.location_id, 'labor_rate'), tr = locRate(doc.location_id, 'tax_rate');
+        if(lr != null) r.data.labor_rate = lr; if(tr != null) r.data.default_tax_rate = tr; }
+      return r; }),
     sb.from('inventory_items').select('id, name, description, unit_price, part_number, track_stock, brand, core_charge').eq('org_id', doc.org_id).eq('active', true).order('name')
   ]);
   const partsRes = doc.job_id ? await sb.from('job_parts').select('item_id, qty, returned_qty, unit_price, inventory_items(name, part_number, core_charge)').eq('job_id', doc.job_id) : { data:[] };
@@ -439,3 +442,12 @@ document.addEventListener('keydown', (e) => {
   const o = document.getElementById('estModal');
   if(e.key === 'Escape' && o && !o.classList.contains('hidden')){ e.stopImmediatePropagation(); closeEstimateEditor(); }
 }, true);
+
+
+// A location's own rate, if it has one (null means "use the company's").
+function locRate(locationId, field){
+  const all = (typeof window !== 'undefined' && window.relayAllLocations) || [];
+  const l = all.find(x => x.id === locationId) || (typeof chosenLocation === 'function' ? chosenLocation() : null);
+  const v = l ? l[field] : null;
+  return v == null || v === '' ? null : Number(v);
+}

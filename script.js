@@ -255,7 +255,8 @@ function showCompleteToast(job){
 
 // ================= data layer =================
 async function fetchMyProfile(userId){
-  let { data, error } = await sb.from('profiles').select('id, name, role, company, org_id, active, staff_role').eq('id', userId).maybeSingle();
+  let { data, error } = await sb.from('profiles').select('id, name, role, company, org_id, active, staff_role, location_id').eq('id', userId).maybeSingle();
+  if(error && /location_id/.test(error.message || '')) ({ data, error } = await sb.from('profiles').select('id, name, role, company, org_id, active, staff_role').eq('id', userId).maybeSingle());
   // Before migration 0013 the staff_role column does not exist yet: sign-in must still work.
   if(error && /staff_role/.test(error.message || '')){
     ({ data, error } = await sb.from('profiles').select('id, name, role, company, org_id, active').eq('id', userId).maybeSingle());
@@ -648,6 +649,8 @@ const navHome = document.getElementById('navHome'), navSignin = document.getElem
 // when the param is present, takes over the page instead of showing the
 // usual logged-out home screen.
 const requestOrgId = new URLSearchParams(window.location.search).get('request');
+// which location the link belongs to (each location has its own request link); the database checks it is this shop's
+const requestLocId = (() => { const v = new URLSearchParams(window.location.search).get('loc'); return /^[0-9]{1,18}$/.test(v || '') ? Number(v) : null; })();
 if(requestOrgId){
   homeView.classList.add('hidden');
   requestView.classList.remove('hidden');
@@ -786,6 +789,7 @@ async function initPublicRequestPage(orgId){
       payload.photo_paths = paths;
     }
     btn.disabled = true; btn.textContent = 'Sending…';
+    if(requestLocId) payload.location_id = requestLocId;
     const { error } = await sb.from('work_requests').insert([payload]);
     btn.disabled = false; btn.textContent = 'Submit request';
 
@@ -1069,6 +1073,8 @@ async function onAuthed(userId){
     orgStatus = orgData ? orgData.status : 'approved';
   }
   session = { id:profile.id, name:profile.name, role:profile.role, staffRole:profile.staff_role || (profile.role === 'shop' ? 'owner' : profile.role === 'fleet' ? 'fleet_manager' : null), company:profile.company, orgId:profile.org_id, orgName, orgStatus };
+  session.locationId = profile.location_id || null;
+  if(typeof applyStartupLocation === 'function') applyStartupLocation();   // the right location from the very first request
 
   if(profile.active === false){
     showInactiveScreen();
@@ -2046,7 +2052,8 @@ function initInventoryUI(){
 let pendingAcceptRequestId = null; // set when "Accept" is clicked, consumed once the job is actually created
 
 function setUpRequestLink(){
-  const url = `${window.location.origin}/?request=${session.orgId}`;
+  const loc = typeof currentLocationId === 'function' ? currentLocationId() : null;
+  const url = `${window.location.origin}/?request=${session.orgId}${loc ? '&loc=' + loc : ''}`;   // this location's own link
   const input = document.getElementById('requestLinkDisplay');
   if(input) input.value = url;
   const btn = document.getElementById('copyRequestLinkBtn');
@@ -3140,7 +3147,7 @@ async function renderFleetCustomers(){
   const day = v => v ? new Date(v).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
   box.innerHTML = `<div class="team-subhead">Regular fleet customers</div>
     <p class="meta">Fleet managers open their own Relay account, find you under Find shops, and become your regular customer with your fleet code. You can remove a fleet from this list; their own account stays theirs.</p>
-    ${isOwner ? `<div class="fleet-code-box"><div><span class="meta">Your fleet code</span><b class="mono" id="fleetCodeVal">${esc(data.fleet_code || '')}</b></div>
+    ${isOwner ? `<div class="fleet-code-box"><div><span class="meta">${typeof relayLocations !== 'undefined' && relayLocations.length > 1 && typeof chosenLocation === 'function' && chosenLocation() ? 'Fleet code for ' + esc(locDisplayName(chosenLocation())) : 'Your fleet code'}</span><b class="mono" id="fleetCodeVal">${esc(data.fleet_code || '')}</b></div>
       <div class="job-actions" style="margin-top:0;"><button type="button" class="ghost-btn" id="fleetCodeCopy">Copy</button><button type="button" class="text-btn" id="fleetCodeNew">Make a new code</button></div></div>
       <p class="meta">Share it only with fleets you want as customers. It is separate from the mechanic invite code, so a fleet can never use it to join your team.</p>` : ''}
     <p class="form-error" id="fleetCustErr"></p>

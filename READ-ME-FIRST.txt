@@ -1,13 +1,13 @@
-RelayFleet website - fleet accounts and a sign-up security fix
+RelayFleet - separate locations
 
-ORDER (both together, the same day):
- 1. Run migration 0046_fleet_accounts_and_signup_security.sql in the Supabase SQL Editor (needs 0045).
+ORDER (all on the same day):
+ 1. Run migration 0047_separate_locations.sql in the Supabase SQL Editor (needs 0046).
  2. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
+ 3. Replace three Edge Functions with the files in invoice-functions-simple (one file each, paste over index.ts, Deploy):
+      1-get-invoice-pdf.ts       -> get-invoice-pdf
+      2-send-invoice-email.ts    -> send-invoice-email
+      3-send-notifications.ts    -> send-notifications
 
-Why together: after 0046 the database only lets mechanics join through the new checked sign-up, which this website uses. The old website would show an error to a new mechanic.
-
-What changed:
-- SECURITY FIX: a new user could attach themselves to any shop as a mechanic and read its work orders and team contacts. Now the database checks the invite code.
-- Fleet managers sign up with no code. They find shops under Find shops and join with the shop\x27s fleet code (starts with F).
-- Team & time: "Regular fleet customers" with the fleet code (owner), Copy, Make a new code, and Remove. Shops no longer switch fleet accounts on or off.
-- Existing fleets keep every shop they use today.
+After that:
+- Settings > Locations: open each location, fill in its own name on documents, logo, rates, payment details and terms.
+- Office staff work only in their own location. Each starts in the first location: set the right one in Settings > Locations > Who works where.

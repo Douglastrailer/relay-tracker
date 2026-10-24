@@ -2565,3 +2565,28 @@ body.setup-open{ overflow:hidden; }
 /* Team & time: the fleet code */
 .fleet-code-box{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding:12px 14px; border:1px solid var(--line); border-radius:var(--r-md); background:var(--panel); margin:8px 0 6px; }
 .fleet-code-box b{ display:block; font-size:1.2rem; letter-spacing:.08em; }
+
+/* Board cards: the Move button has its own space, so it never covers the work order number or badges */
+.wo-card .wo-card-top{ padding-right:84px; flex-wrap:wrap; row-gap:4px; }
+
+/* The location switcher at the top of the menu */
+.loc-switcher{ position:relative; display:flex; align-items:center; gap:10px; margin:4px 8px 14px; padding:10px 12px; border:1px solid var(--line); border-radius:var(--r-md); background:var(--panel); }
+.loc-sw-logo{ width:34px; height:34px; border-radius:8px; object-fit:contain; flex:none; background:#fff; border:1px solid var(--line); }
+.loc-sw-initial{ display:inline-flex; align-items:center; justify-content:center; background:var(--accent); color:#fff; border:none; font-weight:800; font-family:'Archivo',sans-serif; }
+.loc-sw-label{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+.loc-sw-fixed .loc-sw-label{ position:static; width:auto; height:auto; clip:auto; display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); }
+.loc-sw-fixed b{ font-size:.95rem; }
+.loc-sw-fixed{ flex:1; min-width:0; line-height:1.25; }
+.loc-sw-fixed b{ display:block; overflow-wrap:anywhere; }
+.loc-sw-caret{ color:var(--ink-soft); font-size:.8rem; flex:none; }
+/* the real dropdown covers the whole box, invisible, so the full name can wrap above it */
+.loc-sw-select{ position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; font-size:16px; }
+.loc-switcher:has(.loc-sw-select:focus-visible){ outline:3px solid var(--accent-soft); outline-offset:2px; }
+.loc-switcher:has(.loc-sw-select):hover{ border-color:var(--accent); }
+body.nav-collapsed .loc-switcher .loc-sw-fixed, body.nav-collapsed .loc-switcher .loc-sw-caret{ display:none; }
+
+/* Settings → Locations: each location's own details */
+.loc-id-block{ margin:14px 0 6px; padding:14px; border:1px dashed var(--line-strong); border-radius:var(--r-md); }
+.loc-id-head{ display:flex; flex-direction:column; gap:2px; margin-bottom:10px; }
+.loc-logo-row{ display:flex; align-items:center; gap:10px; }
+.loc-logo-prev{ width:44px; height:44px; object-fit:contain; border:1px solid var(--line); border-radius:8px; background:#fff; }
