@@ -320,7 +320,7 @@ async function openRepairOrder(jobId){
   const service = job.complaint ? (job.complaint.length > 90 ? job.complaint.slice(0, 88) + '…' : job.complaint) : 'No complaint recorded';
   const tabs = [['overview','Overview'], ['diagnosis','Diagnosis'], ['billing', billing ? 'Estimate & invoice' : 'Approval'], ['labor','Labor'], ['parts','Parts'],
                 ['inspection','Inspection'], ['photos','Photos'], ['messages','Messages'], ['history','History']];
-  body.innerHTML = `
+  body.innerHTML = `<div class="wo-layout${isShop ? ' has-side' : ''}"><div class="wo-main">
     <div class="wo-head">
       <div class="wo-head-main">
         <div class="wo-head-line"><span class="wo-num">${esc(job.ro_number || 'Work order #' + job.id)}</span>${jobStatusBadge(job.status)}${roChipsHtml(Object.assign({}, job, { ro_number: null }))}</div>
@@ -414,12 +414,13 @@ async function openRepairOrder(jobId){
         <h4>History</h4>
         <ol class="ro-timeline">${roTimelineHtml(hist.data || [], audit.data || [], names)}</ol>
       </section>
-    </div>`;
+    </div></div>${isShop ? '<aside class="wo-side" id="woSide" aria-label="Order, customer and vehicle"></aside>' : ''}</div>`;
 
   document.querySelectorAll('#roBody .wo-tab').forEach(t => t.onclick = () => showWoTab(t.dataset.tab));
   if(typeof showWoTab === 'function') showWoTab(roLastJobId === job.id ? woLastTab : 'overview');
   roLastJobId = job.id;
   if(typeof loadWoSummary === 'function') loadWoSummary(job, { billing });
+  if(isShop && typeof renderWoSide === 'function') renderWoSide(job);
   wireWoActions(job, { isShop, billing });
   if(typeof loadWoBay === 'function') loadWoBay(job);
   if(typeof loadWoTechs === 'function') loadWoTechs(job);

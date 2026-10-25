@@ -1074,6 +1074,7 @@ async function onAuthed(userId){
   }
   session = { id:profile.id, name:profile.name, role:profile.role, staffRole:profile.staff_role || (profile.role === 'shop' ? 'owner' : profile.role === 'fleet' ? 'fleet_manager' : null), company:profile.company, orgId:profile.org_id, orgName, orgStatus };
   session.locationId = profile.location_id || null;
+  if(typeof initHelpExtras === 'function') setTimeout(initHelpExtras, 0);
   if(typeof applyStartupLocation === 'function') applyStartupLocation();   // the right location from the very first request
 
   if(profile.active === false){
@@ -1391,7 +1392,7 @@ function enterApp(){
   }
 
   if(session.role === 'mechanic'){ document.getElementById('mechanicView').classList.remove('hidden'); initMechanicView(); }
-  else if(session.role === 'shop'){ document.getElementById('shopView').classList.remove('hidden'); initShopView(); if(typeof checkShopSetupGate === 'function') checkShopSetupGate(); }
+  else if(session.role === 'shop'){ document.getElementById('shopView').classList.remove('hidden'); initShopView(); if(typeof checkShopSetupGate === 'function') checkShopSetupGate(); if(typeof maybeStartTour === 'function') maybeStartTour(); }
   else if(session.role === 'admin'){ document.getElementById('adminView').classList.remove('hidden'); initAdminView(); }
   else { document.getElementById('fleetView').classList.remove('hidden'); initFleetView(); }
 
@@ -2736,6 +2737,12 @@ async function refreshShopData(){
     if(countEl) countEl.textContent = String(jobsInCol.length);
   });
   if(board) wireKanbanDragDrop(board);
+  // board filters: technician, roadside or in-shop, urgent only (kept across refreshes)
+  if(typeof ensureBoardFilters === 'function'){
+    ensureBoardFilters();
+    const techNames = {}; boardJobs.forEach(j => { if(j.mechanic_id) techNames[j.mechanic_id] = mechName(j.mechanic_id); });
+    refreshBoardTechs(techNames); applyBoardFilters();
+  }
   if(typeof renderWorkOrdersList === 'function') renderWorkOrdersList(active, history, mechanics, metrics);
 
   // Redesign R1: shop.js draws "Recently completed" as compact rows.

@@ -53,3 +53,6 @@
   document.addEventListener('visibilitychange', () => document.hidden ? stop() : run());
   frame(0); run();
 })();
+
+// "Get started" buttons further down the page do the same as the one at the top
+document.querySelectorAll('[data-lx-start]').forEach(b => b.addEventListener('click', () => { const s = document.getElementById('landingSignup'); if(s) s.click(); }));

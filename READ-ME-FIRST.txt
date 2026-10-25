@@ -1,13 +1,10 @@
-RelayFleet - separate locations
+RelayFleet website - work order panel, board, tour, What\x27s new, landing page
 
-ORDER (all on the same day):
- 1. Run migration 0047_separate_locations.sql in the Supabase SQL Editor (needs 0046).
- 2. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
- 3. Replace three Edge Functions with the files in invoice-functions-simple (one file each, paste over index.ts, Deploy):
-      1-get-invoice-pdf.ts       -> get-invoice-pdf
-      2-send-invoice-email.ts    -> send-invoice-email
-      3-send-notifications.ts    -> send-notifications
+Upload ALL files to GitHub and commit (3 new files: wo-side.js, board-plus.js, tour.js). Refresh with Cmd+Shift+R.
+No database or Edge Function changes.
 
-After that:
-- Settings > Locations: open each location, fill in its own name on documents, logo, rates, payment details and terms.
-- Office staff work only in their own location. Each starts in the first location: set the right one in Settings > Locations > Who works where.
+What changed:
+- Work orders: an Order / Customer / Vehicle panel beside the work order (above it on a phone).
+- Shop board: each card shows how long the job has been in its stage (amber after 1 day, red after 3). Filters for technician, roadside or in-shop, and urgent.
+- Menu: "What\x27s new" and "Take the tour". New shop owners get the tour once, after setup.
+- Landing page: a "Sound familiar?" section and three benefits, with no made-up ratings or numbers.

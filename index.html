@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=104"/>
+<link rel="stylesheet" href="style.css?v=105"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -144,6 +144,25 @@
           <div class="lx-wo-foot" id="lxFoot">Customer can follow along</div>
         </div>
       </div>
+    </section>
+
+    <section class="lx-pains" id="lxPains" aria-labelledby="lxPainsH">
+      <span class="lx-kicker">Sound familiar?</span>
+      <h2 id="lxPainsH">Running a truck shop shouldn't mean running on phone calls and whiteboards.</h2>
+      <div class="lx-pain-grid">
+        <article class="lx-pain"><p class="lx-pain-q">“Where's that truck at?”</p><h3>A live board of every job</h3><p>Every work order sits on one board with its stage, its technician and how long it has waited, so stuck jobs stand out before a customer calls.</p></article>
+        <article class="lx-pain"><p class="lx-pain-q">“When is the tech getting here?”</p><h3>A tracking link, not a phone call</h3><p>Send a link from the work order. The customer follows the repair from their phone, with no account, and sees the technician on the way for roadside jobs.</p></article>
+        <article class="lx-pain"><p class="lx-pain-q">“Did they approve the estimate yet?”</p><h3>Approval in one tap</h3><p>Customers approve or decline the estimate from a link. Approved work becomes the invoice, with your terms and warranty printed on it.</p></article>
+        <article class="lx-pain"><p class="lx-pain-q">“Which yard was that customer?”</p><h3>Every location kept separate</h3><p>Each location has its own logo, details, customers and invoices. Switch between them in one tap; nothing gets mixed up.</p></article>
+      </div>
+    </section>
+
+    <section class="lx-pillars" aria-labelledby="lxPillarsH">
+      <h2 id="lxPillarsH" class="lx-visually-hidden">Why shops use Relay</h2>
+      <div class="lx-pillar"><span class="lx-pillar-n">1</span><h3>Run the floor and the road together</h3><p>In-shop work and roadside calls on one board, with dispatch and live technician positions.</p></div>
+      <div class="lx-pillar"><span class="lx-pillar-n">2</span><h3>Get approved and paid faster</h3><p>Estimates approved by link, professional invoices by email, and reminders for anything past due.</p></div>
+      <div class="lx-pillar"><span class="lx-pillar-n">3</span><h3>Keep customers in the loop</h3><p>Automatic updates at each stage, a tracking link, and a review request once the job is done.</p></div>
+      <div class="lx-pillar-cta"><button type="button" class="lx-btn lx-btn-primary" data-lx-start>Get started</button></div>
     </section>
 
     <section class="lx-feat" id="lxFeatures" aria-labelledby="lxFeatH">
@@ -1006,8 +1025,11 @@
 <script src="ui-dialogs.js?v=2" defer></script>
 <script src="setup-gate.js?v=2" defer></script>
 <script src="track-share.js?v=1" defer></script>
-<script src="script.js?v=89" defer></script>
-<script src="ro.js?v=19" defer></script>
+<script src="wo-side.js?v=2" defer></script>
+<script src="board-plus.js?v=1" defer></script>
+<script src="tour.js?v=1" defer></script>
+<script src="script.js?v=90" defer></script>
+<script src="ro.js?v=20" defer></script>
 <script src="insp.js?v=4" defer></script>
 <script src="est.js?v=13" defer></script>
 <script src="tech.js?v=9" defer></script>
@@ -1023,7 +1045,7 @@
     <div id="custBody"></div>
   </div>
 </div>
-<script src="shop.js?v=7" defer></script>
+<script src="shop.js?v=8" defer></script>
 <script src="ops.js?v=4" defer></script>
 <script src="dispatch.js?v=6" defer></script>
 <button type="button" id="assistFab" class="assist-fab hidden" aria-label="Ask Natasha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>Ask Natasha</span></button>
@@ -1067,7 +1089,7 @@
 <script src="lang.js?v=4" defer></script>
 <script src="natasha.js?v=1" defer></script>
 <script src="plans.js?v=9" defer></script>
-<script src="landing.js?v=1" defer></script>
+<script src="landing.js?v=2" defer></script>
 <script src="pwa.js?v=1" defer></script>
 
 </body>

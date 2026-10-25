@@ -2590,3 +2590,74 @@ body.nav-collapsed .loc-switcher .loc-sw-fixed, body.nav-collapsed .loc-switcher
 .loc-id-head{ display:flex; flex-direction:column; gap:2px; margin-bottom:10px; }
 .loc-logo-row{ display:flex; align-items:center; gap:10px; }
 .loc-logo-prev{ width:44px; height:44px; object-fit:contain; border:1px solid var(--line); border-radius:8px; background:#fff; }
+
+/* ---- Work order side panel: Order · Customer · Vehicle ---- */
+.wo-layout.has-side{ display:grid; grid-template-columns:minmax(0,1fr); gap:16px; }
+@media (min-width:1180px){ .wo-layout.has-side{ grid-template-columns:minmax(0,1fr) 320px; align-items:start; } .wo-side{ position:sticky; top:12px; } }
+@media (max-width:1179px){ .wo-layout.has-side .wo-side{ order:-1; } }
+.wo-side{ border:1px solid var(--line); border-radius:var(--r-lg); background:var(--panel); overflow:hidden; }
+.ws-tabs{ display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--line); }
+.ws-tab{ min-height:46px; border:none; background:transparent; font:inherit; font-weight:700; color:var(--ink-soft); cursor:pointer; border-bottom:3px solid transparent; }
+.ws-tab.is-on{ color:var(--accent); border-bottom-color:var(--accent); }
+.ws-tab:focus-visible{ outline:3px solid var(--accent-soft); outline-offset:-3px; }
+.ws-pane{ padding:12px 16px 16px; }
+.ws-row{ display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--line); font-size:.92rem; }
+.ws-row:last-child{ border-bottom:none; }
+.ws-row span{ color:var(--ink-soft); flex:none; }
+.ws-row b{ text-align:right; font-weight:600; overflow-wrap:anywhere; }
+.ws-title{ font-weight:800; font-size:1.05rem; margin:2px 0 6px; }
+.ws-sub{ font-weight:700; margin:14px 0 4px; font-size:.9rem; }
+.ws-note{ margin-top:10px; padding:10px 12px; background:var(--bg, #F3F5F7); border-radius:var(--r-md); font-size:.9rem; }
+.ws-note span{ display:block; color:var(--ink-soft); font-size:.8rem; margin-bottom:2px; }
+.ws-note p{ margin:0; white-space:pre-line; }
+.ws-hist{ padding:7px 0; border-bottom:1px solid var(--line); font-size:.88rem; }
+.ws-open{ margin-top:12px; width:100%; min-height:42px; }
+.ws-loading{ padding:16px; }
+
+/* ---- Board: time in stage, filters ---- */
+.wo-stage{ display:inline-block; margin:6px 0 2px; padding:2px 8px; border-radius:999px; font-size:.75rem; font-weight:700; background:var(--bg, #F3F5F7); color:var(--ink-soft); }
+.wo-stage.is-slow{ background:#FDF3E1; color:#8A5A00; }
+.wo-stage.is-late{ background:#FBE5E3; color:#A3261B; }
+.board-filters{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; margin:0 0 12px; }
+.bf-field{ display:flex; align-items:center; gap:8px; font-size:.88rem; color:var(--ink-soft); }
+.bf-field select{ min-height:38px; }
+.bf-seg{ display:inline-flex; border:1px solid var(--line-strong); border-radius:999px; overflow:hidden; }
+.bf-seg button{ min-height:38px; padding:4px 14px; border:none; background:var(--panel); font:inherit; font-size:.88rem; font-weight:600; color:var(--ink-soft); cursor:pointer; }
+.bf-seg button.is-on{ background:var(--accent); color:#fff; }
+.bf-check{ display:flex; align-items:center; gap:6px; font-size:.88rem; min-height:38px; }
+.wo-card.hidden{ display:none !important; }
+
+/* ---- Guided tour ---- */
+.tour-ring{ position:fixed; z-index:3600; border:3px solid var(--accent); border-radius:12px; box-shadow:0 0 0 9999px rgba(14,42,49,.35); pointer-events:none; transition:all .2s; }
+.tour-pop{ position:fixed; z-index:3700; width:min(340px, calc(100vw - 24px)); background:var(--panel); color:var(--ink); border-radius:14px; box-shadow:0 18px 48px rgba(14,42,49,.3); padding:16px 18px; }
+.tour-pop h3{ margin:4px 0 6px; font-size:1.08rem; }
+.tour-pop p{ margin:0 0 12px; color:var(--ink-soft); line-height:1.5; }
+.tour-actions{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.tour-actions span{ display:flex; gap:8px; }
+.tour-actions button:not(.text-btn):not(.ghost-btn){ min-height:40px; padding:6px 18px; border-radius:var(--r-md); border:1px solid var(--accent); background:var(--accent); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
+
+/* ---- What's new ---- */
+#whatsNewBtn.has-dot::after{ content:''; display:inline-block; width:8px; height:8px; margin-left:8px; border-radius:50%; background:var(--accent); vertical-align:middle; }
+.whats-new .wn-item{ padding:12px 0; border-bottom:1px solid var(--line); }
+.whats-new .wn-item:last-child{ border-bottom:none; }
+.whats-new h3{ margin:2px 0 6px; font-size:1.05rem; }
+.whats-new ul{ margin:0; padding-left:20px; line-height:1.55; }
+
+/* ---- Landing: "Sound familiar?" problems and answers, and three benefits ---- */
+.lx-pains, .lx-pillars{ max-width:1240px; margin:0 auto; padding:84px 28px 24px; }
+.lx-pains{ text-align:center; }
+.lx-pain{ text-align:left; }
+.lx-pains h2{ max-width:760px; margin-left:auto !important; margin-right:auto !important; font-size:clamp(1.6rem, 3.2vw, 2.3rem); line-height:1.15; margin:8px 0 28px; }
+.lx-pain-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:18px; }
+.lx-pain{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:22px; box-shadow:0 1px 2px rgba(14,42,49,.04); }
+.lx-pain-q{ margin:0 0 10px; font-family:var(--lx-display); font-weight:700; color:var(--lx-blue); font-size:1.02rem; }
+.lx-pain h3{ margin:0 0 8px; font-size:1.15rem; }
+.lx-pain p:last-child{ margin:0; color:var(--ink-soft); line-height:1.55; }
+.lx-pillars{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:26px; padding-top:40px; padding-bottom:56px; }
+.lx-pillar-n{ display:inline-flex; width:34px; height:34px; border-radius:10px; align-items:center; justify-content:center; background:var(--lx-night); color:#fff; font-weight:800; font-family:var(--lx-display); }
+.lx-pillar h3{ margin:12px 0 6px; font-size:1.2rem; }
+.lx-pillar p{ margin:0; color:var(--ink-soft); line-height:1.55; }
+.lx-pillar-cta{ grid-column:1 / -1; display:flex; justify-content:center; }
+.lx-visually-hidden{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+@media (max-width:760px){ .lx-pillars{ grid-template-columns:1fr; } }

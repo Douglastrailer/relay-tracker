@@ -62,6 +62,9 @@ async function fetchBoardMetrics(ids){
     billing ? sb.from('invoices').select('doc_number, job_id, kind, status, total, created_at').in('job_id', ids).eq('kind', 'estimate').order('created_at') : Promise.resolve({ data:[] }),
     typeof helperCounts === 'function' ? helperCounts(ids) : Promise.resolve({})
   ]);
+  // when each job entered its current stage (the latest status change)
+  const hist = await sb.from('job_status_history').select('job_id, changed_at').in('job_id', ids).order('changed_at', { ascending: false });
+  (hist.data || []).forEach(r => { if(out[r.job_id] && !out[r.job_id].stageSince) out[r.job_id].stageSince = r.changed_at; });
   Object.entries(helpers || {}).forEach(([id, n]) => { if(out[id]) out[id].helpers = n; });
   (t.data || []).forEach(r => { if(out[r.job_id]) out[r.job_id].laborH = Number(r.labor_minutes || 0) / 60; });
   (pts.data || []).forEach(r => { if(out[r.job_id]) out[r.job_id].parts = (out[r.job_id].parts || 0) + (Number(r.qty) - Number(r.returned_qty)) * Number(r.unit_price || 0); });
@@ -74,11 +77,12 @@ function woCardHtml(j, techName, m){
   if(m.laborH) facts.push(`<span><em>Labor</em>${m.laborH.toFixed(1)} h</span>`);
   if(m.parts) facts.push(`<span><em>Parts</em>${shopMoney0(m.parts)}</span>`);
   if(m.estimate != null) facts.push(`<span><em>Estimate</em>${shopMoney0(m.estimate)}</span>`);
-  return `<div class="job-card wo-card${j.safety_issue ? ' is-safety' : ''}${j.priority === 'urgent' || j.priority === 'high' ? ' is-prio' : ''}" data-job="${j.id}" data-jobtype="${esc(j.job_type)}" data-status="${esc(j.status)}" draggable="${j.status === 'invoiced' ? 'false' : 'true'}" tabindex="0" role="button" aria-label="Open ${esc(j.ro_number || 'work order')}">
+  return `<div class="job-card wo-card${j.safety_issue ? ' is-safety' : ''}${j.priority === 'urgent' || j.priority === 'high' ? ' is-prio' : ''}" data-job="${j.id}" data-tech="${esc(j.mechanic_id || '')}" data-prio="${esc(j.priority || 'normal')}" data-jobtype="${esc(j.job_type)}" data-status="${esc(j.status)}" draggable="${j.status === 'invoiced' ? 'false' : 'true'}" tabindex="0" role="button" aria-label="Open ${esc(j.ro_number || 'work order')}">
       <div class="wo-card-top"><span class="ro-num">${esc(j.ro_number || '#' + j.id)}</span>${j.job_type === 'mobile' ? '<span class="wo-road" title="Roadside">ROAD</span>' : ''}${j.priority && j.priority !== 'normal' ? `<span class="prio-chip prio-${esc(j.priority)}">${esc(PRIORITY_LABELS[j.priority] || j.priority)}</span>` : ''}${j.warranty_claim_status === 'pending_review' ? '<span class="prio-chip prio-high">Warranty?</span>' : ''}</div>
       <div class="wo-card-unit">${esc(j.vehicle || '')}${typeof locTag === 'function' ? locTag(j.location_id) : ''}</div>
       ${j.complaint ? `<div class="wo-card-svc">${esc(j.complaint.length > 70 ? j.complaint.slice(0, 68) + '…' : j.complaint)}</div>` : ''}
       <div class="wo-card-meta"><span>${esc(j.customer || '')}</span><span>${esc(techName || 'Unassigned')}${m.helpers ? ' +' + m.helpers : ''}</span></div>
+      ${stageChip(j, m)}
       <div class="wo-card-foot">${jobStatusBadge(j.status)}${facts.length ? `<div class="wo-card-facts">${facts.join('')}</div>` : ''}</div>
       <button type="button" class="wo-move-btn" data-move-job="${j.id}" aria-label="Move ${esc(j.ro_number || 'this work order')} to another column">Move ▾</button>
     </div>`;
@@ -346,4 +350,15 @@ async function generateInvoiceFromWork(job){
     if(e2) relayFail(e2, 'The invoice was created, but its lines could not be added');
   }
   openEstimateEditor(inv.id);
+}
+
+
+// How long a job has been in its current stage. Amber after a day, red after three, so stuck work stands out.
+function stageChip(j, m){
+  if(['complete', 'invoiced', 'paid', 'cancelled'].includes(j.status)) return '';
+  const since = (m && m.stageSince) || j.updated_at || j.created_at; if(!since) return '';
+  const mins = Math.max(0, (Date.now() - new Date(since).getTime()) / 60000);
+  const label = mins < 60 ? Math.round(mins) + ' min' : mins < 1440 ? Math.floor(mins / 60) + ' h' : Math.floor(mins / 1440) + ' d';
+  const cls = mins >= 4320 ? ' is-late' : mins >= 1440 ? ' is-slow' : '';
+  return `<div class="wo-stage${cls}" title="Time in this stage">${label} in this stage</div>`;
 }
