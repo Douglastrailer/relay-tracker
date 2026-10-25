@@ -1,10 +1,9 @@
-RelayFleet website - sidebar sub-items, new header
+RelayFleet website - sidebar sub-items open on tap
 
-Upload ALL files to GitHub and commit (new files: header.js, nav-subs.js). Refresh with Cmd+Shift+R.
+Upload ALL files to GitHub and commit (new files since the last upload: header.js, nav-subs.js). Refresh with Cmd+Shift+R.
 No database or Edge Function changes.
 
 What changed:
-- Sidebar: hover a group (or tab onto it) to see its screens and sections underneath. The group you are in stays open, with the current item marked.
-    Work orders, Customers & units, Team & time: their screens.  Parts & inventory: its sections.  Settings: its sections, then Integrations.
-- On wide screens the rows of buttons at the top of those pages are gone (the sidebar has them). On phones and tablets they stay.
+- Sidebar: tap a group to see its screens and sections underneath. They stay open while you are in that group, with the current one marked. Nothing opens on hover.
+- Icons-only sidebar: tapping an icon shows its items as a small menu; choose one or tap elsewhere to close it.
 - Header: Recently opened, Create new (+), Messages, Notifications, and your initials (account menu with the location switch).

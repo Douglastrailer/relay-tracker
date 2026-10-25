@@ -1,7 +1,7 @@
 // ============================================================
 // RelayFleet — sub-items under every sidebar group.
-// Hovering a group (or tabbing onto it) opens its screens and sections underneath; the group
-// you are in stays open with the current item marked. Choosing an item works exactly like the
+// Tapping a group opens its screens and sections underneath, and they stay open while you are
+// in that group, with the current item marked. Nothing opens on hover. Choosing an item works exactly like the
 // buttons at the top of the page, which stay on phones and tablets.
 //   - most groups list their screens (Work orders: All, Requests, Board, …)
 //   - Parts & inventory lists its sections (Parts & prices, Low stock, …)
@@ -69,3 +69,12 @@ document.addEventListener('click', (e) => {
 });
 // keep the lists in step with where the person is, however they got there
 document.addEventListener('click', (e) => { if(e.target.closest && e.target.closest('.dash-tab, .nav-group-btn, [data-settab], [data-itab], [data-subtab]')) setTimeout(renderNavSubs, 30); });
+
+// icons-only sidebar: tapping a group's icon shows its items as a small menu; choosing one, or tapping elsewhere, closes it
+document.addEventListener('click', (e) => {
+  if(!document.body.classList.contains('nav-collapsed')) return;
+  const grp = e.target.closest && e.target.closest('.nav-fly-wrap > .nav-group-btn');
+  document.querySelectorAll('.nav-fly-wrap.fly-show').forEach(w => { if(!grp || w !== grp.parentElement) w.classList.remove('fly-show'); });
+  if(grp) grp.parentElement.classList.add('fly-show');
+  if(e.target.closest && e.target.closest('[data-navfly]')) document.querySelectorAll('.nav-fly-wrap.fly-show').forEach(w => w.classList.remove('fly-show'));
+});
