@@ -119,6 +119,7 @@ function renderParts(){
     const mySeq = ++partsState.seq; partsState.loading = true;
     if(!append){ partsState.offset = 0; list.innerHTML = '<div class="meta">Loading…</div>'; }
     const { data, error } = await sb.rpc('parts_page', { p_search: partsState.q || null, p_filter: partsState.filter, p_vendor: partsState.vendor ? Number(partsState.vendor) : null, p_category: partsState.category || null, p_offset: partsState.offset, p_limit: 50 });
+    if(!panel.isConnected) return;   // a newer drawing of this screen replaced it while waiting; let that one finish
     if(mySeq !== partsState.seq || !document.getElementById('invList')) return;
     partsState.loading = false;
     if(error || !data){ document.getElementById('invList').innerHTML = `<div class="form-error">Parts couldn't be loaded${error ? ': ' + esc(error.message) : '.'}</div>`; document.getElementById('invLoadMore').classList.add('hidden'); return; }
@@ -355,6 +356,7 @@ function openVendor(id){
 async function renderLocations(){
   const panel = document.getElementById('invPanel');
   const mechs = typeof fetchOrgMechanics === 'function' ? (await fetchOrgMechanics()).filter(m => m.active) : [];
+  if(!panel.isConnected) return;   // a newer drawing of this screen replaced it while waiting; let that one finish
   const mname = id => (mechs.find(m => m.id === id) || {}).name || '';
   panel.innerHTML = `<div class="rec-toolbar"><span class="meta">Your shop and each mechanic's service truck. Mechanics can take parts from the shop or their own truck.</span><button type="button" id="lNew">Add location</button></div>
     <div class="rec-list">${invState.locations.map(l => `<button type="button" class="rec-row${l.active ? '' : ' is-inactive'}" data-l="${l.id}"><div class="rec-main"><b>${esc(l.name)}</b><div class="meta">${l.kind === 'truck' ? 'Service truck' + (l.mechanic_id ? ' · ' + esc(mname(l.mechanic_id)) : '') : 'Shop'}</div></div>
@@ -459,6 +461,7 @@ async function renderReorder(){
   const panel = document.getElementById('invPanel');
   panel.innerHTML = '<div class="meta">Working out what you need…</div>';
   const { data, error } = await sb.rpc('reorder_suggestions');
+  if(!panel.isConnected) return;   // a newer drawing of this screen replaced it while waiting; let that one finish
   if(error || !data){ panel.innerHTML = `<div class="form-error">Couldn't work out the low stock${error ? ': ' + esc(error.message) : '.'}</div>`; return; }
   reorderData = data;
   const vendors = data.vendors || [];
@@ -477,7 +480,7 @@ async function renderReorder(){
         <td class="num"><input type="number" class="ro-qty" data-item="${l.item_id}" min="0" step="1" value="${l.suggest}" aria-label="Quantity to order for ${esc(l.name)}" style="width:5.5rem"></td></tr>`).join('')}
       </tbody></table></div></div>`).join('')}`;
   panel.querySelectorAll('.ro-all').forEach(a => a.onchange = () => panel.querySelectorAll(`.ro-pick[data-vendor="${a.dataset.vendor}"]`).forEach(c => { c.checked = a.checked; }));
-  document.getElementById('roCreate').onclick = async () => {
+  panel.querySelector('#roCreate').onclick = async () => {
     const lines = [...panel.querySelectorAll('.ro-pick:checked')].map(c => {
       const q = panel.querySelector(`.ro-qty[data-item="${c.dataset.item}"]`);
       return { item_id: Number(c.dataset.item), qty: Number(q && q.value) || 0 };
@@ -528,6 +531,7 @@ async function renderCount(){
     const list = document.getElementById('cntList'); if(!list) return;
     list.innerHTML = '<div class="meta">Loading…</div>';
     const { data, error } = await sb.rpc('count_session_list', { p_location: Number(countState.location), p_search: countState.q || null, p_only_stocked: countState.onlyStocked });
+    if(!panel.isConnected) return;   // a newer drawing of this screen replaced it while waiting; let that one finish
     if(!document.getElementById('cntList')) return;
     if(error || !data){ document.getElementById('cntList').innerHTML = `<div class="form-error">${error ? esc(error.message) : 'The count sheet could not be loaded.'}</div>`; return; }
     countState.rows = data.rows || []; draw();
@@ -560,6 +564,7 @@ async function renderCores(){
   const panel = document.getElementById('invPanel');
   panel.innerHTML = '<div class="meta">Loading…</div>';
   const { data, error } = await sb.rpc('core_list', { p_status: coreState.status, p_limit: 200 });
+  if(!panel.isConnected) return;   // a newer drawing of this screen replaced it while waiting; let that one finish
   if(error || !data){ panel.innerHTML = `<div class="form-error">Couldn't load the cores${error ? ': ' + esc(error.message) : '.'}</div>`; return; }
   const rows = data.rows || [];
   panel.innerHTML = `<div class="rec-toolbar">
