@@ -75,6 +75,7 @@ function navPaint(groupId, target){
     return `<button type="button" class="nav-sub${t === target ? ' active' : ''}" data-subtab="${t}" data-group="${group.id}" aria-current="${t === target ? 'page' : 'false'}">${esc(label)}${badge ? ` <span class="nav-sub-badge">${esc(badge.textContent.trim())}</span>` : ''}</button>`;
   }).join('');
   navHideDuplicates();
+  if(typeof renderNavSubs === 'function') renderNavSubs();   // the sidebar follows the screen
 }
 function buildNav(){
   const host = document.querySelector('#shopView .dash-tabs'); if(!host || navBuilt) return;
@@ -104,6 +105,7 @@ function buildNav(){
   const open = document.querySelector('#shopView .dash-tab.active:not(.nav-group-btn)');
   const g = open ? navGroupFor(open.dataset.target) : NAV_GROUPS[0];
   navPaint(g ? g.id : 'overview', open ? open.dataset.target : 'shop-overview');
+  if(typeof renderNavSubs === 'function') setTimeout(renderNavSubs, 0);
 }
 // a count on a hidden sub-tab still needs to be seen on its group
 function navRollUpBadges(){

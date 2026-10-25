@@ -124,6 +124,7 @@ function uxSettingsTabs(){
   if(bar.dataset.sig !== html){ bar.innerHTML = html; bar.dataset.sig = html; }
   bar.classList.toggle('hidden', present.length < 2);
   kids.forEach(k => { if(k.dataset.setgroup) k.classList.toggle('hidden', k.dataset.setgroup !== active); });
+  if(typeof renderNavSubs === 'function') renderNavSubs();   // the same sections in the sidebar
 }
 document.addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('[data-settab]'); if(!b) return;

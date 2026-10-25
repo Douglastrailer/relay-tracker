@@ -1,9 +1,10 @@
-RelayFleet website - new header
+RelayFleet website - sidebar sub-items, new header
 
-Upload ALL files to GitHub and commit (new file: header.js). Refresh with Cmd+Shift+R.
+Upload ALL files to GitHub and commit (new files: header.js, nav-subs.js). Refresh with Cmd+Shift+R.
 No database or Edge Function changes.
 
 What changed:
-- Header: Recently opened (clock), Create new (+), Messages (speech bubble, with a count of new ones), Notifications (bell), and your initials.
-- Your initials open the account menu: name, role, company, the current location, and the location switch.
-- The location switch is no longer in the sidebar.
+- Sidebar: hover a group (or tab onto it) to see its screens and sections underneath. The group you are in stays open, with the current item marked.
+    Work orders, Customers & units, Team & time: their screens.  Parts & inventory: its sections.  Settings: its sections, then Integrations.
+- On wide screens the rows of buttons at the top of those pages are gone (the sidebar has them). On phones and tablets they stay.
+- Header: Recently opened, Create new (+), Messages, Notifications, and your initials (account menu with the location switch).

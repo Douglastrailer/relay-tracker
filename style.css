@@ -2706,3 +2706,20 @@ body.nav-collapsed .loc-switcher .loc-sw-fixed, body.nav-collapsed .loc-switcher
 .who.who-compact .loc-pill{ margin-right:0; }
 .hdr-tools + .notif-wrap .notif-bell{ width:40px; height:40px; border:1px solid transparent !important; border-radius:50% !important; background:transparent !important; box-shadow:none !important; color:var(--ink-soft); display:inline-flex; align-items:center; justify-content:center; }
 .hdr-tools + .notif-wrap .notif-bell:hover, .hdr-tools + .notif-wrap .notif-bell[aria-expanded="true"]{ background:var(--accent-soft) !important; color:var(--accent); }
+
+/* ---- Sidebar sub-items for every group: open on hover or keyboard focus, and stay open for the group you are in ---- */
+.nav-fly-wrap{ position:relative; }
+.nav-fly{ display:none; flex-direction:column; gap:2px; margin:2px 0 6px 38px; padding-left:10px; border-left:2px solid var(--line); }
+.nav-fly-wrap:hover .nav-fly, .nav-fly-wrap:focus-within .nav-fly, .nav-fly-wrap.is-open .nav-fly{ display:flex; }
+.nav-fly-item{ display:flex; align-items:center; justify-content:space-between; gap:8px; text-align:left; min-height:34px; padding:6px 10px; border:none; border-radius:8px; background:transparent; color:var(--ink-soft); font:inherit; font-size:.88rem; font-weight:600; cursor:pointer; }
+.nav-fly-item:hover{ background:var(--accent-soft); color:var(--accent); }
+.nav-fly-item.is-on{ color:var(--accent); background:var(--accent-soft); font-weight:700; }
+.nav-fly-item:focus-visible{ outline:3px solid var(--accent-soft); outline-offset:1px; }
+.nav-fly-item .nav-sub-badge{ margin-left:auto; }
+/* icons-only sidebar: the sub-items open as a small menu to the right */
+body.nav-collapsed .nav-fly{ position:absolute; left:100%; top:0; margin:0 0 0 8px; padding:6px; min-width:210px; border:1px solid var(--line); border-radius:12px; background:var(--panel); box-shadow:0 12px 32px rgba(14,42,49,.18); z-index:1250; }
+body.nav-collapsed .nav-fly-wrap.is-open:not(:hover):not(:focus-within) .nav-fly{ display:none; }
+/* where the sidebar is shown, the rows of section buttons at the top of each page are no longer needed */
+@media (min-width:901px){
+  body.has-sidebar #navSubTabs, body.has-sidebar #shop-billing > .settings-tabs, body.has-sidebar #shop-inventory .inv-tabs{ display:none !important; }
+}
