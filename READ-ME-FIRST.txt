@@ -1,10 +1,9 @@
-RelayFleet website - work order panel, board, tour, What\x27s new, landing page
+RelayFleet website - new header
 
-Upload ALL files to GitHub and commit (3 new files: wo-side.js, board-plus.js, tour.js). Refresh with Cmd+Shift+R.
+Upload ALL files to GitHub and commit (new file: header.js). Refresh with Cmd+Shift+R.
 No database or Edge Function changes.
 
 What changed:
-- Work orders: an Order / Customer / Vehicle panel beside the work order (above it on a phone).
-- Shop board: each card shows how long the job has been in its stage (amber after 1 day, red after 3). Filters for technician, roadside or in-shop, and urgent.
-- Menu: "What\x27s new" and "Take the tour". New shop owners get the tour once, after setup.
-- Landing page: a "Sound familiar?" section and three benefits, with no made-up ratings or numbers.
+- Header: Recently opened (clock), Create new (+), Messages (speech bubble, with a count of new ones), Notifications (bell), and your initials.
+- Your initials open the account menu: name, role, company, the current location, and the location switch.
+- The location switch is no longer in the sidebar.

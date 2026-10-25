@@ -37,19 +37,9 @@ function currentLocationId(){
 function setLocFocus(id){ if(id && isLocOwner()) switchLocation(id); }
 // the switcher at the top of the menu: logo and name; the owner can change it, staff see theirs
 function renderLocSwitcher(){
-  const host = document.querySelector('#shopView .dash-tabs');
-  let box = document.getElementById('locSwitcher');
-  if(!host || !session || session.role !== 'shop' || relayLocations.length < 2){ if(box) box.remove(); return; }
-  if(!box){ box = document.createElement('div'); box.id = 'locSwitcher'; box.className = 'loc-switcher'; host.prepend(box); }
-  const cur = chosenLocation() || relayLocations[0];
-  const logo = cur && cur.logo_path && typeof billingLogoPublicUrl === 'function' ? billingLogoPublicUrl(cur.logo_path) : '';
-  const mark = logo ? `<img src="${esc(logo)}" alt="" class="loc-sw-logo">` : `<span class="loc-sw-logo loc-sw-initial" aria-hidden="true">${esc((locDisplayName(cur) || '?').trim().charAt(0).toUpperCase())}</span>`;
-  box.innerHTML = isLocOwner()
-    ? `${mark}<div class="loc-sw-fixed"><span class="loc-sw-label">Location</span><b>${esc(locDisplayName(cur))}</b></div><span class="loc-sw-caret" aria-hidden="true">▾</span>
-       <select id="locSwSelect" class="loc-sw-select" aria-label="Switch location">${relayLocations.map(l => `<option value="${l.id}" ${l.id === (cur && cur.id) ? 'selected' : ''}>${esc(locDisplayName(l))}</option>`).join('')}</select>`
-    : `${mark}<div class="loc-sw-fixed"><span class="loc-sw-label">Location</span><b>${esc(locDisplayName(cur))}</b></div>`;
-  const sel = document.getElementById('locSwSelect');
-  if(sel) sel.onchange = () => { const id = Number(sel.value); if(id && id !== relayChosenLoc) switchLocation(id); };
+  // the switch lives in the account menu (avatar) now; the old box in the sidebar is removed
+  const box = document.getElementById('locSwitcher'); if(box) box.remove();
+  if(typeof renderAvatarLocations === 'function') renderAvatarLocations();
 }
 function renderLocFocusBar(){ const bar = document.getElementById('locFocusBar'); if(bar) bar.remove(); }   // replaced by the switcher in the menu
 function locTag(id){

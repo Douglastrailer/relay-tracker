@@ -4,6 +4,16 @@
 // can be skipped at any step, and can be taken again any time.
 // ============================================================
 const RELAY_RELEASES = [
+  { date: '2026-10-25', title: 'New header', items: [
+    'Recently opened work orders, customers and units, one tap away.',
+    'Create a work order, estimate, customer or unit from anywhere with +.',
+    'Messages on work orders in one list, with a count of new ones.',
+    'Your account and the location switch are under your initials.'] },
+  { date: '2026-10-25', title: 'A new header', items: [
+    'Recently opened work orders, customers and units, one tap away (the clock icon).',
+    'Create a work order, estimate, customer or unit from any screen (the + icon).',
+    'Messages from your team on work orders, with a count of new ones.',
+    'Your account and the location switch are under your initials, top right.'] },
   { date: '2026-10-25', title: 'Separate locations', items: [
     'Each location has its own name, logo, details, rates and terms, printed on its own documents.',
     'Switch locations from the top of the menu. Customers, work orders and invoices are never mixed.',

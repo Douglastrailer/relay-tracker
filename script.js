@@ -1075,6 +1075,7 @@ async function onAuthed(userId){
   session = { id:profile.id, name:profile.name, role:profile.role, staffRole:profile.staff_role || (profile.role === 'shop' ? 'owner' : profile.role === 'fleet' ? 'fleet_manager' : null), company:profile.company, orgId:profile.org_id, orgName, orgStatus };
   session.locationId = profile.location_id || null;
   if(typeof initHelpExtras === 'function') setTimeout(initHelpExtras, 0);
+  if(typeof initHeaderTools === 'function') setTimeout(initHeaderTools, 0);
   if(typeof applyStartupLocation === 'function') applyStartupLocation();   // the right location from the very first request
 
   if(profile.active === false){

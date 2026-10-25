@@ -2661,3 +2661,48 @@ body.nav-collapsed .loc-switcher .loc-sw-fixed, body.nav-collapsed .loc-switcher
 .lx-visually-hidden{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
 
 @media (max-width:760px){ .lx-pillars{ grid-template-columns:1fr; } }
+
+/* ---- Header tools: Recent · New · Messages, and the account avatar ---- */
+.hdr-tools{ display:flex; align-items:center; gap:4px; }
+.hdr-tool{ position:relative; }
+.hdr-btn{ position:relative; width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center; border:1px solid transparent; border-radius:50%; background:transparent; color:var(--ink-soft); cursor:pointer; }
+.hdr-btn svg{ width:21px; height:21px; }
+.hdr-btn:hover, .hdr-btn[aria-expanded="true"]{ background:var(--accent-soft); color:var(--accent); }
+.hdr-btn:focus-visible{ outline:3px solid var(--accent-soft); outline-offset:1px; }
+.hdr-btn .notif-count{ position:absolute; top:-2px; right:-4px; }
+.hdr-panel{ position:absolute; right:0; top:calc(100% + 8px); z-index:1300; width:min(340px, calc(100vw - 24px)); max-height:min(70vh, 520px); overflow:auto; background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:0 18px 48px rgba(14,42,49,.22); padding:6px; }
+.hdr-head{ padding:10px 12px 6px; font-weight:800; font-size:.92rem; }
+.hdr-empty{ padding:14px 12px; color:var(--ink-soft); font-size:.9rem; }
+.hdr-row{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; text-align:left; padding:10px 12px; border:none; border-radius:10px; background:transparent; color:var(--ink); font:inherit; cursor:pointer; }
+.hdr-row:hover, .hdr-row:focus-visible{ background:var(--accent-soft); outline:none; }
+.hdr-row b{ font-size:.94rem; }
+.hdr-kind{ font-size:.74rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); font-weight:700; }
+.hdr-new{ flex-direction:row; align-items:center; gap:10px; }
+.hdr-new svg{ width:18px; height:18px; color:var(--accent); }
+.hdr-msg.is-new{ background:var(--accent-soft); }
+.hdr-msg-body{ font-size:.88rem; color:var(--ink-soft); line-height:1.4; }
+/* the account: initials in a circle; name, role and company move into the menu */
+.who.who-compact #whoName, .who.who-compact #whoRole, .who.who-compact #whoOrg{ display:none; }
+.hdr-avatar{ width:40px; height:40px; border-radius:50% !important; background:#E8B931 !important; color:#1B2430 !important; font-weight:800; font-size:.9rem; letter-spacing:.02em; display:inline-flex; align-items:center; justify-content:center; border:none !important; }
+.hdr-avatar:focus-visible{ outline:3px solid var(--accent-soft); outline-offset:2px; }
+.acct-head{ display:flex; gap:12px; align-items:center; padding:12px 14px; border-bottom:1px solid var(--line); margin-bottom:4px; min-width:240px; }
+.acct-head b{ display:block; }
+.acct-head span:not(.acct-avatar){ display:block; font-size:.84rem; color:var(--ink-soft); }
+.acct-avatar{ width:38px; height:38px; border-radius:50%; background:#E8B931; color:#1B2430; font-weight:800; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+@media (max-width:640px){ #hdrTool-recent, .hdr-tools .hdr-tool:first-child{ display:none; } }
+/* the location switch inside the account menu, and the location label next to the avatar */
+.acct-loc{ padding:6px 6px 8px; border-bottom:1px solid var(--line); margin-bottom:4px; }
+.acct-loc-h{ padding:4px 8px; font-size:.74rem; text-transform:uppercase; letter-spacing:.06em; font-weight:800; color:var(--ink-faint); }
+.acct-loc-opt{ display:flex !important; align-items:center; gap:8px; width:100%; min-height:42px; text-align:left; font-weight:600; border-radius:8px; }
+.acct-loc-opt.is-on{ color:var(--accent); background:var(--accent-soft); }
+.acct-tick{ width:16px; display:inline-block; font-weight:800; }
+.acct-loc-fixed{ padding:6px 8px; font-weight:700; }
+.acct-loc-fixed .meta{ display:block; font-weight:400; font-size:.82rem; }
+.loc-pill{ max-width:220px; min-height:34px; padding:4px 12px; margin-right:6px; border:1px solid var(--line-strong); border-radius:999px; background:var(--panel); color:var(--ink); font:inherit; font-size:.86rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
+.loc-pill:hover{ border-color:var(--accent); color:var(--accent); }
+@media (max-width:820px){ .loc-pill{ display:none; } }
+/* label and avatar side by side; the bell matches the other header icons */
+.who.who-compact, .who.who-compact .more-menu-wrap{ display:flex; align-items:center; flex-wrap:nowrap; gap:8px; }
+.who.who-compact .loc-pill{ margin-right:0; }
+.hdr-tools + .notif-wrap .notif-bell{ width:40px; height:40px; border:1px solid transparent !important; border-radius:50% !important; background:transparent !important; box-shadow:none !important; color:var(--ink-soft); display:inline-flex; align-items:center; justify-content:center; }
+.hdr-tools + .notif-wrap .notif-bell:hover, .hdr-tools + .notif-wrap .notif-bell[aria-expanded="true"]{ background:var(--accent-soft) !important; color:var(--accent); }
