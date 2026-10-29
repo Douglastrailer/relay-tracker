@@ -2726,3 +2726,11 @@ body.nav-collapsed .nav-fly-wrap.fly-show .nav-fly{ display:flex; }
 @media (min-width:901px){
   body.has-sidebar #navSubTabs, body.has-sidebar #shop-billing > .settings-tabs, body.has-sidebar #shop-inventory .inv-tabs{ display:none !important; }
 }
+
+/* Reports: choose the location, and compare locations side by side */
+.an-loc{ display:inline-flex; align-items:center; gap:8px; margin:6px 0 10px; font-size:.9rem; color:var(--ink-soft); }
+.an-loc select{ min-height:40px; font:inherit; font-weight:600; }
+.an-byloc{ margin:6px 0 18px; }
+.an-byloc h3{ margin:0 0 8px; font-size:1rem; }
+.an-table-wrap{ overflow-x:auto; }
+.an-byloc .an-table td.an-over{ color:var(--danger); font-weight:700; }

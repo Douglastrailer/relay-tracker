@@ -1,8 +1,10 @@
 // RelayFleet service worker — lets Relay install to the home screen and
-// open without a signal. Always asks the network first, so an upload to
-// GitHub reaches everyone right away; the saved copy is used only when
-// there is no connection. Never stores Supabase data or other sites.
-const CACHE = 'relay-shell-v76';
+// open without a signal, and opens it quickly. The page is always asked for
+// from the network first, so an upload to GitHub reaches everyone right away.
+// App code and styles carry a fingerprint of their contents (?v=…): a saved copy
+// with the same fingerprint is served straight from the device. Never stores
+// Supabase data or other sites.
+const CACHE = 'relay-shell-1828644d6b';
 const SHELL = ['/', '/index.html', '/route.js', '/nav-subs.js', '/header.js', '/tour.js', '/board-plus.js', '/wo-side.js', '/track-share.js', '/setup-gate.js', '/ui-dialogs.js', '/vin.js', '/subs.js', '/nav.js', '/safety.js', '/offline.js', '/account.js', '/terms.html', '/privacy.html', '/lang.js', '/completed.js', '/docs.js', '/lang-es.js', '/lang-ru.js', '/lang-pt.js', '/lang-fr.js', '/pwa.js', '/style.css', '/script.js', '/ro.js', '/insp.js', '/est.js', '/tech.js', '/fleet.js', '/unit.js',
                '/inv.js', '/analytics.js', '/comms.js', '/roles.js', '/shop.js', '/ops.js', '/dispatch.js', '/r4.js', '/assist.js', '/landing.js', '/scan.js', '/r6.js', '/profit.js', '/loc.js', '/voice.js', '/pdfview.js', '/map.js', '/sheet.js', '/parts.js', '/migrate.js', '/training.js', '/ux.js', '/natasha.js', '/plans.js', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
@@ -16,7 +18,18 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;   // Supabase, maps, CDNs: untouched
-  if (url.pathname.startsWith('/approve') || url.pathname.startsWith('/review')) return;   // customer links: always live
+  if (url.pathname.startsWith('/approve') || url.pathname.startsWith('/review') || url.pathname.startsWith('/track')) return;   // customer links: always live
+  // App code and styles carry their own fingerprint (?v=…), which changes whenever the file changes.
+  // So a saved copy with the same fingerprint is exactly right: it opens instantly, with no network trip.
+  if (url.searchParams.has('v') && /\.(js|css)$/.test(url.pathname)) {
+    e.respondWith(caches.open(CACHE).then((c) => c.match(req).then((hit) => hit || fetch(req).then((res) => {
+      if (res.ok && res.type === 'basic') c.put(req, res.clone());
+      return res;
+    }))).catch(() => fetch(req)));
+    return;
+  }
+  // The page itself (and anything without a fingerprint): network first, so an upload reaches everyone right away;
+  // the saved copy is used only when there is no connection.
   e.respondWith(
     fetch(req).then((res) => {
       if (res.ok && res.type === 'basic') { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }

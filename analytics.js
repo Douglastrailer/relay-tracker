@@ -36,7 +36,10 @@ async function refreshAnalyticsV2(){
   if(!rg){ out.innerHTML = '<p class="meta">Pick a start and end date.</p>'; return; }
   if(rg.to <= rg.from){ out.innerHTML = '<p class="form-error">The end date must be after the start date.</p>'; return; }
   out.innerHTML = '<p class="meta">Calculating…</p>';
-  const { data, error } = await sb.rpc('shop_analytics', { p_from: rg.from.toISOString(), p_to: rg.to.toISOString() });
+  anLocationPicker();
+  const args = { p_from: rg.from.toISOString(), p_to: rg.to.toISOString() };
+  if(anState.loc) args.p_location = anState.loc;   // 'all', or a location id; none = the location being worked in
+  const { data, error } = await sb.rpc('shop_analytics', args);
   if(error || !data || !data.summary){ out.innerHTML = `<p class="form-error">The report couldn't be worked out${error ? ': ' + esc(error.message) : '.'}</p>`; return; }
   anState.data = data; anState.from = rg.from; anState.to = rg.to;
   renderAnalyticsV2();
@@ -50,7 +53,8 @@ function renderAnalyticsV2(){
   const tile = (label, value, sub, cls) => `<div class="an-tile${cls ? ' ' + cls : ''}"><span>${esc(label)}</span><b>${value}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
   const toLabel = new Date(anState.to.getTime() - 1);
   document.getElementById('anOut').innerHTML = `
-    <p class="meta an-period">${anState.from.toLocaleDateString()} – ${toLabel.toLocaleDateString()}</p>
+    <p class="meta an-period">${anState.from.toLocaleDateString()} – ${toLabel.toLocaleDateString()}${d.location && (d.location.all || d.location.name) ? ' · ' + esc(d.location.all ? 'All locations' : d.location.name) : ''}</p>
+    ${anByLocationHtml(d.by_location)}
     <div class="an-tiles">
       ${tile('Revenue billed', anMoney0(s.revenue), `${s.invoices} invoice${s.invoices === 1 ? '' : 's'}`)}
       ${tile('Collected', anMoney0(s.collected), 'payments received in this period')}
@@ -121,4 +125,33 @@ function initAnalyticsV2(){
   root.querySelectorAll('#anRanges [data-r]').forEach(b => b.onclick = () => { anState.range = b.dataset.r; refreshAnalyticsV2(); });
   document.getElementById('anApply').onclick = refreshAnalyticsV2;
   document.querySelectorAll('.dash-tab[data-target="shop-analytics"]').forEach(t => t.addEventListener('click', refreshAnalyticsV2));
+}
+
+
+// ---- Reports by location (migration 0048) ----
+// The owner chooses: the location being worked in (default), any other location, or All locations,
+// which adds a side-by-side comparison. Office staff always see their own location (the database decides).
+function anLocationPicker(){
+  const host = document.getElementById('anRanges'); if(!host) return;
+  let box = document.getElementById('anLocBox');
+  const locs = (typeof relayLocations !== 'undefined' ? relayLocations : []) || [];
+  const owner = typeof session !== 'undefined' && session && session.staffRole === 'owner';
+  if(!owner || locs.length < 2){ if(box) box.remove(); anState.loc = null; return; }
+  if(box) return;
+  box = document.createElement('label'); box.id = 'anLocBox'; box.className = 'an-loc';
+  const cur = typeof currentLocationId === 'function' ? currentLocationId() : null;
+  box.innerHTML = `<span>Location</span><select id="anLocSel" aria-label="Location for these reports">
+      <option value="">This location${cur && typeof chosenLocation === 'function' && chosenLocation() ? ' (' + esc(locDisplayName(chosenLocation())) + ')' : ''}</option>
+      ${locs.filter(l => l.id !== cur).map(l => `<option value="${l.id}">${esc(l.display_name || l.name)}</option>`).join('')}
+      <option value="all">All locations — compare side by side</option></select>`;
+  host.after(box);
+  box.querySelector('#anLocSel').onchange = (e) => { anState.loc = e.target.value || null; refreshAnalyticsV2(); };
+}
+function anByLocationHtml(rows){
+  if(!rows || !rows.length) return '';
+  const head = ['Location', 'Revenue', 'Invoices', 'Collected', 'Opened', 'Completed', 'Unpaid', 'Overdue'];
+  return `<div class="an-byloc"><h3>Locations side by side</h3><div class="an-table-wrap"><table class="an-table">
+    <thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r => `<tr><td><b>${esc(r.name)}</b></td><td>${anMoney0(r.revenue)}</td><td>${Number(r.invoices || 0)}</td><td>${anMoney0(r.collected)}</td><td>${Number(r.jobs_opened || 0)}</td><td>${Number(r.jobs_completed || 0)}</td><td>${anMoney0(r.unpaid_total)}</td><td class="${Number(r.overdue_total) > 0 ? 'an-over' : ''}">${anMoney0(r.overdue_total)}</td></tr>`).join('')}</tbody>
+  </table></div></div>`;
 }

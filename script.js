@@ -605,6 +605,14 @@ async function fetchLocation(mechanicId){
 // one request per mechanic — critical once you have more than a
 // handful of mechanics, since the old per-mechanic loop meant every
 // dashboard refresh did N sequential network round-trips.
+// every position of this shop's mechanics in one request, asked for by shop (no need to wait for the mechanic list)
+async function fetchShopPositions(){
+  const { data, error } = await sb.from('locations').select('mechanic_id, lat, lng, updated_at, status').eq('org_id', session.orgId).limit(500);
+  if(error) return null;   // the caller falls back to asking by mechanic
+  const map = {};
+  (data || []).forEach(row => { map[row.mechanic_id] = { lat: row.lat, lng: row.lng, updatedAt: new Date(row.updated_at).getTime(), status: row.status }; });
+  return map;
+}
 async function fetchLocationsFor(mechanicIds){
   const map = {};
   if(!mechanicIds || mechanicIds.length === 0) return map;
@@ -2702,8 +2710,11 @@ function renderAnalytics(jobs, mechanics, mechName){
 
 async function refreshShopData(){
   // Mechanics and jobs do not depend on each other: load them together, not one after the other.
-  const [mechanics, active] = await Promise.all([fetchOrgMechanics(), fetchActiveJobs({ orgId: session.orgId })]);
-  const locByMechanic = await fetchLocationsFor(mechanics.map(m=>m.id));
+  // recent completed work does not depend on them either, so it starts at the same time (it is only awaited later)
+  const historyP = fetchCompletedJobs(60, { orgId: session.orgId });
+  // positions carry their shop, so they are asked for by shop at the same time as everything else
+  const [mechanics, active, locByOrg] = await Promise.all([fetchOrgMechanics(), fetchActiveJobs({ orgId: session.orgId }), fetchShopPositions()]);
+  const locByMechanic = locByOrg || await fetchLocationsFor(mechanics.map(m=>m.id));   // older databases: by mechanic, as before
 
   let liveCount = 0;
   for(const m of mechanics){
@@ -2720,7 +2731,7 @@ async function refreshShopData(){
 
   const mechName = id => (mechanics.find(m=>m.id===id) || {}).name || 'Unassigned';
 
-  const history = await fetchCompletedJobs(60, { orgId: session.orgId });
+  const history = await historyP;
   if(typeof renderTodayTiles === 'function') renderTodayTiles(active, mechanics, liveCount);
 
   // Shop board: open work orders plus the last 7 days of completed and invoiced ones.

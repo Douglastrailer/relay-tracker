@@ -56,14 +56,14 @@ async function fetchBoardMetrics(ids){
   if(!ids.length) return out;
   ids.forEach(id => out[id] = {});
   const billing = typeof can !== 'function' || can('billing');
-  const [t, pts, est, helpers] = await Promise.all([
+  const [t, pts, est, helpers, hist] = await Promise.all([
     sb.from('job_time_summary').select('job_id, labor_minutes').in('job_id', ids),
     sb.from('job_parts').select('job_id, qty, returned_qty, unit_price').in('job_id', ids),
     billing ? sb.from('invoices').select('doc_number, job_id, kind, status, total, created_at').in('job_id', ids).eq('kind', 'estimate').order('created_at') : Promise.resolve({ data:[] }),
-    typeof helperCounts === 'function' ? helperCounts(ids) : Promise.resolve({})
+    typeof helperCounts === 'function' ? helperCounts(ids) : Promise.resolve({}),
+    // when each job entered its current stage (the latest status change), fetched alongside the rest
+    sb.from('job_status_history').select('job_id, changed_at').in('job_id', ids).order('changed_at', { ascending: false })
   ]);
-  // when each job entered its current stage (the latest status change)
-  const hist = await sb.from('job_status_history').select('job_id, changed_at').in('job_id', ids).order('changed_at', { ascending: false });
   (hist.data || []).forEach(r => { if(out[r.job_id] && !out[r.job_id].stageSince) out[r.job_id].stageSince = r.changed_at; });
   Object.entries(helpers || {}).forEach(([id, n]) => { if(out[id]) out[id].helpers = n; });
   (t.data || []).forEach(r => { if(out[r.job_id]) out[r.job_id].laborH = Number(r.labor_minutes || 0) / 60; });

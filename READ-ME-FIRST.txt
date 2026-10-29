@@ -1,11 +1,11 @@
-RelayFleet website - a refresh comes back to the same place
+RelayFleet - locations finished (batch 1 of 4)
 
-Upload ALL files to GitHub and commit (new file: route.js). Refresh with Cmd+Shift+R.
-No database or Edge Function changes.
+ORDER (same day, outside working hours):
+ 1. Run migration 0048_locations_finished.sql in the Supabase SQL Editor (needs 0047).
+ 2. Replace the send-notifications Edge Function with invoice-functions-simple/3-send-notifications.ts (paste over index.ts, Deploy).
+ 3. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
 
 What changed:
-- Refreshing Relay opens the same screen, section and work order you were on, instead of the home page.
-  The place is kept in the address, e.g. relayfleet.us/#v=shop-inventory&s=reorder
-- The saved screen is opened before the loading screen lifts, so the home page never flashes.
-- Opening relayfleet.us fresh (nothing after the address) still starts at home. Logging out forgets the place.
-- Includes: the Low stock fix, sidebar items on tap, the new header.
+- Reports show the location you are in (before, every location was added together). The owner can pick another location, or All locations to compare them side by side. Office staff see their own location.
+- The tracking page and customer emails use the location\x27s own name, logo, email, phone and review link.
+- Parts stock per location: on hand, low stock, what to order and below-zero count only that location\x27s shelves and its mechanics\x27 trucks. Shop staff see only their location\x27s shelves and trucks; a new shelf belongs to the location it was added in.
