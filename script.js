@@ -1298,7 +1298,7 @@ function refreshCurrentView(){
   if(!appEntered) return;
   if(document.hidden){ rcvPending = true; return; }
   clearTimeout(rcvTimer);
-  rcvTimer = setTimeout(refreshCurrentViewNow, 1500);
+  rcvTimer = setTimeout(refreshCurrentViewNow, 250);   // a quick pause combines bursts; only changed cards are redrawn
 }
 document.addEventListener('visibilitychange', () => { if(!document.hidden && rcvPending){ rcvPending = false; refreshCurrentView(); } });
 function refreshCurrentViewNow(){
@@ -1358,6 +1358,7 @@ function setupRealtimeSync(){
   }
   if(session.role === 'admin') realtimeChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, handleLocationPing);
   else if(session.role !== 'fleet' && session.orgId) realtimeChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'locations', filter: 'org_id=eq.' + session.orgId }, handleLocationPing);
+  if(typeof addLiveTables === 'function') realtimeChannel = addLiveTables(realtimeChannel);   // estimates, payments, appointments, messages (live.js)
   realtimeChannel.subscribe();
   // safety net: the request count is re-checked each minute while the app is open
   if(session.role === 'shop' && typeof everyWhileVisible === 'function') everyWhileVisible(() => { if(typeof refreshRequestCount === 'function') refreshRequestCount(); }, 60000);

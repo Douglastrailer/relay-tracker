@@ -1,10 +1,9 @@
-RelayFleet website - Russian for everything added recently (batch 4 of 4)
+RelayFleet - live updates (batch 1 of 2)
 
-Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R.
-No database or Edge Function changes in this batch.
+ORDER (same day):
+ 1. Run migration 0050_live_updates.sql in the Supabase SQL Editor (needs 0049).
+ 2. Upload ALL website files to GitHub and commit (new file: live.js). Refresh with Cmd+Shift+R.
 
-What changed:
-- Russian for the header, account menu, sidebar items, board filters, work order side panel, Schedule, setup panel, tracking links, tour, What\x27s new, Reports (including by location), fleet customers, location settings, and error messages.
-- Dates and times on these screens follow the chosen language.
-- Customer emails (and the time written into appointment reminders) stay in English.
-- What\x27s new: removed a duplicated entry, corrected where the location switch is, and added this round\x27s releases.
+To check live updates are switched on, run in the SQL Editor:
+   select tablename from pg_publication_tables where pubname = \x27supabase_realtime\x27 order by 1;
+You should see: appointments, invoices, job_comments, jobs, locations, payments, shop_notifications, work_requests.
