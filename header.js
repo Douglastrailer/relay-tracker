@@ -73,7 +73,7 @@ async function refreshMsgBadge(){
   const list = await loadMessages();
   const n = list.filter(m => new Date(m.created_at).getTime() > seen).length;
   b.textContent = n > 9 ? '9+' : String(n); b.classList.toggle('hidden', n === 0);
-  const btn = document.getElementById('hdrBtn-msg'); if(btn) btn.setAttribute('aria-label', n ? `Messages, ${n} new` : 'Messages');
+  const btn = document.getElementById('hdrBtn-msg'); if(btn) btn.setAttribute('aria-label', n ? relayFmt('Messages, {n} new', { n }) : relayFmt('Messages'));
 }
 async function renderMessages(panel){
   panel.innerHTML = skelRows(3);
@@ -116,7 +116,7 @@ function initAvatar(){
   const roleLabel = session.role === 'shop' ? ({ owner: 'Shop owner', office: 'Office', service_writer: 'Service writer' }[session.staffRole] || 'Shop staff') : session.role === 'mechanic' ? 'Mechanic' : session.role === 'fleet' ? 'Fleet manager' : session.role === 'admin' ? 'Relay admin' : '';
   const org = (document.getElementById('whoOrg') || {}).textContent || session.company || '';
   const loc = typeof chosenLocation === 'function' && chosenLocation() && (window.relayAllLocations || []).length > 1 ? (chosenLocation().display_name || chosenLocation().name) : '';
-  btn.setAttribute('aria-label', (loc ? 'Account and location: ' : 'Account: ') + (session.name || '') + (loc ? ', ' + loc : ''));
+  btn.setAttribute('aria-label', loc ? relayFmt('Account and location: {name}, {loc}', { name: session.name || '', loc }) : relayFmt('Account: {name}', { name: session.name || '' }));
   head.innerHTML = `<span class="acct-avatar" aria-hidden="true">${esc(initials(session.name))}</span><div><b>${esc(session.name || '')}</b><span>${esc([roleLabel, org].filter(Boolean).join(' · '))}</span>${loc ? `<span>${esc(loc)}</span>` : ''}</div>`;
 }
 

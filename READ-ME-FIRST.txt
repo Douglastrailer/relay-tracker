@@ -1,10 +1,10 @@
-RelayFleet - Schedule (appointments calendar), batch 3 of 4
+RelayFleet website - Russian for everything added recently (batch 4 of 4)
 
-ORDER (same day):
- 1. Run migration 0049_appointments.sql in the Supabase SQL Editor (needs 0048).
- 2. Upload ALL website files to GitHub and commit (new file: schedule.js). Refresh with Cmd+Shift+R.
-No Edge Function changes in this batch.
+Upload ALL files to GitHub and commit. Refresh with Cmd+Shift+R.
+No database or Edge Function changes in this batch.
 
-Reminders: they are queued every hour by the database scheduler (pg_cron). To check it is on, run:
-   select jobname, schedule from cron.job;
-You should see relay-appointment-reminders. If cron is not available, turn on the pg_cron extension under Database > Extensions and run migration 0049 again.
+What changed:
+- Russian for the header, account menu, sidebar items, board filters, work order side panel, Schedule, setup panel, tracking links, tour, What\x27s new, Reports (including by location), fleet customers, location settings, and error messages.
+- Dates and times on these screens follow the chosen language.
+- Customer emails (and the time written into appointment reminders) stay in English.
+- What\x27s new: removed a duplicated entry, corrected where the location switch is, and added this round\x27s releases.

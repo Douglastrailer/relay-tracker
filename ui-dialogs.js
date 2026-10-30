@@ -30,8 +30,9 @@ function friendlyError(err, action){
   } else {
     say = 'Something went wrong on our side.';
   }
-  const lead = action ? action.replace(/[.\s]+$/, '') + '. ' : '';
-  return { message: lead + say, detail: raw && raw.length < 300 ? raw : '' };
+  const tr = t => typeof relayFmt === 'function' ? relayFmt(t) : t;   // each half in the chosen language
+  const lead = action ? tr(action.replace(/[.\s]+$/, '')) + '. ' : '';
+  return { message: lead + tr(say), detail: raw && raw.length < 300 ? raw : '' };
 }
 
 let relayDialogSeq = 0;

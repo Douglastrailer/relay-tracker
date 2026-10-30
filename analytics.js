@@ -53,21 +53,21 @@ function renderAnalyticsV2(){
   const tile = (label, value, sub, cls) => `<div class="an-tile${cls ? ' ' + cls : ''}"><span>${esc(label)}</span><b>${value}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
   const toLabel = new Date(anState.to.getTime() - 1);
   document.getElementById('anOut').innerHTML = `
-    <p class="meta an-period">${anState.from.toLocaleDateString()} – ${toLabel.toLocaleDateString()}${d.location && (d.location.all || d.location.name) ? ' · ' + esc(d.location.all ? 'All locations' : d.location.name) : ''}</p>
+    <p class="meta an-period">${anState.from.toLocaleDateString()} – ${toLabel.toLocaleDateString()}${d.location && (d.location.all || d.location.name) ? ' · <span>' + esc(d.location.all ? 'All locations' : d.location.name) + '</span>' : ''}</p>
     ${anByLocationHtml(d.by_location)}
     <div class="an-tiles">
-      ${tile('Revenue billed', anMoney0(s.revenue), `${s.invoices} invoice${s.invoices === 1 ? '' : 's'}`)}
+      ${tile('Revenue billed', anMoney0(s.revenue), relayFmt(s.invoices === 1 ? '{n} invoice' : '{n} invoices', { n: s.invoices }))}
       ${tile('Collected', anMoney0(s.collected), 'payments received in this period')}
       ${tile('Average work order', anMoney(s.avg_ro), '')}
-      ${tile('Gross margin', anMoney0(s.gross_margin), marginPct == null ? 'after parts cost' : `${marginPct}% after ${anMoney0(s.parts_cost)} parts cost`)}
-      ${tile('Jobs completed', s.jobs_completed, `${s.jobs_opened} opened`)}
+      ${tile('Gross margin', anMoney0(s.gross_margin), marginPct == null ? 'after parts cost' : relayFmt('{p}% after {m} parts cost', { p: marginPct, m: anMoney0(s.parts_cost) }))}
+      ${tile('Jobs completed', s.jobs_completed, relayFmt('{n} opened', { n: s.jobs_opened }))}
       ${tile('Response time', anMinutes(s.avg_response_minutes), 'request to work started')}
       ${tile('Roadside arrival', anMinutes(s.avg_roadside_minutes), 'request to on site')}
       ${tile('Repair time', anHours(s.avg_repair_hours), 'opened to completed')}
       ${tile('Labor hours', anHours(s.labor_hours), 'from mechanics\' timers')}
-      ${tile('Unpaid invoices', anMoney0(s.unpaid_total), `${s.unpaid_count} open${Number(s.overdue_total) ? ` · <b class="neg">${anMoney0(s.overdue_total)} overdue</b>` : ''}`, Number(s.overdue_total) ? 'warn' : '')}
+      ${tile('Unpaid invoices', anMoney0(s.unpaid_total), `${esc(relayFmt('{n} open', { n: s.unpaid_count }))}${Number(s.overdue_total) ? ` · <b class="neg">${esc(relayFmt('{m} overdue', { m: anMoney0(s.overdue_total) }))}</b>` : ''}`, Number(s.overdue_total) ? 'warn' : '')}
     </div>
-    <section class="ro-sec"><h4>Revenue by ${esc(d.bucket)}</h4>${trendChart(d.trend, d.bucket)}</section>
+    <section class="ro-sec"><h4>${esc(relayFmt('Revenue by {b}', { b: relayFmt(d.bucket) }))}</h4>${trendChart(d.trend, d.bucket)}</section>
     ${anTable('Technicians', 'tech', ['Mechanic','Jobs done','Roadside / in-shop','Labor','Drive','Avg completion','Revenue'],
       d.technicians.map(t => [esc(t.name) + (t.active ? '' : ' <span class="meta">(inactive)</span>'), t.jobs_completed, `${t.roadside} / ${t.inshop}`, anHours(t.labor_hours), anHours(t.drive_hours), anHours(t.avg_completion_hours), anMoney(t.revenue)]),
       'No mechanics yet.')}
@@ -141,7 +141,7 @@ function anLocationPicker(){
   box = document.createElement('label'); box.id = 'anLocBox'; box.className = 'an-loc';
   const cur = typeof currentLocationId === 'function' ? currentLocationId() : null;
   box.innerHTML = `<span>Location</span><select id="anLocSel" aria-label="Location for these reports">
-      <option value="">This location${cur && typeof chosenLocation === 'function' && chosenLocation() ? ' (' + esc(locDisplayName(chosenLocation())) + ')' : ''}</option>
+      <option value="">${cur && typeof chosenLocation === 'function' && chosenLocation() ? esc(relayFmt('This location ({name})', { name: locDisplayName(chosenLocation()) })) : esc(relayFmt('This location'))}</option>
       ${locs.filter(l => l.id !== cur).map(l => `<option value="${l.id}">${esc(l.display_name || l.name)}</option>`).join('')}
       <option value="all">All locations — compare side by side</option></select>`;
   host.after(box);

@@ -5,15 +5,9 @@
 // ============================================================
 let woSideTab = 'order';
 
-function woAgo(ts){
-  if(!ts) return '';
-  const m = Math.max(0, Math.round((Date.now() - new Date(ts).getTime()) / 60000));
-  if(m < 60) return m + ' min';
-  const h = Math.floor(m / 60); if(h < 24) return h + ' h ' + (m % 60 ? (m % 60) + ' min' : '');
-  const d = Math.floor(h / 24); return d + (d === 1 ? ' day' : ' days');
-}
+function woAgo(ts){ return ts ? relayDur((Date.now() - new Date(ts).getTime()) / 60000) : ''; }
 function woCap(s){ s = String(s || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
-function woMoney(n){ return '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function woMoney(n){ return '$' + Number(n || 0).toLocaleString(relayLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function woRow(label, value){ return value === '' || value == null ? '' : `<div class="ws-row"><span>${esc(label)}</span><b>${value}</b></div>`; }
 
 async function renderWoSide(job){
@@ -41,13 +35,13 @@ async function renderWoSide(job){
     order: `
       ${woRow('Status', typeof jobStatusBadge === 'function' ? jobStatusBadge(job.status) : esc(job.status))}
       ${closed.includes(job.status) ? '' : woRow('In this stage', esc(woAgo(stageSince)))}
-      ${woRow('Opened', esc(new Date(job.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })) + ' · ' + esc(woAgo(job.created_at)) + ' ago')}
+      ${woRow('Opened', esc(new Date(job.created_at).toLocaleDateString(relayLocale(), { month: 'short', day: 'numeric', year: 'numeric' })) + ' · ' + esc(relayFmt('{t} ago', { t: woAgo(job.created_at) })))}
       ${woRow('Service', job.job_type === 'mobile' ? 'Roadside / mobile' : 'In the shop')}
       ${job.priority && job.priority !== 'normal' ? woRow('Priority', esc(job.priority.charAt(0).toUpperCase() + job.priority.slice(1))) : ''}
       ${woRow('Technician', esc((tech.data && tech.data.name) || 'Unassigned'))}
       ${loc && (window.relayAllLocations || []).length > 1 ? woRow('Location', esc(loc.display_name || loc.name)) : ''}
-      ${est ? woRow('Estimate', esc(est.doc_number || '') + ' · ' + esc(woCap(est.status)) + ' · ' + woMoney(est.total)) : ''}
-      ${inv ? woRow('Invoice', esc(inv.doc_number || '') + ' · ' + esc(woCap(inv.status)) + ' · ' + woMoney(inv.total)) : ''}
+      ${est ? woRow('Estimate', esc(est.doc_number || '') + ' · ' + esc(relayFmt(woCap(est.status))) + ' · ' + woMoney(est.total)) : ''}
+      ${inv ? woRow('Invoice', esc(inv.doc_number || '') + ' · ' + esc(relayFmt(woCap(inv.status))) + ' · ' + woMoney(inv.total)) : ''}
       ${job.complaint ? `<div class="ws-note"><span>Reason for visit</span><p>${esc(job.complaint)}</p></div>` : ''}`,
     customer: c ? `
       <div class="ws-title">${esc(c.company_name)}</div>
@@ -68,7 +62,7 @@ async function renderWoSide(job){
       ${woRow('Engine', esc(u.engine || ''))}
       ${(job.odometer || u.odometer) ? woRow('Odometer', esc(Number(job.odometer || u.odometer).toLocaleString()) + ' mi') : ''}
       <div class="ws-sub">Earlier repairs</div>
-      ${(unitJobs.data || []).length ? (unitJobs.data || []).map(r => `<div class="ws-hist"><b>${esc(r.ro_number || '#' + r.id)}</b> <span class="meta">${esc(new Date(r.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }))}</span><div>${esc((r.complaint || '').slice(0, 70))}</div></div>`).join('') : '<p class="meta">No earlier repairs on this unit.</p>'}
+      ${(unitJobs.data || []).length ? (unitJobs.data || []).map(r => `<div class="ws-hist"><b>${esc(r.ro_number || '#' + r.id)}</b> <span class="meta">${esc(new Date(r.created_at).toLocaleDateString(relayLocale(), { month: 'short', day: 'numeric', year: 'numeric' }))}</span><div>${esc((r.complaint || '').slice(0, 70))}</div></div>`).join('') : '<p class="meta">No earlier repairs on this unit.</p>'}
       ${typeof openUnitHistory === 'function' ? `<button type="button" class="ghost-btn ws-open" data-ws-unit="${u.id}">Full history</button>` : ''}`
       : `<p class="meta">No unit is linked to this work order.</p>`
   };

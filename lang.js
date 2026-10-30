@@ -87,3 +87,22 @@ function relayLangInit(){
 
 // the browser-format locale for the language chosen in the menu (dates and numbers follow it)
 function relayLangLocale(){ return ({ en:'en-US', es:'es-ES', ru:'ru-RU', pt:'pt-BR', fr:'fr-FR' })[relayLang] || 'en-US'; }
+
+// A phrase with values in it, e.g. relayFmt('Step {i} of {n}', { i: 1, n: 5 }). The whole pattern is looked up in the
+// chosen language's dictionary (so word order can change), then the values are filled in.
+function relayFmt(pattern, vars){
+  if(pattern == null) return '';   // nothing to say: never break the screen
+  let p = String(pattern);
+  try { const d = typeof relayLang !== 'undefined' && relayLang !== 'en' && window.RELAY_I18N && window.RELAY_I18N[relayLang]; if(d && d.words && d.words[pattern]) p = d.words[pattern]; } catch(_){}
+  return p.replace(/\{(\w+)\}/g, (_, k) => vars && k in vars ? String(vars[k]) : '');
+}
+// A length of time in the chosen language: compact ('20 min', '5 h', '3 d') or full ('20 min', '2 h 15 min', '3 days').
+function relayDur(mins, compact){
+  const ru = typeof relayLang !== 'undefined' && relayLang === 'ru';
+  mins = Math.max(0, Math.round(mins));
+  if(mins < 60) return mins + (ru ? ' мин' : ' min');
+  const h = Math.floor(mins / 60), m = mins % 60;
+  if(mins < 1440) return compact ? h + (ru ? ' ч' : ' h') : h + (ru ? ' ч' : ' h') + (m ? ' ' + m + (ru ? ' мин' : ' min') : '');
+  const d = Math.floor(mins / 1440);
+  return compact ? d + (ru ? ' дн.' : ' d') : d + (ru ? ' дн.' : (d === 1 ? ' day' : ' days'));
+}

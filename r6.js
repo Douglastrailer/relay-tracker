@@ -145,7 +145,7 @@ async function renderSetupChecklist(){
   const done = steps.filter(s => s[2]).length;
   if(done === steps.length){ if(box) box.remove(); return; }
   if(!box){ box = document.createElement('div'); box.id = 'setupBox'; box.className = 'setup-box'; ov.insertBefore(box, ov.firstChild); }
-  box.innerHTML = `<div class="setup-head"><div><h2>Get your shop ready</h2><span class="meta">${done} of ${steps.length} done</span></div><button type="button" class="text-btn" id="setupHide">Hide</button></div>
+  box.innerHTML = `<div class="setup-head"><div><h2>Get your shop ready</h2><span class="meta">${esc(relayFmt('{n} of {m} done', { n: done, m: steps.length }))}</span></div><button type="button" class="text-btn" id="setupHide">Hide</button></div>
     <div class="setup-bar"><span style="width:${Math.round(done / steps.length * 100)}%"></span></div>
     <ol class="setup-steps">${steps.map(([t, d, ok, target, btn], i) => `<li class="${ok ? 'ok' : ''}"><span class="setup-mark" aria-hidden="true">${ok ? '✓' : i + 1}</span>
       <div><b>${t}</b><span>${d}</span></div>${ok ? '<em>Done</em>' : `<button type="button" class="ghost-btn" data-go="${target}" data-new="${target === 'shop-jobs' ? 1 : ''}">${btn}</button>`}</li>`).join('')}</ol>`;

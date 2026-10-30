@@ -77,14 +77,14 @@ function woCardHtml(j, techName, m){
   if(m.laborH) facts.push(`<span><em>Labor</em>${m.laborH.toFixed(1)} h</span>`);
   if(m.parts) facts.push(`<span><em>Parts</em>${shopMoney0(m.parts)}</span>`);
   if(m.estimate != null) facts.push(`<span><em>Estimate</em>${shopMoney0(m.estimate)}</span>`);
-  return `<div class="job-card wo-card${j.safety_issue ? ' is-safety' : ''}${j.priority === 'urgent' || j.priority === 'high' ? ' is-prio' : ''}" data-job="${j.id}" data-tech="${esc(j.mechanic_id || '')}" data-prio="${esc(j.priority || 'normal')}" data-jobtype="${esc(j.job_type)}" data-status="${esc(j.status)}" draggable="${j.status === 'invoiced' ? 'false' : 'true'}" tabindex="0" role="button" aria-label="Open ${esc(j.ro_number || 'work order')}">
+  return `<div class="job-card wo-card${j.safety_issue ? ' is-safety' : ''}${j.priority === 'urgent' || j.priority === 'high' ? ' is-prio' : ''}" data-job="${j.id}" data-tech="${esc(j.mechanic_id || '')}" data-prio="${esc(j.priority || 'normal')}" data-jobtype="${esc(j.job_type)}" data-status="${esc(j.status)}" draggable="${j.status === 'invoiced' ? 'false' : 'true'}" tabindex="0" role="button" aria-label="${esc(relayFmt('Open {wo}', { wo: j.ro_number || '#' + j.id }))}">
       <div class="wo-card-top"><span class="ro-num">${esc(j.ro_number || '#' + j.id)}</span>${j.job_type === 'mobile' ? '<span class="wo-road" title="Roadside">ROAD</span>' : ''}${j.priority && j.priority !== 'normal' ? `<span class="prio-chip prio-${esc(j.priority)}">${esc(PRIORITY_LABELS[j.priority] || j.priority)}</span>` : ''}${j.warranty_claim_status === 'pending_review' ? '<span class="prio-chip prio-high">Warranty?</span>' : ''}</div>
       <div class="wo-card-unit">${esc(j.vehicle || '')}${typeof locTag === 'function' ? locTag(j.location_id) : ''}</div>
       ${j.complaint ? `<div class="wo-card-svc">${esc(j.complaint.length > 70 ? j.complaint.slice(0, 68) + '…' : j.complaint)}</div>` : ''}
       <div class="wo-card-meta"><span>${esc(j.customer || '')}</span><span>${esc(techName || 'Unassigned')}${m.helpers ? ' +' + m.helpers : ''}</span></div>
       ${stageChip(j, m)}
       <div class="wo-card-foot">${jobStatusBadge(j.status)}${facts.length ? `<div class="wo-card-facts">${facts.join('')}</div>` : ''}</div>
-      <button type="button" class="wo-move-btn" data-move-job="${j.id}" aria-label="Move ${esc(j.ro_number || 'this work order')} to another column">Move ▾</button>
+      <button type="button" class="wo-move-btn" data-move-job="${j.id}" aria-label="${esc(relayFmt('Move {wo} to another column', { wo: j.ro_number || '#' + j.id }))}">Move ▾</button>
     </div>`;
 }
 // Board cards open their work order (drag still moves them).
@@ -142,7 +142,7 @@ function renderWorkOrdersList(active, history, mechanics, metrics){
   rows = rows.slice().sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
   const name = id => (woCache.mechanics.find(m => m.id === id) || {}).name || 'Unassigned';
   // only the rows that changed are redrawn; the list keeps its place and focus
-  const woRowHtml = j => `<div class="wo-row" data-job="${j.id}" tabindex="0" role="button" aria-label="Open ${esc(j.ro_number || 'work order')}">
+  const woRowHtml = j => `<div class="wo-row" data-job="${j.id}" tabindex="0" role="button" aria-label="${esc(relayFmt('Open {wo}', { wo: j.ro_number || '#' + j.id }))}">
         <span><span class="ro-num">${esc(j.ro_number || '#' + j.id)}</span>${j.job_type === 'mobile' ? ' <span class="wo-road">ROAD</span>' : ''}${j.priority === 'urgent' || j.priority === 'high' ? ` <span class="prio-chip prio-${esc(j.priority)}">${esc(PRIORITY_LABELS[j.priority])}</span>` : ''}</span>
         <span><b>${esc(j.customer || '')}</b><span class="meta"> · ${esc(j.vehicle || '')}</span>${typeof locTag === 'function' ? locTag(j.location_id) : ''}</span>
         <span class="wo-svc">${esc(j.complaint || '—')}</span>
@@ -162,7 +162,7 @@ function renderWorkOrdersList(active, history, mechanics, metrics){
   if(hb){
     const recent = woCache.history.slice().sort((a, b) => new Date(b.completed_at || b.updated_at) - new Date(a.completed_at || a.updated_at)).slice(0, 10);
     hb.className = 'wo-list';
-    const recentRow = j => `<div class="wo-row" data-job="${j.id}" tabindex="0" role="button" aria-label="Open ${esc(j.ro_number || 'work order')}">
+    const recentRow = j => `<div class="wo-row" data-job="${j.id}" tabindex="0" role="button" aria-label="${esc(relayFmt('Open {wo}', { wo: j.ro_number || '#' + j.id }))}">
         <span><span class="ro-num">${esc(j.ro_number || '#' + j.id)}</span></span>
         <span><b>${esc(j.customer || '')}</b><span class="meta"> · ${esc(j.vehicle || '')}</span></span>
         <span class="wo-svc">${esc(j.complaint || '—')}</span>
@@ -367,7 +367,7 @@ function stageChip(j, m){
   if(['complete', 'invoiced', 'paid', 'cancelled'].includes(j.status)) return '';
   const since = (m && m.stageSince) || j.updated_at || j.created_at; if(!since) return '';
   const mins = Math.max(0, (Date.now() - new Date(since).getTime()) / 60000);
-  const label = mins < 60 ? Math.round(mins) + ' min' : mins < 1440 ? Math.floor(mins / 60) + ' h' : Math.floor(mins / 1440) + ' d';
+  const label = typeof relayDur === 'function' ? relayDur(mins, true) : Math.round(mins) + ' min';
   const cls = mins >= 4320 ? ' is-late' : mins >= 1440 ? ' is-slow' : '';
-  return `<div class="wo-stage${cls}" title="Time in this stage">${label} in this stage</div>`;
+  return `<div class="wo-stage${cls}" title="Time in this stage">${typeof relayFmt === 'function' ? relayFmt('{t} in this stage', { t: label }) : label + ' in this stage'}</div>`;
 }

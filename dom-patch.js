@@ -53,3 +53,6 @@ function skelTableRows(rows, cols){
   return Array.from({ length: rows || 5 }, (_, i) => `<tr class="skel-tr" aria-hidden="${i ? 'true' : 'false'}">` +
     Array.from({ length: cols || 4 }, (_, c) => `<td><span class="skel ${c ? 'w50' : 'w75'}"></span>${!i && !c ? '<span class="skel-sr">Loading</span>' : ''}</td>`).join('') + '</tr>').join('');
 }
+
+// dates and times follow the language chosen in the app (English when none is set)
+function relayLocale(){ return typeof relayLangLocale === 'function' ? relayLangLocale() : undefined; }

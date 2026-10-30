@@ -4,11 +4,17 @@
 // can be skipped at any step, and can be taken again any time.
 // ============================================================
 const RELAY_RELEASES = [
-  { date: '2026-10-25', title: 'New header', items: [
-    'Recently opened work orders, customers and units, one tap away.',
-    'Create a work order, estimate, customer or unit from anywhere with +.',
-    'Messages on work orders in one list, with a count of new ones.',
-    'Your account and the location switch are under your initials.'] },
+  { date: '2026-10-30', title: 'Schedule', items: [
+    'A calendar of appointments, by week or day. Each one sits exactly at its time; overlapping ones sit side by side.',
+    'Tap an empty time to book. Start the work order from the appointment in one step.',
+    'Customers get an email reminder the day before.'] },
+  { date: '2026-10-30', title: 'Locations, finished', items: [
+    'Reports show the location you are in. The owner can compare all locations side by side.',
+    'Parts stock, low stock and what to order are worked out per location.',
+    'The tracking page and customer emails carry the location\'s own name and details.'] },
+  { date: '2026-10-30', title: 'Smoother screens', items: [
+    'The board and lists update only what changed: no flicker, and your place stays put.',
+    'Screens show their layout while loading instead of "Loading…".'] },
   { date: '2026-10-25', title: 'A new header', items: [
     'Recently opened work orders, customers and units, one tap away (the clock icon).',
     'Create a work order, estimate, customer or unit from any screen (the + icon).',
@@ -16,7 +22,7 @@ const RELAY_RELEASES = [
     'Your account and the location switch are under your initials, top right.'] },
   { date: '2026-10-25', title: 'Separate locations', items: [
     'Each location has its own name, logo, details, rates and terms, printed on its own documents.',
-    'Switch locations from the top of the menu. Customers, work orders and invoices are never mixed.',
+    'Switch locations under your initials, top right. Customers, work orders and invoices are never mixed.',
     'Office staff work in their own location; set who works where in Settings → Locations.'] },
   { date: '2026-10-25', title: 'Fleet customers', items: [
     'Fleet managers open their own account and join your shop with your fleet code.',
@@ -39,7 +45,7 @@ function openWhatsNew(){
   markWhatsNewDot();
   const body = document.createElement('div');
   body.innerHTML = `<div class="card rec-form whats-new">${RELAY_RELEASES.map(r => `
-      <section class="wn-item"><div class="meta">${esc(new Date(r.date + 'T12:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }))}</div>
+      <section class="wn-item"><div class="meta">${esc(new Date(r.date + 'T12:00:00').toLocaleDateString(relayLocale(), { month: 'long', day: 'numeric', year: 'numeric' }))}</div>
       <h3>${esc(r.title)}</h3><ul>${r.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></section>`).join('')}</div>`;
   if(typeof openFormSheet === 'function') openFormSheet("What's new in Relay", [body]);
 }
@@ -76,7 +82,7 @@ function showTourStep(){
   const pop = document.createElement('div'); pop.className = 'tour-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-labelledby', 'tourTitle');
   const narrow = window.innerWidth < 700;
   Object.assign(pop.style, narrow ? { left: '12px', right: '12px', bottom: '16px' } : { top: Math.max(12, r.top - 8) + 'px', left: (r.right + 16) + 'px' });
-  pop.innerHTML = `<div class="meta">Step ${tourIdx + 1} of ${TOUR_STEPS.length}</div><h3 id="tourTitle">${esc(step.title)}</h3><p>${esc(step.text)}</p>
+  pop.innerHTML = `<div class="meta">${esc(relayFmt('Step {i} of {n}', { i: tourIdx + 1, n: TOUR_STEPS.length }))}</div><h3 id="tourTitle">${esc(step.title)}</h3><p>${esc(step.text)}</p>
     <div class="tour-actions"><button type="button" class="text-btn" id="tourSkip">Skip tour</button><span>${tourIdx > 0 ? '<button type="button" class="ghost-btn" id="tourBack">Back</button>' : ''}<button type="button" id="tourNext">${tourIdx === TOUR_STEPS.length - 1 ? 'Done' : 'Next'}</button></span></div>`;
   document.body.append(ring, pop);
   pop.querySelector('#tourSkip').onclick = endTour;

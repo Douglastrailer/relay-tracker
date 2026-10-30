@@ -3169,7 +3169,7 @@ async function renderFleetCustomers(){
   const { data, error } = await sb.rpc('shop_fleet_customers');
   if(error || !data){ box.innerHTML = '<div class="team-subhead">Regular fleet customers</div>' + (error && /Only the shop owner or office/.test(error.message) ? '' : `<p class="form-error">${esc(friendlyError(error, 'Could not load your fleet customers').message)}</p>`); return; }
   const fleets = data.fleets || [];
-  const day = v => v ? new Date(v).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+  const day = v => v ? new Date(v).toLocaleDateString(relayLocale(), { year: 'numeric', month: 'short', day: 'numeric' }) : '';
   box.innerHTML = `<div class="team-subhead">Regular fleet customers</div>
     <p class="meta">Fleet managers open their own Relay account, find you under Find shops, and become your regular customer with your fleet code. You can remove a fleet from this list; their own account stays theirs.</p>
     ${isOwner ? `<div class="fleet-code-box"><div><span class="meta">${typeof relayLocations !== 'undefined' && relayLocations.length > 1 && typeof chosenLocation === 'function' && chosenLocation() ? 'Fleet code for ' + esc(locDisplayName(chosenLocation())) : 'Your fleet code'}</span><b class="mono" id="fleetCodeVal">${esc(data.fleet_code || '')}</b></div>
@@ -3178,7 +3178,7 @@ async function renderFleetCustomers(){
     <p class="form-error" id="fleetCustErr"></p>
     ${fleets.length ? fleets.map(f => `<div class="team-row">
         <div><div class="tname">${esc(f.company || f.name || 'Fleet')}</div>
-        <div class="tstatus">${esc([f.name && f.company ? f.name : '', f.email, f.phone].filter(Boolean).join(' · '))}${f.since ? ' — customer since ' + esc(day(f.since)) : ''}</div></div>
+        <div class="tstatus">${esc([f.name && f.company ? f.name : '', f.email, f.phone].filter(Boolean).join(' · '))}</div>${f.since ? `<div class="tstatus">${esc(relayFmt('Customer since {d}', { d: day(f.since) }))}</div>` : ''}</div>
         ${isOwner ? `<button type="button" class="text-btn danger" data-fleetremove="${esc(f.fleet_id)}" data-name="${esc(f.company || f.name || 'this fleet')}">Remove</button>` : ''}
       </div>`).join('') : '<div class="empty-note">No regular fleet customers yet.</div>'}`;
   const err = m => { const e = document.getElementById('fleetCustErr'); if(e) e.textContent = m || ''; };

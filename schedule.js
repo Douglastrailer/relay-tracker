@@ -15,8 +15,10 @@ function schRange(){
   const start = schAdd(SCH.anchor, -((SCH.anchor.getDay() + 6) % 7));   // weeks start on Monday
   return [start, schAdd(start, 7)];
 }
-function schTime(d){ return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); }
-function schLabel(d){ return d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+function schTime(d){ return d.toLocaleTimeString(relayLocale(), { hour: 'numeric', minute: '2-digit' }); }
+function schLabel(d){ return d.toLocaleString(relayLocale(), { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+// the time written into the customer's reminder email: always English, like the rest of the email
+function schEmailLabel(d){ return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
 function schMinutes(d){ return d.getHours() * 60 + d.getMinutes(); }
 
 async function renderSchedule(){
@@ -42,8 +44,8 @@ async function renderSchedule(){
   const [from, to] = schRange();
   const last = schAdd(to, -1);
   panel.querySelector('#schTitle').textContent = SCH.view === 'day'
-    ? SCH.anchor.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-    : from.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' – ' + last.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    ? SCH.anchor.toLocaleDateString(relayLocale(), { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    : from.toLocaleDateString(relayLocale(), { month: 'short', day: 'numeric' }) + ' – ' + last.toLocaleDateString(relayLocale(), { month: 'short', day: 'numeric', year: 'numeric' });
   const seq = (SCH.seq = (SCH.seq || 0) + 1);
   const [res, mres] = await Promise.all([
     sb.from('appointments').select('*').lt('starts_at', to.toISOString()).gt('ends_at', from.toISOString()).neq('status', 'cancelled').order('starts_at'),
@@ -84,7 +86,7 @@ function drawScheduleGrid(from, days){
       const top = (it.s - SCH.startHour * 60) / 60 * px, h = Math.max(22, (it.e - it.s) / 60 * px);
       const a = it.a, st = a.status;
       return `<button type="button" class="sch-ev sch-${st}" data-appt="${a.id}" style="top:${top.toFixed(1)}px;height:${h.toFixed(1)}px;left:calc(${(100 / it.cols * it.col).toFixed(3)}% + 2px);width:calc(${(100 / it.cols).toFixed(3)}% - 4px)"
-        aria-label="${esc(schTime(new Date(a.starts_at)) + ' to ' + schTime(new Date(a.ends_at)) + ', ' + a.customer_name + (a.reason ? ', ' + a.reason : ''))}">
+        aria-label="${esc(relayFmt('{from} to {to}', { from: schTime(new Date(a.starts_at)), to: schTime(new Date(a.ends_at)) }) + ', ' + a.customer_name + (a.reason ? ', ' + a.reason : ''))}">
         <span class="sch-ev-time">${it.startsBefore ? '… ' : ''}${esc(schTime(new Date(a.starts_at)))} – ${esc(schTime(new Date(a.ends_at)))}${it.endsAfter ? ' …' : ''}</span>
         <b>${esc(a.customer_name)}</b>${a.unit_label ? ` <span class="sch-ev-unit">${esc(a.unit_label)}</span>` : ''}
         ${a.reason ? `<span class="sch-ev-reason">${esc(a.reason)}</span>` : ''}
@@ -96,8 +98,8 @@ function drawScheduleGrid(from, days){
     const nowTop = isToday ? (schMinutes(new Date()) - SCH.startHour * 60) / 60 * px : -1;
     cols += `<div class="sch-col${isToday ? ' is-today' : ''}" data-day="${day.getTime()}" style="height:${total}px">${blocks}${nowTop >= 0 && nowTop <= total ? `<div class="sch-now" style="top:${nowTop.toFixed(1)}px" aria-hidden="true"></div>` : ''}</div>`;
   }
-  const heads = Array.from({ length: days }, (_, i) => { const d = schAdd(from, i); return `<div class="sch-head${d.getTime() === today ? ' is-today' : ''}">${esc(d.toLocaleDateString(undefined, { weekday: 'short' }))}<b>${d.getDate()}</b></div>`; }).join('');
-  const hours = Array.from({ length: SCH.endHour - SCH.startHour }, (_, i) => { const d = new Date(2000, 0, 1, SCH.startHour + i); return `<div class="sch-hour" style="height:${px}px">${esc(d.toLocaleTimeString(undefined, { hour: 'numeric' }))}</div>`; }).join('');
+  const heads = Array.from({ length: days }, (_, i) => { const d = schAdd(from, i); return `<div class="sch-head${d.getTime() === today ? ' is-today' : ''}">${esc(d.toLocaleDateString(relayLocale(), { weekday: 'short' }))}<b>${d.getDate()}</b></div>`; }).join('');
+  const hours = Array.from({ length: SCH.endHour - SCH.startHour }, (_, i) => { const d = new Date(2000, 0, 1, SCH.startHour + i); return `<div class="sch-hour" style="height:${px}px">${esc(d.toLocaleTimeString(relayLocale(), { hour: 'numeric' }))}</div>`; }).join('');
   grid.innerHTML = `<div class="sch-wrap sch-days-${days}" style="--sch-hour:${px}px">
       <div class="sch-heads"><div class="sch-gutter-head"></div>${heads}</div>
       <div class="sch-body"><div class="sch-gutter">${hours}</div>${cols}</div>
@@ -157,7 +159,7 @@ async function openAppointmentForm(appt, at){
     const row = { customer_id: custId, customer_name: name, unit_id: unitId,
       unit_label: unitId ? unitSel.selectedOptions[0].dataset.label : (unitText.value.trim() || null),
       reason: box.querySelector('#apReason').value.trim() || null, notes: box.querySelector('#apNotes').value.trim() || null,
-      starts_at: s.toISOString(), ends_at: e.toISOString(), starts_label: schLabel(s),
+      starts_at: s.toISOString(), ends_at: e.toISOString(), starts_label: schEmailLabel(s),
       mechanic_id: box.querySelector('#apTech').value || null, remind: box.querySelector('#apRemind').checked };
     const btn = box.querySelector('#apSave'); btn.disabled = true; err('');
     const res = appt ? await sb.from('appointments').update(row).eq('id', appt.id) : await sb.from('appointments').insert([{ ...row, org_id: session.orgId }]);
@@ -178,7 +180,7 @@ async function openAppointment(id){
     <p class="appt-when"><b>${esc(schLabel(new Date(a.starts_at)))}</b> – ${esc(schTime(new Date(a.ends_at)))}</p>
     <p><b>${esc(a.customer_name)}</b>${a.unit_label ? ' · ' + esc(a.unit_label) : ''}</p>
     ${a.reason ? `<p>${esc(a.reason)}</p>` : ''}${a.notes ? `<p class="meta">${esc(a.notes)}</p>` : ''}
-    <p class="meta">Technician: ${esc(mech || 'not assigned yet')}${a.remind ? ' · reminder ' + (a.reminder_sent_at ? 'sent' : 'the day before') : ''}</p>
+    <p class="meta"><span>Technician: ${esc(mech || relayFmt('not assigned yet'))}</span>${a.remind ? `<span> · </span><span>${a.reminder_sent_at ? 'Reminder sent' : 'Reminder the day before'}</span>` : ''}</p>
     ${open && !a.mechanic_id ? `<div class="field"><label for="apStartTech">Technician for the work order</label><select id="apStartTech"><option value="">Choose…</option>${SCH.mechs.filter(m => m.active).map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join('')}</select></div>` : ''}
     <p class="form-error" id="apDErr" role="alert"></p>
     <div class="job-actions appt-actions">
