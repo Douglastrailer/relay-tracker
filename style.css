@@ -2748,3 +2748,48 @@ body.nav-collapsed .nav-fly-wrap.fly-show .nav-fly{ display:flex; }
 @keyframes skelShimmer{ 0%{ background-position:100% 0; } 100%{ background-position:0 0; } }
 @media (prefers-reduced-motion:reduce){ .skel{ animation:none; } }
 .ws-loading{ padding:14px; }
+
+/* ---- Schedule: the calendar ---- */
+.sch-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; margin:4px 0 14px; }
+.sch-nav{ display:flex; gap:6px; }
+.sch-nav .ghost-btn{ min-height:40px; min-width:40px; }
+.sch-bar h3{ margin:0; font-size:1.1rem; flex:1; min-width:180px; }
+.sch-views{ display:inline-flex; border:1px solid var(--line-strong); border-radius:999px; overflow:hidden; }
+.sch-views button{ min-height:38px; padding:4px 16px; border:none; background:var(--panel); font:inherit; font-weight:600; color:var(--ink-soft); cursor:pointer; }
+.sch-views button.is-on{ background:var(--accent); color:#fff; }
+#schNew{ min-height:40px; }
+.sch-wrap{ border:1px solid var(--line); border-radius:var(--r-lg); background:var(--panel); overflow:auto; max-height:72vh; }
+.sch-heads{ display:flex; position:sticky; top:0; z-index:3; background:var(--panel); border-bottom:1px solid var(--line); }
+.sch-gutter-head, .sch-gutter{ width:58px; flex:none; }
+.sch-head{ flex:1; min-width:110px; text-align:center; padding:8px 4px; font-size:.82rem; color:var(--ink-soft); border-left:1px solid var(--line); }
+.sch-head b{ display:block; font-size:1.15rem; color:var(--ink); }
+.sch-head.is-today b{ display:inline-flex; width:32px; height:32px; align-items:center; justify-content:center; border-radius:50%; background:var(--accent); color:#fff; }
+.sch-body{ display:flex; }
+.sch-hour{ font-size:.72rem; color:var(--ink-faint); text-align:right; padding-right:8px; transform:translateY(-7px); }
+.sch-hour:first-child{ transform:none; }
+.sch-col{ flex:1; min-width:110px; position:relative; border-left:1px solid var(--line); cursor:copy;
+  background-image:repeating-linear-gradient(to bottom, var(--line) 0, var(--line) 1px, transparent 1px, transparent var(--sch-hour)),
+                   repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--sch-hour) / 2), rgba(14,42,49,.035) calc(var(--sch-hour) / 2), rgba(14,42,49,.035) calc(var(--sch-hour) / 2 + 1px), transparent calc(var(--sch-hour) / 2 + 1px), transparent var(--sch-hour)); }
+.sch-col.is-today{ background-color:rgba(13,92,110,.035); }
+.sch-ev{ position:absolute; z-index:2; display:flex; flex-direction:column; align-items:flex-start; gap:1px; overflow:hidden; text-align:left; padding:4px 7px;
+  border:none; border-left:4px solid var(--accent); border-radius:8px; background:#E3EFF2; color:var(--ink); font:inherit; font-size:.78rem; line-height:1.25; cursor:pointer; box-shadow:0 1px 2px rgba(14,42,49,.12); }
+.sch-ev:hover, .sch-ev:focus-visible{ z-index:4; box-shadow:0 4px 14px rgba(14,42,49,.22); outline:none; }
+.sch-ev:focus-visible{ outline:3px solid var(--accent-soft); }
+.sch-ev b{ font-size:.82rem; }
+.sch-ev-time{ font-weight:700; color:var(--accent); font-size:.74rem; }
+.sch-ev-reason, .sch-ev-tech, .sch-ev-unit{ color:var(--ink-soft); }
+.sch-ev-badge{ font-size:.7rem; font-weight:700; }
+.sch-converted{ background:#E6F4EC; border-left-color:#2f8f5b; }
+.sch-checked_in{ background:#FDF3E1; border-left-color:#B7791F; }
+.sch-no_show{ background:#F1F2F4; border-left-color:#8A93A0; opacity:.8; text-decoration:line-through; }
+.sch-now{ position:absolute; left:0; right:0; height:2px; background:#D64545; z-index:5; pointer-events:none; }
+.sch-now::before{ content:''; position:absolute; left:-5px; top:-4px; width:10px; height:10px; border-radius:50%; background:#D64545; }
+.sch-empty{ margin-top:10px; }
+.appt-row{ display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:10px; }
+.appt-check{ display:flex; gap:8px; align-items:center; min-height:40px; }
+#apUnitText{ margin-top:6px; }
+.appt-when{ font-size:1.05rem; }
+.appt-actions{ flex-wrap:wrap; }
+@media (max-width:640px){ .appt-row{ grid-template-columns:1fr 1fr; } .sch-bar h3{ order:5; flex-basis:100%; } }
+.sch-head.is-today b{ display:flex; margin:2px auto 0; }
+#schNew{ padding:8px 18px; border-radius:var(--r-md); border:1px solid var(--accent); background:var(--accent); color:#fff; font:inherit; font-weight:700; cursor:pointer; }

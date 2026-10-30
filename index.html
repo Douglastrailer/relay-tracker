@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=91c9ea0f48"/>
+<link rel="stylesheet" href="style.css?v=90402f5b77"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -508,6 +508,7 @@
       </div>
       <button class="dash-tab nav-hidden" data-target="shop-vin" title="VIN lookup"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M8 11h6M11 8v6"/></svg><span class="nav-label">VIN lookup</span></button>
       <button class="dash-tab nav-hidden" data-target="shop-pastdue" title="Past due"><span class="nav-label">Past due</span><span class="nav-badge hidden" id="pastDueBadge"></span></button>
+      <button class="dash-tab nav-hidden" data-target="shop-schedule" title="Schedule"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span class="nav-label">Schedule</span></button>
       <button class="dash-tab nav-hidden" data-target="shop-requests" title="Requests"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><span class="nav-label">Requests</span> <span id="workRequestsBadge" class="req-badge hidden">0</span></button>
       <button type="button" class="nav-foot nav-install hidden" title="Install the Relay app"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="nav-label">Install app</span></button>
       <button type="button" class="nav-foot nav-help" title="Help &amp; support"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span class="nav-label">Help &amp; support</span></button>
@@ -581,6 +582,7 @@
     <div class="dash-panel hidden" id="shop-pastdue">
       <div class="section" id="overdueBox"></div>
     </div>
+    <div class="dash-panel hidden" id="shop-schedule"></div>
     <div class="dash-panel hidden" id="shop-requests">
       <div class="section" id="requestLinkSection"><div class="card">
         <h3 style="margin-bottom:6px;">Your request link</h3>
@@ -1024,6 +1026,7 @@
 </div>
 <script src="ui-dialogs.js?v=232a0968f9" defer></script>
 <script src="dom-patch.js?v=5219a64931" defer></script>
+<script src="schedule.js?v=cffb56f3af" defer></script>
 <script src="setup-gate.js?v=5769da0b03" defer></script>
 <script src="track-share.js?v=e9c22b7dcb" defer></script>
 <script src="wo-side.js?v=5ca975a310" defer></script>
@@ -1084,7 +1087,7 @@
 <script src="training.js?v=c536d26d9a" defer></script>
 <script src="ux.js?v=0fcf294484" defer></script>
 <script src="subs.js?v=4fe8f6c1d5" defer></script>
-<script src="nav.js?v=20d9acac86" defer></script>
+<script src="nav.js?v=23acef8e27" defer></script>
 <script src="safety.js?v=939c988e6d" defer></script>
 <script src="offline.js?v=59b2632a55" defer></script>
 <script src="account.js?v=3ea11cb6c1" defer></script>

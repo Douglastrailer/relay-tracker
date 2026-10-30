@@ -1,9 +1,10 @@
-RelayFleet website - smoother screens (batch 2 of 4)
+RelayFleet - Schedule (appointments calendar), batch 3 of 4
 
-Upload ALL files to GitHub and commit (new file: dom-patch.js). Refresh with Cmd+Shift+R.
-No database or Edge Function changes in this batch. (Batch 1 needs migration 0048 and the send-notifications function, if not done yet.)
+ORDER (same day):
+ 1. Run migration 0049_appointments.sql in the Supabase SQL Editor (needs 0048).
+ 2. Upload ALL website files to GitHub and commit (new file: schedule.js). Refresh with Cmd+Shift+R.
+No Edge Function changes in this batch.
 
-What changed:
-- The shop board, the work orders list and Recently completed update only the cards and rows that changed. No flicker, and keyboard focus and scroll stay put.
-- Fixed: every board refresh added another copy of the drop action, so one drop could move a job many times (9 times in the test). Each card and column is now set up once.
-- Screens show grey shapes in their own layout while loading, instead of "Loading..." text. Reports keep the last report on screen while a new one is worked out.
+Reminders: they are queued every hour by the database scheduler (pg_cron). To check it is on, run:
+   select jobname, schedule from cron.job;
+You should see relay-appointment-reminders. If cron is not available, turn on the pg_cron extension under Database > Extensions and run migration 0049 again.

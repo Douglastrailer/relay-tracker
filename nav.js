@@ -8,6 +8,7 @@
 const NAV_GROUPS = [
   { id: 'overview',  label: 'Overview',            tabs: ['shop-overview'] },
   { id: 'work',      label: 'Work orders',         tabs: ['shop-jobs', 'shop-requests', 'shop-floor', 'shop-inspections', 'shop-history', 'shop-pastdue'] },
+  { id: 'schedule',  label: 'Schedule',            tabs: ['shop-schedule'] },
   { id: 'dispatch',  label: 'Dispatch',            tabs: ['shop-dispatch'] },
   { id: 'customers', label: 'Customers & units',   tabs: ['shop-customers', 'shop-units'] },
   // shops asked for this: decode any VIN, see if it is already a unit, check recalls
@@ -20,7 +21,7 @@ const NAV_GROUPS = [
 ];
 // what each sub-tab is called once it is inside a group (shorter, since the group gives the context)
 const NAV_SUB_LABELS = {
-  'shop-jobs': 'All work orders', 'shop-requests': 'Requests', 'shop-floor': 'Board',
+  'shop-schedule': 'Schedule', 'shop-jobs': 'All work orders', 'shop-requests': 'Requests', 'shop-floor': 'Board',
   'shop-inspections': 'Inspections', 'shop-history': 'Completed', 'shop-customers': 'Customers',
   'shop-units': 'Units', 'shop-pastdue': 'Past due', 'shop-team': 'Technicians', 'shop-time': 'Time', 'shop-billing': 'Settings',
   'shop-integrations': 'Integrations', 'shop-invoices': 'Estimates & invoices'
