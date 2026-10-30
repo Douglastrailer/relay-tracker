@@ -110,7 +110,7 @@ async function openCustomerForm(id){
       <p class="form-error" id="cfError"></p>
       <div class="job-actions"><button type="button" id="cfSave">${c ? 'Save changes' : 'Add customer'}</button></div>
       ${c ? `<h4 class="rec-subhead">Units</h4><div class="rec-mini">${recordsUnits.filter(u => u.customer_id === c.id).map(u => `<span class="rec-tag">${esc(UNIT_TYPE_LABELS[u.unit_type] || '')} ${esc(u.unit_number)}</span>`).join('') || '<span class="meta">No units yet.</span>'}</div>
-      <h4 class="rec-subhead">Work orders</h4><div id="cfOrders" class="rec-orders"><span class="meta">Loading…</span></div>` : ''}
+      <h4 class="rec-subhead">Work orders</h4><div id="cfOrders" class="rec-orders"><div class="skel-wrap" role="status" aria-busy="true" aria-label="Loading"><span class="skel-sr">Loading</span><div class="skel-row"><span class="skel w60"></span><span class="skel w25"></span></div><div class="skel-row"><span class="skel w40"></span><span class="skel w25"></span></div></div></div>` : ''}
     </div>`;
   panel.classList.remove('hidden');
   panel.scrollIntoView({ behavior:'smooth', block:'start' });
@@ -208,7 +208,7 @@ function openUnitForm(id){
       </div>
       <p class="form-error" id="ufError"></p>
       <div class="job-actions"><button type="button" id="ufSave">${u ? 'Save changes' : 'Add unit'}</button></div>
-      ${u ? `<h4 class="rec-subhead">Work orders for this unit</h4><div id="ufOrders" class="rec-orders"><span class="meta">Loading…</span></div>` : ''}
+      ${u ? `<h4 class="rec-subhead">Work orders for this unit</h4><div id="ufOrders" class="rec-orders"><div class="skel-wrap" role="status" aria-busy="true" aria-label="Loading"><span class="skel-sr">Loading</span><div class="skel-row"><span class="skel w60"></span><span class="skel w25"></span></div><div class="skel-row"><span class="skel w40"></span><span class="skel w25"></span></div></div></div>` : ''}
     </div>`;
   panel.classList.remove('hidden');
   panel.scrollIntoView({ behavior:'smooth', block:'start' });
@@ -399,11 +399,11 @@ async function openRepairOrder(jobId){
     </div>
 
     <div class="wo-pane" data-pane="billing">
-      <section class="ro-sec${isShop ? '' : ' hidden'}" id="roEstimates">${isShop ? '<h4>Estimates &amp; invoices</h4><p class="meta">Loading…</p>' : ''}</section>
+      <section class="ro-sec${isShop ? '' : ' hidden'}" id="roEstimates">${isShop ? '<h4>Estimates &amp; invoices</h4><div class="skel-wrap" role="status" aria-busy="true" aria-label="Loading"><span class="skel-sr">Loading</span><div class="skel-row"><span class="skel w60"></span><span class="skel w25"></span></div><div class="skel-row"><span class="skel w40"></span><span class="skel w25"></span></div></div>' : ''}</section>
     </div>
     <div class="wo-pane" data-pane="labor"><section class="ro-sec hidden" id="roTime"></section></div>
     <div class="wo-pane" data-pane="parts"><section class="ro-sec hidden" id="roParts"></section></div>
-    <div class="wo-pane" data-pane="inspection"><section class="ro-sec" id="roInspections"><h4>Inspections</h4><p class="meta">Loading…</p></section></div>
+    <div class="wo-pane" data-pane="inspection"><section class="ro-sec" id="roInspections"><h4>Inspections</h4><div class="skel-wrap" role="status" aria-busy="true" aria-label="Loading"><span class="skel-sr">Loading</span><div class="skel-row"><span class="skel w60"></span><span class="skel w25"></span></div><div class="skel-row"><span class="skel w40"></span><span class="skel w25"></span></div></div></section></div>
     <div class="wo-pane" data-pane="photos"><section class="ro-sec ro-comms">${attachmentsBlockHtml(job.id)}</section></div>
     <div class="wo-pane" data-pane="messages">
       <section class="ro-sec hidden" id="roComms2"></section>

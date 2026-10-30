@@ -32,7 +32,7 @@ async function refreshDocsTable(mode){
   const quiet = mode === 'quiet', reset = mode === true || quiet;
   const startAt = reset ? 0 : docState.offset, size = quiet ? Math.max(FIND_PAGE, docState.offset) : FIND_PAGE;
   const mySeq = ++docState.seq;
-  if(mode === true){ docState.offset = 0; body.innerHTML = '<tr><td colspan="6" class="meta">Loading…</td></tr>'; }
+  if(mode === true){ docState.offset = 0; body.innerHTML = skelTableRows(6, 6); }
   let q = sb.from('invoices').select('id, doc_number, job_id, kind, status, customer_name, unit_number, created_at, paid_at, due_date, total', { count: 'exact' }).eq('org_id', session.orgId);
   if(docState.tab === 'estimates') q = q.eq('kind', 'estimate');
   else if(docState.tab === 'invoices') q = q.eq('kind', 'invoice');

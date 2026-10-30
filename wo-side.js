@@ -18,7 +18,7 @@ function woRow(label, value){ return value === '' || value == null ? '' : `<div 
 
 async function renderWoSide(job){
   const side = document.getElementById('woSide'); if(!side || !job) return;
-  side.innerHTML = '<div class="ws-loading meta">Loading…</div>';
+  side.innerHTML = '<div class="ws-loading">' + skelRows(5) + '</div>';
   const closed = ['complete', 'invoiced', 'paid', 'cancelled'];
   const [cust, unit, hist, docs, tech, unitJobs, custOpen] = await Promise.all([
     job.customer_id ? sb.from('customers').select('id, company_name, contact_name, phone, email, billing_email, payment_terms, tax_exempt, notes').eq('id', job.customer_id).maybeSingle() : Promise.resolve({ data: null }),

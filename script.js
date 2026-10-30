@@ -141,6 +141,7 @@ async function moveJobToColumn(jobId, jobType, currentStatus, column){
 
 function wireKanbanDragDrop(board){
   board.querySelectorAll('.job-card').forEach(card=>{
+    if(card.dataset.dnd) return; card.dataset.dnd = '1';   // set up once (refreshes used to add a copy every time)
     card.addEventListener('dragstart', ()=>{
       draggedJobId = Number(card.dataset.job);
       card.classList.add('dragging');
@@ -152,6 +153,7 @@ function wireKanbanDragDrop(board){
   });
 
   board.querySelectorAll('.kanban-col-list').forEach(colList=>{
+    if(colList.dataset.dnd) return; colList.dataset.dnd = '1';   // set up once: one drop moves the job once
     const column = colList.id.replace('kanban-', '');
     colList.addEventListener('dragover', (e)=>{ e.preventDefault(); colList.classList.add('drag-over'); });
     colList.addEventListener('dragleave', ()=> colList.classList.remove('drag-over'));
@@ -2748,7 +2750,8 @@ async function refreshShopData(){
     const countEl = document.getElementById('kanbanCount-' + col);
     if(!colList) return;
     const jobsInCol = columns[col].slice().sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
-    colList.innerHTML = jobsInCol.map(j => cardHtml(j, mechName(j.mechanic_id), metrics[j.id] || {})).join('') || '<div class="kanban-empty">—</div>';
+    // only the cards that changed are redrawn (no flicker; drag and drop stays attached)
+    patchChildren(colList, jobsInCol.map(j => ({ key: 'j' + j.id, html: cardHtml(j, mechName(j.mechanic_id), metrics[j.id] || {}) })), '<div class="kanban-empty">—</div>');
     if(countEl) countEl.textContent = String(jobsInCol.length);
   });
   if(board) wireKanbanDragDrop(board);

@@ -92,7 +92,7 @@ async function cwLoad(reset){
   const body = document.getElementById('fullHistoryList'); if(!body) return;
   if(!cwWired && document.getElementById('cwDates')) return initCompletedWork();   // connect the date buttons, search and clicks before the first draw
   const mySeq = ++cwState.seq;
-  if(reset){ cwState.offset = 0; body.innerHTML = '<tr><td colspan="5" class="meta">Loading…</td></tr>'; }
+  if(reset){ cwState.offset = 0; body.innerHTML = skelTableRows(6, 5); }
   const { data, error } = await sb.rpc('completed_work_page', { p_from: cwState.from ? cwState.from.toISOString() : null, p_to: cwState.to ? cwState.to.toISOString() : null,
     p_search: cwState.q || null, p_type: cwState.type || null, p_offset: cwState.offset, p_limit: FIND_PAGE });
   if(mySeq !== cwState.seq) return;   // a newer search is already on its way

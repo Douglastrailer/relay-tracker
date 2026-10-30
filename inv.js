@@ -117,7 +117,7 @@ function renderParts(){
   const load = async (append) => {
     const list = document.getElementById('invList'); if(!list) return;   // the user has moved to another tab
     const mySeq = ++partsState.seq; partsState.loading = true;
-    if(!append){ partsState.offset = 0; list.innerHTML = '<div class="meta">Loading…</div>'; }
+    if(!append){ partsState.offset = 0; list.innerHTML = skelRows(6, { wide: true }); }
     const { data, error } = await sb.rpc('parts_page', { p_search: partsState.q || null, p_filter: partsState.filter, p_vendor: partsState.vendor ? Number(partsState.vendor) : null, p_category: partsState.category || null, p_offset: partsState.offset, p_limit: 50 });
     if(!panel.isConnected) return;   // a newer drawing of this screen replaced it while waiting; let that one finish
     if(mySeq !== partsState.seq || !document.getElementById('invList')) return;
@@ -529,7 +529,7 @@ async function renderCount(){
   };
   const load = async () => {
     const list = document.getElementById('cntList'); if(!list) return;
-    list.innerHTML = '<div class="meta">Loading…</div>';
+    list.innerHTML = skelRows(5);
     const { data, error } = await sb.rpc('count_session_list', { p_location: Number(countState.location), p_search: countState.q || null, p_only_stocked: countState.onlyStocked });
     if(!panel.isConnected) return;   // a newer drawing of this screen replaced it while waiting; let that one finish
     if(!document.getElementById('cntList')) return;
@@ -562,7 +562,7 @@ async function renderCount(){
 const coreState = { status:'owed' };
 async function renderCores(){
   const panel = document.getElementById('invPanel');
-  panel.innerHTML = '<div class="meta">Loading…</div>';
+  panel.innerHTML = skelRows(5);
   const { data, error } = await sb.rpc('core_list', { p_status: coreState.status, p_limit: 200 });
   if(!panel.isConnected) return;   // a newer drawing of this screen replaced it while waiting; let that one finish
   if(error || !data){ panel.innerHTML = `<div class="form-error">Couldn't load the cores${error ? ': ' + esc(error.message) : '.'}</div>`; return; }
@@ -596,7 +596,7 @@ async function renderCores(){
 // ============================================================
 async function openUsage(id){
   const i = invState.items.find(x => x.id === id) || { id, name: 'Part' };
-  const box = invForm(`<div class="rec-form-head"><h3>${esc(i.name)} — how it has been used</h3><button type="button" class="ghost inv-close">Close</button></div><div id="usageBody"><div class="meta">Loading…</div></div>`);
+  const box = invForm(`<div class="rec-form-head"><h3>${esc(i.name)} — how it has been used</h3><button type="button" class="ghost inv-close">Close</button></div><div id="usageBody"><div class="skel-wrap" role="status" aria-busy="true" aria-label="Loading"><span class="skel-sr">Loading</span><div class="skel-row"><span class="skel w60"></span><span class="skel w25"></span></div><div class="skel-row"><span class="skel w40"></span><span class="skel w25"></span></div></div></div>`);
   const { data, error } = await sb.rpc('part_usage', { p_item: id, p_days: 365 });
   const body = box.querySelector('#usageBody'); if(!body) return;
   if(error || !data){ body.innerHTML = `<div class="form-error">${error ? esc(error.message) : 'That could not be loaded.'}</div>`; return; }

@@ -35,7 +35,7 @@ async function refreshAnalyticsV2(){
   const out = document.getElementById('anOut');
   if(!rg){ out.innerHTML = '<p class="meta">Pick a start and end date.</p>'; return; }
   if(rg.to <= rg.from){ out.innerHTML = '<p class="form-error">The end date must be after the start date.</p>'; return; }
-  out.innerHTML = '<p class="meta">Calculating…</p>';
+  if(!anState.data) out.innerHTML = skelTiles(8) + skelRows(4);   // the layout of the report; an existing report stays while it updates
   anLocationPicker();
   const args = { p_from: rg.from.toISOString(), p_to: rg.to.toISOString() };
   if(anState.loc) args.p_location = anState.loc;   // 'all', or a location id; none = the location being worked in

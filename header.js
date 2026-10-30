@@ -76,7 +76,7 @@ async function refreshMsgBadge(){
   const btn = document.getElementById('hdrBtn-msg'); if(btn) btn.setAttribute('aria-label', n ? `Messages, ${n} new` : 'Messages');
 }
 async function renderMessages(panel){
-  panel.innerHTML = '<div class="hdr-empty">Loading…</div>';
+  panel.innerHTML = skelRows(3);
   const list = await loadMessages();
   let seen = 0; try { seen = Number(localStorage.getItem(hdrKey('msgseen')) || 0); } catch(_){}
   try { localStorage.setItem(hdrKey('msgseen'), String(Date.now())); } catch(_){}

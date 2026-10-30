@@ -2734,3 +2734,17 @@ body.nav-collapsed .nav-fly-wrap.fly-show .nav-fly{ display:flex; }
 .an-byloc h3{ margin:0 0 8px; font-size:1rem; }
 .an-table-wrap{ overflow-x:auto; }
 .an-byloc .an-table td.an-over{ color:var(--danger); font-weight:700; }
+
+/* ---- Screen layouts while loading (skeletons) ---- */
+.skel-wrap{ display:flex; flex-direction:column; gap:10px; padding:6px 0; }
+.skel-row{ display:flex; align-items:center; gap:14px; padding:12px 14px; border:1px solid var(--line); border-radius:var(--r-md); background:var(--panel); }
+.skel{ display:inline-block; height:12px; border-radius:6px; background:linear-gradient(90deg, var(--line) 0%, var(--bg, #F3F5F7) 45%, var(--line) 90%); background-size:300% 100%; animation:skelShimmer 1.4s ease-in-out infinite; }
+.skel-big{ height:24px; border-radius:8px; }
+.skel.w15{ width:15%; } .skel.w25{ width:25%; } .skel.w40{ width:40%; } .skel.w50{ width:50%; } .skel.w60{ width:60%; } .skel.w65{ width:65%; } .skel.w75{ width:75%; }
+.skel-tiles{ display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:14px; margin-bottom:14px; }
+.skel-tile{ display:flex; flex-direction:column; gap:12px; padding:18px; border:1px solid var(--line); border-radius:var(--r-lg); background:var(--panel); min-height:110px; }
+.skel-tr td{ padding:14px 10px; }
+.skel-sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+@keyframes skelShimmer{ 0%{ background-position:100% 0; } 100%{ background-position:0 0; } }
+@media (prefers-reduced-motion:reduce){ .skel{ animation:none; } }
+.ws-loading{ padding:14px; }

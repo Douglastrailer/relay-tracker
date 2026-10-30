@@ -19,7 +19,7 @@ const INV_STATUS_LABEL = { unpaid: 'Unpaid', paid: 'Paid', void: 'Void', draft: 
 async function renderSubscriptions(){
   const box = document.getElementById('adminSubsBox');
   if(!box || !session || session.role !== 'admin') return;
-  if(!subState.rows.length) box.innerHTML = '<div class="section-head"><h2>Subscriptions</h2></div><p class="meta">Loading…</p>';
+  if(!subState.rows.length) box.innerHTML = '<div class="section-head"><h2>Subscriptions</h2></div>' + skelRows(4, { wide: true });
   const { data, error } = await sb.rpc('admin_subscriptions');
   if(error || !data){ box.innerHTML = `<div class="section-head"><h2>Subscriptions</h2></div><p class="form-error">${esc(error ? error.message : 'Could not load this.')}</p>`; return; }
   subState.rows = data;
@@ -291,7 +291,7 @@ async function renderAdminSettings(){
       <select id="regShop" aria-label="Filter by shop"><option value="">All shops</option>${subState.rows.map(r => `<option value="${esc(r.org_id)}">${esc(r.name)}</option>`).join('')}</select>
     </div>
     <p class="form-error" id="regErr"></p>
-    <div id="regList"><p class="meta">Loading…</p></div>
+    <div id="regList">${skelRows(4)}</div>
     <div class="section-head" style="margin-top:28px;"><h2>Relay's details on invoices</h2></div>
     <p class="meta">These appear at the top of every subscription invoice, PDF and email.</p>
     <form class="card rec-form" id="pfForm" style="max-width:640px;" autocomplete="off">

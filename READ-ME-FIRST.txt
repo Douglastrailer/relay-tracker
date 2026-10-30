@@ -1,11 +1,9 @@
-RelayFleet - locations finished (batch 1 of 4)
+RelayFleet website - smoother screens (batch 2 of 4)
 
-ORDER (same day, outside working hours):
- 1. Run migration 0048_locations_finished.sql in the Supabase SQL Editor (needs 0047).
- 2. Replace the send-notifications Edge Function with invoice-functions-simple/3-send-notifications.ts (paste over index.ts, Deploy).
- 3. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
+Upload ALL files to GitHub and commit (new file: dom-patch.js). Refresh with Cmd+Shift+R.
+No database or Edge Function changes in this batch. (Batch 1 needs migration 0048 and the send-notifications function, if not done yet.)
 
 What changed:
-- Reports show the location you are in (before, every location was added together). The owner can pick another location, or All locations to compare them side by side. Office staff see their own location.
-- The tracking page and customer emails use the location\x27s own name, logo, email, phone and review link.
-- Parts stock per location: on hand, low stock, what to order and below-zero count only that location\x27s shelves and its mechanics\x27 trucks. Shop staff see only their location\x27s shelves and trucks; a new shelf belongs to the location it was added in.
+- The shop board, the work orders list and Recently completed update only the cards and rows that changed. No flicker, and keyboard focus and scroll stay put.
+- Fixed: every board refresh added another copy of the drop action, so one drop could move a job many times (9 times in the test). Each card and column is now set up once.
+- Screens show grey shapes in their own layout while loading, instead of "Loading..." text. Reports keep the last report on screen while a new one is worked out.

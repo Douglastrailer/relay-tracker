@@ -89,7 +89,7 @@ async function newEstimateForJob(job, opts){   // opts.open === false: create th
 async function openEstimateEditor(docId, suggestRecs){
   const overlay = document.getElementById('estModal');
   const body = document.getElementById('estBody');
-  body.innerHTML = '<div class="meta" style="padding:24px;">Loading…</div>';
+  body.innerHTML = '<div style="padding:24px;">' + skelRows(6, { wide: true }) + '</div>';
   overlay.classList.remove('hidden'); document.body.classList.add('modal-open');
   const { data: doc, error } = await sb.from('invoices').select('*').eq('id', docId).maybeSingle();
   if(error || !doc){ body.innerHTML = '<div class="form-error" style="padding:24px;">Could not load this document.</div>'; return; }

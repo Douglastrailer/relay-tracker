@@ -9,7 +9,7 @@ async function renderRemovedBox(){
   const box = document.getElementById('removedBox');
   if(!box || !session || session.role !== 'shop'){ if(box) box.classList.add('hidden'); return; }
   box.classList.remove('hidden');
-  box.innerHTML = '<div class="section-head"><h3>Recently removed</h3></div><p class="meta">Loading…</p>';
+  box.innerHTML = '<div class="section-head"><h3>Recently removed</h3></div>' + skelRows(3);
   const { data, error } = await sb.rpc('recently_removed', { p_days: 90 });
   if(error || !data){ box.innerHTML = `<div class="section-head"><h3>Recently removed</h3></div><p class="form-error">${esc(error ? error.message : 'Could not load this.')}</p>`; return; }
   const groups = REMOVED_KINDS.map(([key, kind, label]) => ({ kind, label, rows: data[key] || [] })).filter(g => g.rows.length);
@@ -184,7 +184,7 @@ const fbState = { filter: 'open', rows: [], people: {}, shops: {}, replies: {} }
 async function renderAdminFeedback(){
   const box = document.getElementById('adminFeedbackBox');
   if(!box || !session || session.role !== 'admin') return;
-  if(!fbState.rows.length) box.innerHTML = '<div class="section-head"><h2>Feedback</h2></div><p class="meta">Loading…</p>';
+  if(!fbState.rows.length) box.innerHTML = '<div class="section-head"><h2>Feedback</h2></div>' + skelRows(4);
   const { data, error } = await sb.from('feedback').select('id, org_id, profile_id, role, page, message, handled, created_at').order('created_at', { ascending: false }).limit(300);
   if(error || !data){ box.innerHTML = `<div class="section-head"><h2>Feedback</h2></div><p class="form-error">${esc(error ? error.message : 'Could not load feedback.')}</p>`; return; }
   fbState.rows = data;

@@ -77,7 +77,7 @@ async function renderFleetShopMap(){
 // ---------- admin: every shop on Relay ----------
 // The box is rebuilt whenever a piece of it is missing (an earlier error message used to
 // replace the whole box, including the heading line this function writes into).
-const ADMIN_SHOP_MAP_INNER = '<div class="section-head"><h2>Shops on Relay</h2><span class="meta">Loading…</span></div><div class="form-error hidden" id="adminShopMapErr"></div><div class="shop-map" id="adminShopMap"></div>';
+const ADMIN_SHOP_MAP_INNER = '<div class="section-head"><h2>Shops on Relay</h2><span class="meta"><span class="skel" style="width:140px" role="status" aria-label="Loading"></span></span></div><div class="form-error hidden" id="adminShopMapErr"></div><div class="shop-map" id="adminShopMap"></div>';
 function adminShopMapShell(){
   const box = document.getElementById('adminShopMapBox'); if(!box) return null;
   if(!box.querySelector('.section-head .meta') || !document.getElementById('adminShopMap') || !document.getElementById('adminShopMapErr')) box.innerHTML = ADMIN_SHOP_MAP_INNER;

@@ -141,30 +141,39 @@ function renderWorkOrdersList(active, history, mechanics, metrics){
   if(q) rows = rows.filter(j => [j.ro_number, j.ro_number && j.ro_number.replace(/^WO-0*/, ''), j.customer, j.vehicle, j.complaint].some(v => v && String(v).toLowerCase().includes(q)));
   rows = rows.slice().sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
   const name = id => (woCache.mechanics.find(m => m.id === id) || {}).name || 'Unassigned';
-  box.innerHTML = rows.length ? `<div class="wo-table">
-      <div class="wo-row wo-thead" aria-hidden="true"><span>Work order</span><span>Customer · Unit</span><span>Service</span><span>Technician</span><span>Status</span><span>Updated</span></div>
-      ${rows.map(j => `<div class="wo-row" data-job="${j.id}" tabindex="0" role="button" aria-label="Open ${esc(j.ro_number || 'work order')}">
+  // only the rows that changed are redrawn; the list keeps its place and focus
+  const woRowHtml = j => `<div class="wo-row" data-job="${j.id}" tabindex="0" role="button" aria-label="Open ${esc(j.ro_number || 'work order')}">
         <span><span class="ro-num">${esc(j.ro_number || '#' + j.id)}</span>${j.job_type === 'mobile' ? ' <span class="wo-road">ROAD</span>' : ''}${j.priority === 'urgent' || j.priority === 'high' ? ` <span class="prio-chip prio-${esc(j.priority)}">${esc(PRIORITY_LABELS[j.priority])}</span>` : ''}</span>
         <span><b>${esc(j.customer || '')}</b><span class="meta"> · ${esc(j.vehicle || '')}</span>${typeof locTag === 'function' ? locTag(j.location_id) : ''}</span>
         <span class="wo-svc">${esc(j.complaint || '—')}</span>
         <span>${esc(name(j.mechanic_id))}</span>
         <span>${jobStatusBadge(j.status)}</span>
         <span class="meta">${fmtDateTime(j.updated_at || j.created_at)}</span>
-      </div>`).join('')}</div>`
-    : `<div class="empty-note">${woCache.active.length || woCache.history.length ? 'No work orders match these filters.' : 'No work orders yet. Click "+ New work order" to create the first one.'}</div>`;
+      </div>`;
+  if(rows.length){
+    let table = box.querySelector(':scope > .wo-table[data-live]');
+    if(!table){ box.innerHTML = '<div class="wo-table" data-live="1"></div>'; table = box.firstElementChild; }
+    patchChildren(table, [{ key: 'head', html: '<div class="wo-row wo-thead" aria-hidden="true"><span>Work order</span><span>Customer · Unit</span><span>Service</span><span>Technician</span><span>Status</span><span>Updated</span></div>' }].concat(rows.map(j => ({ key: 'j' + j.id, html: woRowHtml(j) }))));
+  } else {
+    box.innerHTML = `<div class="empty-note">${woCache.active.length || woCache.history.length ? 'No work orders match these filters.' : 'No work orders yet. Click "+ New work order" to create the first one.'}</div>`;
+  }
   // Recently completed: the last 10, in the same compact rows.
   const hb = document.getElementById('shopHistoryList');
   if(hb){
     const recent = woCache.history.slice().sort((a, b) => new Date(b.completed_at || b.updated_at) - new Date(a.completed_at || a.updated_at)).slice(0, 10);
     hb.className = 'wo-list';
-    hb.innerHTML = recent.length ? `<div class="wo-table">${recent.map(j => `<div class="wo-row" data-job="${j.id}" tabindex="0" role="button" aria-label="Open ${esc(j.ro_number || 'work order')}">
+    const recentRow = j => `<div class="wo-row" data-job="${j.id}" tabindex="0" role="button" aria-label="Open ${esc(j.ro_number || 'work order')}">
         <span><span class="ro-num">${esc(j.ro_number || '#' + j.id)}</span></span>
         <span><b>${esc(j.customer || '')}</b><span class="meta"> · ${esc(j.vehicle || '')}</span></span>
         <span class="wo-svc">${esc(j.complaint || '—')}</span>
         <span>${esc(name(j.mechanic_id))}</span>
         <span>${jobStatusBadge(j.status)}</span>
-        <span class="meta">${fmtDateTime(j.completed_at || j.updated_at)}</span></div>`).join('')}</div>`
-      : '<div class="empty-note">Nothing completed yet.</div>';
+        <span class="meta">${fmtDateTime(j.completed_at || j.updated_at)}</span></div>`;
+    if(recent.length){
+      let rt = hb.querySelector(':scope > .wo-table[data-live]');
+      if(!rt){ hb.innerHTML = '<div class="wo-table" data-live="1"></div>'; rt = hb.firstElementChild; }
+      patchChildren(rt, recent.map(j => ({ key: 'j' + j.id, html: recentRow(j) })));
+    } else hb.innerHTML = '<div class="empty-note">Nothing completed yet.</div>';
   }
 }
 async function refreshRequestCount(){

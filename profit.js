@@ -12,7 +12,7 @@ async function refreshProfit(rg){
   if(!root || !rg || !(typeof can !== 'function' || can('analytics'))) return;
   let box = document.getElementById('profitBox');
   if(!box){ box = document.createElement('div'); box.id = 'profitBox'; box.className = 'section'; root.appendChild(box); }
-  box.innerHTML = '<div class="section-head"><h2>Profitability</h2></div><p class="meta">Calculating…</p>';
+  box.innerHTML = '<div class="section-head"><h2>Profitability</h2></div>' + skelRows(3);
   const loc = typeof currentLocationId === 'function' ? currentLocationId() : null;
   const { data, error } = await sb.rpc('job_profit', loc ? { p_from: rg.from.toISOString(), p_to: rg.to.toISOString(), p_location: loc } : { p_from: rg.from.toISOString(), p_to: rg.to.toISOString() });
   if(error){ box.innerHTML = `<div class="section-head"><h2>Profitability</h2></div><p class="form-error">${esc(error.message)}</p>`; return; }
