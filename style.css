@@ -2828,9 +2828,9 @@ body.nav-collapsed .nav-fly-wrap.fly-show .nav-fly{ display:flex; }
    Motion follows the scroll (landing.js): the product settles flat, the story holds while its
    five steps play, sections slide in, the close lights up word by word. Transform and opacity only.
    ============================================================ */
-@font-face{ font-family:'Bricolage'; font-weight:400; font-display:swap; src:url('fonts/bricolage-grotesque-latin-400-normal.woff2') format('woff2'); }
-@font-face{ font-family:'Bricolage'; font-weight:600; font-display:swap; src:url('fonts/bricolage-grotesque-latin-600-normal.woff2') format('woff2'); }
-@font-face{ font-family:'Bricolage'; font-weight:800; font-display:swap; src:url('fonts/bricolage-grotesque-latin-800-normal.woff2') format('woff2'); }
+@font-face{ font-family:'Bricolage'; font-weight:400; font-display:swap; src:url('bricolage-grotesque-latin-400-normal.woff2') format('woff2'); }
+@font-face{ font-family:'Bricolage'; font-weight:600; font-display:swap; src:url('bricolage-grotesque-latin-600-normal.woff2') format('woff2'); }
+@font-face{ font-family:'Bricolage'; font-weight:800; font-display:swap; src:url('bricolage-grotesque-latin-800-normal.woff2') format('woff2'); }
 .lx.nx{ --nx-bg:#07232A; --nx-bg2:#0B2E36; --nx-panel:#0F3A44; --nx-line:rgba(169,205,212,.16); --nx-text:#E9F5F7; --nx-soft:#A9CDD4; --nx-dim:#7FA6AE;
   --nx-teal:#0D5C6E; --nx-btn:#14A0B4; --nx-cyan:#5FD0DF; --nx-ok:#4CC38A;
   background:var(--nx-bg); color:var(--nx-text); font-family:'Bricolage', 'Archivo', system-ui, sans-serif; color-scheme:dark; overflow-x:clip; }
@@ -3011,3 +3011,50 @@ body.nav-collapsed .nav-fly-wrap.fly-show .nav-fly{ display:flex; }
 :root:not([data-theme="dark"]) .lx.nx ::selection{ background:#0D5C6E; color:#fff; }
 :root:not([data-theme="dark"]) .lx.nx :focus-visible{ outline-color:#0A7B8E; }
 .lx.nx, .lx.nx .nx-btn, .lx.nx .nx-form, .lx.nx .nx-step, .lx.nx .nx-col{ transition-property:background-color, color, border-color, box-shadow, opacity, transform; }
+
+/* ---- Landing: the soft glow behind the product, which drifts as you scroll ---- */
+.nx-hero{ position:relative; isolation:isolate; }
+.nx-glow{ position:absolute; z-index:-1; width:760px; height:760px; right:-120px; top:-160px; border-radius:50%; pointer-events:none;
+  background:radial-gradient(closest-side, rgba(20,160,180,.30), rgba(20,160,180,0)); will-change:transform; }
+:root:not([data-theme="dark"]) .nx-glow{ background:radial-gradient(closest-side, rgba(13,92,110,.16), rgba(13,92,110,0)); }
+
+@media (prefers-reduced-motion:reduce){
+  .nx-stage .nx-browser, .nx-stage .nx-phone{ animation:none; }
+  .nx-panel, .nx-panel.is-past, .nx [data-reveal], .nx-word{ filter:none; }
+  .nx-glow{ display:none; }
+}
+
+/* ---- Landing motion, stronger: the first screen arrives, the story slides, sections rise ---- */
+.nx-hero .nx-line{ animation:nxLineIn 1s cubic-bezier(.16,1,.3,1) both; }
+@keyframes nxLineIn{ from{ opacity:0; transform:translateY(60%) skewY(4deg); filter:blur(6px); } to{ opacity:1; transform:none; filter:blur(0); } }
+.nx-stage{ animation:nxStageIn 1.4s cubic-bezier(.16,1,.3,1) .25s both; }
+@keyframes nxStageIn{ from{ opacity:0; translate:90px 60px; } to{ opacity:1; translate:0 0; } }
+.nx-stage .nx-phone{ animation:nxPhoneIn 1.1s cubic-bezier(.34,1.56,.64,1) .75s both, nxFloat 6s ease-in-out 2s infinite; }
+@keyframes nxPhoneIn{ from{ opacity:0; scale:.7; } to{ opacity:1; scale:1; } }
+@keyframes nxFloat{ 0%, 100%{ translate:0 0; } 50%{ translate:0 -12px; } }
+.nx-form{ animation:nxRise .9s cubic-bezier(.16,1,.3,1) .45s both; }
+/* story: a highlight glides between steps; screens slide across with a soft blur */
+.nx-steps{ position:relative; }
+.nx-glide{ position:absolute; left:0; right:0; top:0; height:0; border-radius:12px; background:var(--nx-bg2); border-left:3px solid var(--nx-cyan); box-shadow:0 14px 34px -22px rgba(0,0,0,.6);
+  transition:transform .55s cubic-bezier(.16,1,.3,1), height .55s cubic-bezier(.16,1,.3,1); z-index:0; pointer-events:none; }
+.nx-step{ position:relative; z-index:1; }
+.nx-steps.has-glide .nx-step.is-on{ background:transparent; border-left-color:transparent; box-shadow:none; }
+.nx-panel{ transform:translateX(80px) scale(.94); filter:blur(10px); transition:opacity .7s ease, transform .9s cubic-bezier(.16,1,.3,1), filter .7s ease; }
+.nx-panel.is-on{ transform:none; filter:blur(0); }
+.nx-panel.is-past{ transform:translateX(-80px) scale(.96); filter:blur(10px); }
+.nx-toast{ transform:translateY(-24px) scale(.9); transition:opacity .45s ease .35s, transform .7s cubic-bezier(.34,1.56,.64,1) .35s; }
+.nx-panel.is-on .nx-toast{ transform:none; }
+.nx-panel .nx-ok{ opacity:0; transform:translateY(8px); transition:opacity .4s ease .7s, transform .5s cubic-bezier(.16,1,.3,1) .7s; }
+.nx-panel.is-on .nx-ok{ opacity:1; transform:none; }
+/* sections rise from further, with a light blur */
+.nx [data-reveal]{ transform:translateY(70px); filter:blur(8px); transition:opacity .9s ease var(--d, 0ms), transform 1.1s cubic-bezier(.16,1,.3,1) var(--d, 0ms), filter .9s ease var(--d, 0ms); }
+.nx [data-reveal].is-in{ filter:blur(0); }
+.nx-col li[data-reveal]{ transform:translateX(-30px); }
+.nx-col li[data-reveal].is-in{ transform:none; }
+.nx-word{ transform:translateY(18px); transition:opacity .35s ease, transform .5s cubic-bezier(.16,1,.3,1); }
+.nx-word.is-lit{ transform:none; }
+@media (prefers-reduced-motion:reduce){
+  .nx-stage, .nx-stage .nx-phone, .nx-hero .nx-line, .nx-form{ animation:none !important; }
+  .nx-panel, .nx-panel.is-past, .nx [data-reveal], .nx-word, .nx-col li[data-reveal]{ filter:none !important; transform:none !important; }
+  .nx-panel .nx-ok{ opacity:1; transform:none; } .nx-glide{ display:none; }
+}

@@ -1,10 +1,7 @@
-RelayFleet - new landing page (Night shift, follows the scroll, light and dark)
+RelayFleet - landing page: stronger motion, smooth mouse wheel, images and fonts fixed
 
-ORDER:
- 1. If not done yet: run migration 0052_demo_requests.sql in the Supabase SQL Editor.
- 2. Upload ALL website files to GitHub and commit, INCLUDING the two folders:
-      fonts/  (Bricolage Grotesque + license)
-      img/    (three Relay screens)
-    On GitHub: Add file > Upload files, and drag each whole folder in, so the files land inside fonts/ and img/.
-    You can delete the old fonts/overpass-* files on GitHub if you uploaded the previous version.
- 3. Refresh relayfleet.us with Cmd+Shift+R.
+Upload ALL files to GitHub and commit. There are NO folders this time:
+the 3 images (relay-*.webp) and 3 fonts (bricolage-*.woff2) sit next to index.html.
+Then refresh relayfleet.us with Cmd+Shift+R (Ctrl+Shift+R on Windows).
+
+Optional tidy-up on GitHub: the img/ and fonts/ folders from the previous upload are no longer used.

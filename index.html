@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=190489eecf"/>
+<link rel="stylesheet" href="style.css?v=4febbc43c8"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -102,6 +102,7 @@
   <!-- ================= PUBLIC HOME ================= -->
   <div id="homeView" class="lx nx">
     <section class="nx-hero" aria-labelledby="nxH1">
+      <div class="nx-glow" id="nxGlow" aria-hidden="true"></div>
       <div class="nx-hero-copy">
         <h1 id="nxH1"><span class="nx-line">Your bay and</span> <span class="nx-line">your road calls.</span> <span class="nx-line nx-accent">One screen.</span></h1>
         <p class="nx-lede">Work orders, dispatch, estimates and invoices for truck and trailer repair, in the shop and on the shoulder.</p>
@@ -114,8 +115,8 @@
         <p class="nx-note">We call you back to set a time. Already with Relay? <button type="button" class="nx-link" id="landingLogin">Sign in</button>, or <button type="button" class="nx-link" id="landingSignup">create an account</button>.</p>
       </div>
       <div class="nx-stage" id="nxStage">
-        <div class="nx-browser"><div class="nx-bar"><i></i><i></i><i></i></div><img src="img/relay-schedule.webp" alt="Relay's Schedule: a week of appointments for a truck repair shop" width="1220" height="860"></div>
-        <div class="nx-phone"><img src="img/relay-phone.webp" alt="The same day's appointments in Relay on a phone" width="780" height="1440"></div>
+        <div class="nx-browser"><div class="nx-bar"><i></i><i></i><i></i></div><img src="relay-schedule.webp" alt="Relay's Schedule: a week of appointments for a truck repair shop" width="1220" height="860"></div>
+        <div class="nx-phone"><img src="relay-phone.webp" alt="The same day's appointments in Relay on a phone" width="780" height="1440"></div>
       </div>
     </section>
 
@@ -127,11 +128,11 @@
           <div class="nx-progress" aria-hidden="true"><i id="nxBar"></i></div>
         </div>
         <div class="nx-story-stage" aria-live="off">
-          <figure class="nx-panel" data-i="0"><div class="nx-phone nx-phone-sm"><img src="img/relay-phone.webp" alt="" width="780" height="1440"></div><div class="nx-toast">New road call: I-4, mile 72</div></figure>
-          <figure class="nx-panel" data-i="1"><div class="nx-browser"><div class="nx-bar"><i></i><i></i><i></i></div><img src="img/relay-schedule.webp" alt="" width="1220" height="860"></div></figure>
-          <figure class="nx-panel" data-i="2"><div class="nx-card"><span class="nx-card-k">Estimate EST-12</span><b>$371.00</b><span class="nx-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Approved by Ana Ruiz</span><span class="nx-card-s">Brake chamber, labor 1.5 h, service call</span></div><div class="nx-toast">Estimate EST-12 approved by Ana</div></figure>
-          <figure class="nx-panel" data-i="3"><div class="nx-card"><span class="nx-card-k">Invoice INV-4029</span><b>$371.00</b><span class="nx-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Paid</span><span class="nx-card-s">Review request sent to the customer</span></div><div class="nx-toast">Payment received: $371.00</div></figure>
-          <figure class="nx-panel" data-i="4"><div class="nx-browser"><div class="nx-bar"><i></i><i></i><i></i></div><img src="img/relay-reports.webp" alt="" width="1240" height="900"></div></figure>
+          <figure class="nx-panel" data-i="0"><div class="nx-phone nx-phone-sm"><img src="relay-phone.webp" alt="" width="780" height="1440"></div><div class="nx-toast">New road call: I-4, mile 72</div></figure>
+          <figure class="nx-panel" data-i="1"><div class="nx-browser"><div class="nx-bar"><i></i><i></i><i></i></div><img src="relay-schedule.webp" alt="" width="1220" height="860"></div></figure>
+          <figure class="nx-panel" data-i="2"><div class="nx-card"><span class="nx-card-k">Estimate EST-12</span><b data-count="371">$371.00</b><span class="nx-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Approved by Ana Ruiz</span><span class="nx-card-s">Brake chamber, labor 1.5 h, service call</span></div><div class="nx-toast">Estimate EST-12 approved by Ana</div></figure>
+          <figure class="nx-panel" data-i="3"><div class="nx-card"><span class="nx-card-k">Invoice INV-4029</span><b data-count="371">$371.00</b><span class="nx-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Paid</span><span class="nx-card-s">Review request sent to the customer</span></div><div class="nx-toast">Payment received: $371.00</div></figure>
+          <figure class="nx-panel" data-i="4"><div class="nx-browser"><div class="nx-bar"><i></i><i></i><i></i></div><img src="relay-reports.webp" alt="" width="1240" height="900"></div></figure>
           <p class="nx-caption">Relay screens with example data.</p>
         </div>
       </div>
@@ -1028,7 +1029,7 @@
 <script src="lang.js?v=70e1770f2a" defer></script>
 <script src="natasha.js?v=f224fb953e" defer></script>
 <script src="plans.js?v=b3970d449d" defer></script>
-<script src="landing.js?v=73cd39067b" defer></script>
+<script src="landing.js?v=5dae5c4be9" defer></script>
 <script src="pwa.js?v=d2673f834b" defer></script>
 
 </body>

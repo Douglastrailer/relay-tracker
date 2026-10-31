@@ -1,44 +1,61 @@
 // ============================================================
-// RelayFleet landing — Night shift. Motion follows the scroll wheel (it never takes it over):
-//  - the product screen starts tilted back and settles flat; the phone drifts ahead of it
-//  - "One job, start to finish" holds in place while its five steps play, one screen each
-//  - sections slide in as they arrive; the closing line lights up word by word
-// One requestAnimationFrame per scroll, transform and opacity only. Reduced motion: still.
+// RelayFleet landing — Night shift. Motion follows the scroll:
+//  - the first screen arrives (lines rise, the product swings in, the phone springs up and floats)
+//  - scrolling settles the product flat; the phone and the glow drift
+//  - "One job, start to finish" holds while its five steps play: a highlight glides between steps,
+//    screens slide across, notices drop in, the amount counts up
+//  - sections rise in as they arrive; the closing line lights up word by word
+//  - a notched mouse wheel glides instead of jumping (trackpads, touch and keyboards are untouched)
+// Transform, opacity and filter only, one frame per scroll. Reduced motion: everything still.
 // The demo form books a call through request_demo (migration 0052).
 // ============================================================
 (function(){
   const home = document.getElementById('homeView'); if(!home || !home.classList.contains('nx')) return;
   const reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const stage = document.getElementById('nxStage'), phone = stage && stage.querySelector('.nx-phone');
+  const stage = document.getElementById('nxStage'), phone = stage && stage.querySelector('.nx-phone'), glow = document.getElementById('nxGlow');
   const story = document.getElementById('nxStory'), bar = document.getElementById('nxBar');
   const steps = story ? [...story.querySelectorAll('.nx-step')] : [], panels = story ? [...story.querySelectorAll('.nx-panel')] : [];
   const close = document.getElementById('nxClose'), title = document.getElementById('nxCloseH');
-  // the closing line, one word at a time
   let words = [];
   if(title){ const text = title.textContent.trim().split(/\s+/); title.textContent = ''; text.forEach((w, i) => { const s = document.createElement('span'); s.className = 'nx-word'; s.textContent = w; title.append(s); if(i < text.length - 1) title.append(' '); }); words = [...title.querySelectorAll('.nx-word')]; }
 
-  let current = -1;
+  // the story's gliding highlight
+  const list = story && story.querySelector('.nx-steps');
+  let glideEl = null, current = -1;
+  if(list && !reduce){ glideEl = document.createElement('i'); glideEl.className = 'nx-glide'; glideEl.setAttribute('aria-hidden', 'true'); list.prepend(glideEl); list.classList.add('has-glide'); }
+  function moveGlide(){ const on = steps[current]; if(!glideEl || !on) return; glideEl.style.height = on.offsetHeight + 'px'; glideEl.style.transform = `translateY(${on.offsetTop}px)`; }
+  function countUp(panel){
+    const b = panel && panel.querySelector('[data-count]'); if(!b || reduce) return;
+    const to = Number(b.dataset.count) || 0, t0 = performance.now(), mine = current;
+    b.textContent = '$0.00';   // start from zero at once, so the final amount never flashes first
+    const run = (t) => { const k = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - k, 3);
+      b.textContent = '$' + (to * e).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if(k < 1 && current === mine) requestAnimationFrame(run); else b.textContent = '$' + to.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+    requestAnimationFrame(run);
+  }
   function setStep(i){
     if(i === current) return; current = i;
     steps.forEach((s, k) => { s.classList.toggle('is-on', k === i); s.setAttribute('aria-current', k === i ? 'step' : 'false'); });
     panels.forEach((p, k) => { p.classList.toggle('is-on', k === i); p.classList.toggle('is-past', k < i); });
+    requestAnimationFrame(moveGlide); countUp(panels[i]);
   }
   function frame(){
     ticking = false;
     const vh = window.innerHeight || 800;
-    if(stage){   // settle the product flat over the first screen of scrolling
+    if(stage){   // settle the product flat over the first screen of scrolling; the phone and glow drift
       const p = clamp(window.scrollY / (vh * 0.7), 0, 1);
-      stage.style.transform = `perspective(1600px) rotateX(${(1 - p) * 16}deg) translateY(${(1 - p) * 30}px) scale(${0.94 + p * 0.06})`;
-      if(phone) phone.style.transform = `translateY(${-p * 70}px)`;
+      stage.style.transform = `perspective(1400px) rotateX(${(1 - p) * 22}deg) rotateY(${(1 - p) * -6}deg) translateY(${(1 - p) * 40}px) scale(${0.9 + p * 0.1})`;
+      if(phone) phone.style.transform = `translateY(${-p * 130}px) rotate(${(1 - p) * -4}deg)`;
+      if(glow) glow.style.transform = `translate(${-p * 220}px, ${p * 260}px) scale(${1 + p * 0.3})`;
     }
-    if(story){   // the story's progress decides its step
+    if(story){
       const r = story.getBoundingClientRect(), total = r.height - vh;
       const p = total > 0 ? clamp(-r.top / total, 0, 1) : 0;
       if(bar) bar.style.transform = `scaleX(${p})`;
       setStep(Math.min(steps.length - 1, Math.floor(p * steps.length * 0.9999)));
     }
-    if(close && words.length){   // light the closing words as it rises into view
+    if(close && words.length){
       const r = close.getBoundingClientRect();
       const p = clamp((vh - r.top) / (vh * 0.75), 0, 1);
       const lit = Math.round(p * words.length);
@@ -48,14 +65,36 @@
   let ticking = false;
   const onScroll = () => { if(!ticking){ ticking = true; requestAnimationFrame(frame); } };
 
-  // sections slide in once, as they arrive
   const reveals = [...home.querySelectorAll('[data-reveal]')];
   if(reduce || !('IntersectionObserver' in window)){ reveals.forEach(el => el.classList.add('is-in')); words.forEach(w => w.classList.add('is-lit')); setStep(0); steps.forEach(s => s.classList.add('is-on')); return; }
-  const io = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){ e.target.classList.add('is-in'); io.unobserve(e.target); } }), { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+  const io = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){ e.target.classList.add('is-in'); io.unobserve(e.target); } }), { threshold: 0.15, rootMargin: '0px 0px -6% 0px' });
   reveals.forEach(el => io.observe(el));
   window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll, { passive: true });
+  window.addEventListener('resize', () => { onScroll(); moveGlide(); }, { passive: true });
   frame();
+
+  // smooth mouse-wheel scrolling, on the landing page only: each notch of a mouse wheel glides
+  // instead of jumping. Trackpads (fine steps), touch and the keyboard keep the browser's scrolling.
+  let target = window.scrollY, gliding = false, expected = null;
+  const glideFrame = () => {
+    const y = window.scrollY;
+    // something else moved the page (scrollbar, a link, a button, the keyboard): stop and let it be
+    if(expected !== null && Math.abs(y - expected) > 2){ gliding = false; expected = null; target = y; return; }
+    const d = target - y;
+    if(Math.abs(d) < 0.6){ window.scrollTo(0, target); gliding = false; expected = null; return; }
+    expected = Math.round(y + d * 0.14); window.scrollTo(0, expected); requestAnimationFrame(glideFrame);
+  };
+  window.addEventListener('wheel', (e) => {
+    if(home.classList.contains('hidden') || e.ctrlKey || e.defaultPrevented) return;
+    const notched = e.deltaMode === 1 || (Math.abs(e.deltaY) >= 50 && Number.isInteger(e.deltaY) && Math.abs(e.deltaX) < 1);
+    if(!notched || (e.target && e.target.closest && e.target.closest('textarea, select, [data-no-glide]'))){ target = window.scrollY; return; }
+    e.preventDefault();
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    if(!gliding) target = window.scrollY;
+    target = clamp(target + (e.deltaMode === 1 ? e.deltaY * 40 : e.deltaY), 0, max);
+    if(!gliding){ gliding = true; expected = null; requestAnimationFrame(glideFrame); }
+  }, { passive: false });
+  window.addEventListener('keydown', () => { target = window.scrollY; }, { passive: true });
 })();
 
 // ---- the demo form ----
@@ -83,7 +122,6 @@
     thanks.append(b, document.createTextNode('We will ' + (isEmail ? 'email' : 'call') + ' you to set a time for your demo.'));
     form.replaceWith(thanks); say('', true);
   });
-  // "Book a demo call" lower down brings you back to the form
   document.querySelectorAll('[data-nx-demo]').forEach(b => b.addEventListener('click', () => {
     const target = document.getElementById('rfDemoForm') || document.getElementById('nxThanks'); if(!target) return;
     if(target.scrollIntoView) target.scrollIntoView({ behavior: window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
