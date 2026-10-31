@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=24ba82da60"/>
+<link rel="stylesheet" href="style.css?v=190489eecf"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -100,168 +100,73 @@
 <main>
 
   <!-- ================= PUBLIC HOME ================= -->
-  <div id="homeView" class="lx rf">
-    <section class="rf-hero" aria-labelledby="rfH1">
-      <div class="rf-hero-copy">
-        <h1 id="rfH1">One repair order for the bay, the road and the customer.</h1>
-        <p class="rf-lede">Relay runs truck and trailer repair from the first call to the paid invoice, in your shop and on the shoulder. Everyone works from the same order, so nobody has to ask where a truck is.</p>
-        <form class="rf-slip" id="rfDemoForm" novalidate aria-labelledby="rfSlipH">
-          <div class="rf-slip-head"><h2 id="rfSlipH">Book a demo call</h2><span>We call you, at a time that suits you</span></div>
-          <div class="rf-row">
-            <label class="rf-field"><span>Your name</span><input id="rfName" name="name" autocomplete="name" maxlength="120" required></label>
-            <label class="rf-field"><span>Business name</span><input id="rfBiz" name="business" autocomplete="organization" maxlength="160"></label>
-          </div>
-          <fieldset class="rf-kind"><legend>We are</legend>
-            <label><input type="radio" name="kind" value="repair_shop" checked><span>A repair shop</span></label>
-            <label><input type="radio" name="kind" value="mobile"><span>Mobile service</span></label>
-            <label><input type="radio" name="kind" value="both"><span>Both</span></label>
-          </fieldset>
-          <div class="rf-row">
-            <label class="rf-field"><span>Phone</span><input id="rfPhone" name="phone" type="tel" autocomplete="tel" maxlength="40"></label>
-            <label class="rf-field"><span>Email</span><input id="rfEmail" name="email" type="email" autocomplete="email" maxlength="200"></label>
-          </div>
-          <label class="rf-field"><span>Best time to call <em>(optional)</em></span><input id="rfWhen" name="best_time" maxlength="120" placeholder="e.g. weekday mornings, Eastern time"></label>
-          <div class="rf-slip-foot">
-            <button type="submit" class="rf-btn" id="rfDemoBtn">Book my demo</button>
-            <p class="rf-slip-alt">Already with Relay? <button type="button" class="rf-link" id="landingLogin">Sign in</button>. Rather set it up yourself? <button type="button" class="rf-link" id="landingSignup">Create an account</button>.</p>
-          </div>
-          <p class="rf-msg" id="rfDemoMsg" role="status" aria-live="polite"></p>
+  <div id="homeView" class="lx nx">
+    <section class="nx-hero" aria-labelledby="nxH1">
+      <div class="nx-hero-copy">
+        <h1 id="nxH1"><span class="nx-line">Your bay and</span> <span class="nx-line">your road calls.</span> <span class="nx-line nx-accent">One screen.</span></h1>
+        <p class="nx-lede">Work orders, dispatch, estimates and invoices for truck and trailer repair, in the shop and on the shoulder.</p>
+        <form class="nx-form" id="rfDemoForm" novalidate aria-label="Book a demo call">
+          <label class="nx-in"><span class="nx-sr">Your name</span><input id="rfName" autocomplete="name" maxlength="120" placeholder="Your name"></label>
+          <label class="nx-in"><span class="nx-sr">Phone or email</span><input id="rfContact" autocomplete="email" maxlength="200" placeholder="Phone or email"></label>
+          <button type="submit" class="nx-btn" id="rfDemoBtn">Book a demo</button>
         </form>
+        <p class="nx-msg" id="rfDemoMsg" role="status" aria-live="polite"></p>
+        <p class="nx-note">We call you back to set a time. Already with Relay? <button type="button" class="nx-link" id="landingLogin">Sign in</button>, or <button type="button" class="nx-link" id="landingSignup">create an account</button>.</p>
       </div>
-
-      <div class="rf-ro" id="rfRo" aria-labelledby="rfRoLabel">
-        <div class="rf-copies" role="tablist" aria-label="The same repair order, as each person sees it">
-          <button type="button" role="tab" id="rfTab-shop" aria-controls="rfCopy" aria-selected="true" data-copy="shop">Shop<span class="rf-tab-x"> copy</span></button>
-          <button type="button" role="tab" id="rfTab-mech" aria-controls="rfCopy" aria-selected="false" tabindex="-1" data-copy="mech">Mechanic<span class="rf-tab-x"> copy</span></button>
-          <button type="button" role="tab" id="rfTab-cust" aria-controls="rfCopy" aria-selected="false" tabindex="-1" data-copy="cust">Customer<span class="rf-tab-x"> copy</span></button>
-        </div>
-        <article class="rf-paper" data-copy="shop" data-step="0">
-          <header class="rf-paper-head"><span class="rf-paper-title" id="rfRoLabel">Repair order</span><span class="rf-mono">RO-4029</span></header>
-          <dl class="rf-fields">
-            <div><dt>Customer</dt><dd>Gulf Coast Freight</dd></div>
-            <div><dt>Unit</dt><dd>Tractor 118, 2019 Freightliner Cascadia</dd></div>
-            <div><dt>Where</dt><dd>I-4 westbound, mile 72, right shoulder</dd></div>
-            <div class="rf-wide"><dt>Complaint</dt><dd>Air leak at the right rear brake chamber. Truck is loaded.</dd></div>
-          </dl>
-          <ol class="rf-steps" aria-label="Where this repair order is">
-            <li data-s="0">Call in</li><li data-s="1">Dispatched</li><li data-s="2">On site</li><li data-s="3">Approved</li><li data-s="4">Repaired</li><li data-s="5">Paid</li>
-          </ol>
-          <div class="rf-copy" id="rfCopy" role="tabpanel" aria-labelledby="rfTab-shop">
-            <div class="rf-view" data-view="shop">
-              <p class="rf-line"><b class="rf-live" data-live="shop"></b></p>
-              <table class="rf-est"><caption>Estimate</caption>
-                <tr><td>Labor, 1.5 h</td><td class="rf-mono">$180.00</td></tr>
-                <tr><td>Brake chamber 30/30</td><td class="rf-mono">$96.00</td></tr>
-                <tr><td>Service call</td><td class="rf-mono">$95.00</td></tr>
-                <tr class="rf-total"><td>Total</td><td class="rf-mono">$371.00</td></tr>
-              </table>
-            </div>
-            <div class="rf-view" data-view="mech" hidden>
-              <ul class="rf-check">
-                <li data-s="1">Accept the call</li><li data-s="2">Arrived, 2 photos taken</li><li data-s="3">Estimate sent, approved</li><li data-s="4">Brake chamber fitted in 52 minutes</li>
-              </ul>
-              <p class="rf-line"><b class="rf-live" data-live="mech"></b></p>
-            </div>
-            <div class="rf-view" data-view="cust" hidden>
-              <p class="rf-line rf-big"><b class="rf-live" data-live="cust"></b></p>
-              <p class="rf-line rf-quiet">No account needed. Opened from a link in the email.</p>
-            </div>
-          </div>
-          <div class="rf-stamp" aria-hidden="true"></div>
-          <footer class="rf-paper-foot">Example repair order. Names, places and figures are made up.</footer>
-        </article>
-        <div class="rf-ro-ctrl"><button type="button" class="rf-link" id="rfPlay" aria-pressed="false">Pause</button></div>
+      <div class="nx-stage" id="nxStage">
+        <div class="nx-browser"><div class="nx-bar"><i></i><i></i><i></i></div><img src="img/relay-schedule.webp" alt="Relay's Schedule: a week of appointments for a truck repair shop" width="1220" height="860"></div>
+        <div class="nx-phone"><img src="img/relay-phone.webp" alt="The same day's appointments in Relay on a phone" width="780" height="1440"></div>
       </div>
     </section>
 
-    <section class="rf-ccc" id="lxPains" aria-labelledby="rfCccH">
-      <div class="rf-wrap">
-        <h2 id="rfCccH">Complaint. Cause. Correction.</h2>
-        <p class="rf-sub">The three lines on every repair order, written about running the business.</p>
-        <div class="rf-ccc-table" role="table" aria-label="Problems shops tell us about, and what Relay does">
-          <div class="rf-ccc-row rf-ccc-head" role="row"><span role="columnheader">Complaint</span><span role="columnheader">Cause</span><span role="columnheader">Correction</span></div>
-          <div class="rf-ccc-row" role="row"><span role="cell">"Where's my truck?" calls, all day.</span><span role="cell">The status lives on a whiteboard and in people's heads.</span><span role="cell">A live board in the shop, and a tracking link the customer opens on their phone.</span></div>
-          <div class="rf-ccc-row" role="row"><span role="cell">Estimates wait hours for a yes.</span><span role="cell">Approval happens by phone tag.</span><span role="cell">The customer approves from a link; the work order moves on by itself and the shop sees it at once.</span></div>
-          <div class="rf-ccc-row" role="row"><span role="cell">Road calls get lost between the office and the truck.</span><span role="cell">Dispatch and the mechanic work from different tools.</span><span role="cell">The call goes to the mechanic's phone; the office sees where they are and when they arrive.</span></div>
-          <div class="rf-ccc-row" role="row"><span role="cell">Parts ordered twice, or not at all.</span><span role="cell">Nobody knows what is on which shelf, in which yard.</span><span role="cell">Stock per location, a low-stock list, and purchase orders grouped by vendor.</span></div>
-          <div class="rf-ccc-row" role="row"><span role="cell">Month end is guesswork.</span><span role="cell">Invoices, payments and margins live in different places.</span><span role="cell">Reports split revenue into labor, parts and fees, compare it with last period, and download as CSV.</span></div>
+    <section class="nx-story" id="nxStory" aria-labelledby="nxStoryH">
+      <div class="nx-story-pin">
+        <div class="nx-story-copy">
+          <h2 id="nxStoryH">One job, start to finish.</h2>
+          <ol class="nx-steps"><li class="nx-step" data-i="0"><b>A call comes in</b><span>From your request link or a phone call. It is on the board straight away.</span></li><li class="nx-step" data-i="1"><b>Booked or dispatched</b><span>A slot on the Schedule, or a road call sent to a mechanic’s phone.</span></li><li class="nx-step" data-i="2"><b>Approved from a link</b><span>The customer approves the estimate on their phone. The job moves on by itself.</span></li><li class="nx-step" data-i="3"><b>Paid</b><span>The estimate becomes the invoice. Payments show up the moment they arrive.</span></li><li class="nx-step" data-i="4"><b>The month, in numbers</b><span>Revenue split into labor, parts and fees, compared with last period.</span></li></ol>
+          <div class="nx-progress" aria-hidden="true"><i id="nxBar"></i></div>
+        </div>
+        <div class="nx-story-stage" aria-live="off">
+          <figure class="nx-panel" data-i="0"><div class="nx-phone nx-phone-sm"><img src="img/relay-phone.webp" alt="" width="780" height="1440"></div><div class="nx-toast">New road call: I-4, mile 72</div></figure>
+          <figure class="nx-panel" data-i="1"><div class="nx-browser"><div class="nx-bar"><i></i><i></i><i></i></div><img src="img/relay-schedule.webp" alt="" width="1220" height="860"></div></figure>
+          <figure class="nx-panel" data-i="2"><div class="nx-card"><span class="nx-card-k">Estimate EST-12</span><b>$371.00</b><span class="nx-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Approved by Ana Ruiz</span><span class="nx-card-s">Brake chamber, labor 1.5 h, service call</span></div><div class="nx-toast">Estimate EST-12 approved by Ana</div></figure>
+          <figure class="nx-panel" data-i="3"><div class="nx-card"><span class="nx-card-k">Invoice INV-4029</span><b>$371.00</b><span class="nx-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Paid</span><span class="nx-card-s">Review request sent to the customer</span></div><div class="nx-toast">Payment received: $371.00</div></figure>
+          <figure class="nx-panel" data-i="4"><div class="nx-browser"><div class="nx-bar"><i></i><i></i><i></i></div><img src="img/relay-reports.webp" alt="" width="1240" height="900"></div></figure>
+          <p class="nx-caption">Relay screens with example data.</p>
         </div>
       </div>
     </section>
 
-    <section class="rf-split" id="lxFeatures" aria-labelledby="rfSplitH">
-      <div class="rf-wrap">
-        <h2 id="rfSplitH">In the bay, and on the road.</h2>
-        <div class="rf-split-cols">
-          <div class="rf-col"><h3>In the bay</h3>
-            <dl class="rf-feat">
-              <div><dt>Shop board</dt><dd>Every job by stage, who has it, and how long it has waited.</dd></div>
-              <div><dt>Schedule</dt><dd>Book appointments on a calendar. Customers get a reminder the day before.</dd></div>
-              <div><dt>Estimates to invoices</dt><dd>Approved by the customer from a link, then turned into the invoice.</dd></div>
-              <div><dt>Parts</dt><dd>Stock per location, cores, counts, and what to reorder.</dd></div>
-              <div><dt>Reports</dt><dd>Revenue, margins, technicians and customers, by location or all together.</dd></div>
-            </dl>
-          </div>
-          <div class="rf-col"><h3>On the road</h3>
-            <dl class="rf-feat">
-              <div><dt>Dispatch</dt><dd>Send a road call to a mechanic's phone and watch them head out.</dd></div>
-              <div><dt>Live tracking</dt><dd>The office sees the mechanic on a map; the customer sees the arrival time.</dd></div>
-              <div><dt>Works without signal</dt><dd>The mechanic app keeps working on the shoulder and syncs when it is back.</dd></div>
-              <div><dt>On the job</dt><dd>Timers, photos, parts used and notes, all on the same order.</dd></div>
-              <div><dt>Voice</dt><dd>Hands busy? Ask Natasha, the assistant, in plain words.</dd></div>
-            </dl>
-          </div>
+    <section class="nx-sides" id="lxFeatures" aria-labelledby="nxSidesH">
+      <div class="nx-wrap">
+        <h2 id="nxSidesH" data-reveal>Built for both sides of the job.</h2>
+        <div class="nx-cols">
+          <div class="nx-col" data-reveal style="--d:80ms"><h3>On the road</h3><ul><li data-reveal style="--d:0ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Road calls sent to the mechanic’s phone</li><li data-reveal style="--d:70ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Live position and arrival time for the office and the customer</li><li data-reveal style="--d:140ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>The mechanic app keeps working without signal</li><li data-reveal style="--d:210ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Timers, photos and parts used, on the job</li><li data-reveal style="--d:280ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Ask Natasha, the assistant, by voice</li></ul></div>
+          <div class="nx-col" data-reveal style="--d:160ms"><h3>In the bay</h3><ul><li data-reveal style="--d:0ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>A live board: every job, its stage and how long it has waited</li><li data-reveal style="--d:70ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Schedule with reminders the day before</li><li data-reveal style="--d:140ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Estimates approved by link, then invoiced</li><li data-reveal style="--d:210ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Parts and stock for each location</li><li data-reveal style="--d:280ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Reports by location, or all together</li></ul></div>
         </div>
       </div>
     </section>
 
-    <section class="rf-flow" aria-labelledby="rfFlowH">
-      <div class="rf-wrap">
-        <h2 id="rfFlowH">From the call to paid.</h2>
-        <ol class="rf-flow-list">
-          <li><b>Request</b><span>The customer asks from your link, or you enter the job.</span></li>
-          <li><b>Dispatch or book</b><span>A road call goes to a mechanic; a shop job gets a slot on the Schedule.</span></li>
-          <li><b>On the job</b><span>Timers, photos and parts go onto the order as the work happens.</span></li>
-          <li><b>Approved</b><span>The customer approves the estimate from their phone.</span></li>
-          <li><b>Invoiced</b><span>The estimate becomes the invoice, with your terms and warranty.</span></li>
-          <li><b>Paid</b><span>Payment is recorded and the customer is asked for a review.</span></li>
-        </ol>
+    <section class="nx-switch" id="lxSwitch" aria-labelledby="nxSwitchH">
+      <div class="nx-wrap nx-switch-in" data-reveal>
+        <h2 id="nxSwitchH">Switching is the easy part.</h2>
+        <p>Bring your customers, units and parts from Fullbay, Shopmonkey, Tekmetric, Mitchell 1 or spreadsheets. Relay recognises each file and brings everything over in the right order.</p>
+        <button type="button" class="nx-link" data-contact>Send us your files</button>
       </div>
     </section>
 
-    <section class="rf-switch" id="lxSwitch" aria-labelledby="rfSwitchH">
-      <div class="rf-wrap rf-switch-in">
-        <div>
-          <h2 id="rfSwitchH">Switching from another system?</h2>
-          <p class="rf-sub">Export your customers, vehicles and parts, drop the files into Relay, and it recognises each one and brings everything over in the right order. Need a hand? Send us your files.</p>
-          <p class="rf-from">From Fullbay, Shopmonkey, Tekmetric, Mitchell 1, spreadsheets, or any other system.</p>
-          <div class="rf-switch-actions"><button type="button" class="rf-btn" data-rf-demo>Book a demo call</button><button type="button" class="rf-link" data-contact>Send us your files</button></div>
-        </div>
-        <div class="rf-also">
-          <h3>Also on every order</h3>
-          <ul>
-            <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Separate locations, each with its own details and stock</li>
-            <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>A portal for your fleet customers</li>
-            <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>QuickBooks export</li>
-            <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>English and Russian</li>
-          </ul>
-        </div>
+    <section class="nx-faq" id="lxFaq" aria-labelledby="nxFaqH">
+      <div class="nx-wrap">
+        <h2 id="nxFaqH" data-reveal>Questions shops ask</h2>
+        <div class="nx-faq-list" data-reveal style="--d:80ms"><details class="nx-faq-item"><summary>What is Relay?</summary><p>Relay is shop and road service software for truck and trailer repair. Every repair lives on one work order — from the call or request, through dispatch, the mechanic on site, the estimate and the customer's approval, to the invoice and payment — and your office, your mechanics and your fleet customers all see the same job, live.</p></details><details class="nx-faq-item"><summary>Who is it for?</summary><p>Truck and trailer repair shops, mobile mechanics and roadside service businesses — from a two-mechanic shop with no dispatcher to companies running several locations.</p></details><details class="nx-faq-item"><summary>Do mechanics need special devices?</summary><p>No. Mechanics use Relay on their own phones (iPhone or Android). They accept road calls, navigate, run timers, add parts and photos, and can use voice commands. Relay can be installed on the home screen like an app — no app store needed.</p></details><details class="nx-faq-item"><summary>How does live tracking work?</summary><p>When a mechanic is on a road call and sharing location, the office sees them on the dispatch map and the fleet customer sees the ETA. Mechanics control when they share, and location is only visible to their own shop and the customer on that job. Phones pause location while an app is closed or the screen is locked, so the ETA updates while Relay is open on the mechanic's phone.</p></details><details class="nx-faq-item"><summary>Can our fleet customers use it?</summary><p>Yes. Fleet customers get their own portal: they request service, follow the mechanic's ETA, approve estimates, see photos and invoices, and look up every unit's repair history.</p></details><details class="nx-faq-item"><summary>We use Fullbay, Shopmonkey or spreadsheets today. Can we bring our data?</summary><p>Yes. Export your customers, vehicles and parts as CSV or Excel files and add them all at once — Relay recognises each file, matches the columns, and imports everything in the right order. Nothing is duplicated.</p></details><details class="nx-faq-item"><summary>Does it work with QuickBooks?</summary><p>Relay exports your customers, invoices, payments, products and vendors in the format QuickBooks Online imports.</p></details><details class="nx-faq-item"><summary>Can we run more than one location?</summary><p>Yes. Each location keeps its own customers, work orders, invoices, stock and mechanics, with its own name and details on its documents. The owner switches between them in a tap and compares them side by side in Reports.</p></details><details class="nx-faq-item"><summary>Is our data private?</summary><p>Each shop's data is kept separate and is only visible to that shop's team, with access by role (owner, office staff, mechanic) — and to fleet customers only for their own vehicles and jobs.</p></details><details class="nx-faq-item"><summary>How do we get started?</summary><p>Book a demo call and we will walk you through Relay with your own kind of work. Or set up your company yourself in a few minutes, invite your mechanics with your shop code, and add or import your customers.</p></details></div>
+        <p class="nx-more">Something else? <button type="button" class="nx-link" id="faqContact">Get in touch</button></p>
       </div>
     </section>
 
-    <section class="rf-faq" id="lxFaq" aria-labelledby="rfFaqH">
-      <div class="rf-wrap">
-        <h2 id="rfFaqH">Questions shops ask</h2>
-        <div class="rf-faq-list"><details class="rf-faq-item"><summary>What is Relay?</summary><p>Relay is shop and road service software for truck and trailer repair. Every repair lives on one work order — from the call or request, through dispatch, the mechanic on site, the estimate and the customer's approval, to the invoice and payment — and your office, your mechanics and your fleet customers all see the same job, live.</p></details><details class="rf-faq-item"><summary>Who is it for?</summary><p>Truck and trailer repair shops, mobile mechanics and roadside service businesses — from a two-mechanic shop with no dispatcher to companies running several locations.</p></details><details class="rf-faq-item"><summary>Do mechanics need special devices?</summary><p>No. Mechanics use Relay on their own phones (iPhone or Android). They accept road calls, navigate, run timers, add parts and photos, and can use voice commands. Relay can be installed on the home screen like an app — no app store needed.</p></details><details class="rf-faq-item"><summary>How does live tracking work?</summary><p>When a mechanic is on a road call and sharing location, the office sees them on the dispatch map and the fleet customer sees the ETA. Mechanics control when they share, and location is only visible to their own shop and the customer on that job. Phones pause location while an app is closed or the screen is locked, so the ETA updates while Relay is open on the mechanic's phone.</p></details><details class="rf-faq-item"><summary>Can our fleet customers use it?</summary><p>Yes. Fleet customers get their own portal: they request service, follow the mechanic's ETA, approve estimates, see photos and invoices, and look up every unit's repair history.</p></details><details class="rf-faq-item"><summary>We use Fullbay, Shopmonkey or spreadsheets today. Can we bring our data?</summary><p>Yes. Export your customers, vehicles and parts as CSV or Excel files and add them all at once — Relay recognises each file, matches the columns, and imports everything in the right order. Nothing is duplicated.</p></details><details class="rf-faq-item"><summary>Does it work with QuickBooks?</summary><p>Relay exports your customers, invoices, payments, products and vendors in the format QuickBooks Online imports.</p></details><details class="rf-faq-item"><summary>Can we run more than one location?</summary><p>Yes. Each location keeps its own customers, work orders, invoices, stock and mechanics, with its own name and details on its documents. The owner switches between them in a tap and compares them side by side in Reports.</p></details><details class="rf-faq-item"><summary>Is our data private?</summary><p>Each shop's data is kept separate and is only visible to that shop's team, with access by role (owner, office staff, mechanic) — and to fleet customers only for their own vehicles and jobs.</p></details><details class="rf-faq-item"><summary>How do we get started?</summary><p>Book a demo call and we will walk you through Relay with your own kind of work. Or set up your company yourself in a few minutes, invite your mechanics with your shop code, and add or import your customers.</p></details></div>
-        <p class="rf-sub">Something else? <button type="button" class="rf-link" id="faqContact">Get in touch</button></p>
-      </div>
-    </section>
-
-    <section class="rf-close" aria-labelledby="rfCloseH">
-      <div class="rf-wrap rf-close-in">
-        <h2 id="rfCloseH">See your own work on one repair order.</h2>
-        <p>A short call: you tell us how your shop and your trucks run, we show you Relay doing it.</p>
-        <div class="rf-close-actions"><button type="button" class="rf-btn" data-rf-demo>Book a demo call</button><button type="button" class="rf-link rf-link-light" id="landingSignup2">Or create your account</button></div>
+    <section class="nx-close" id="nxClose" aria-labelledby="nxCloseH">
+      <div class="nx-wrap">
+        <h2 id="nxCloseH" class="nx-fill">See your own work in Relay.</h2>
+        <div class="nx-close-actions"><button type="button" class="nx-btn" data-nx-demo>Book a demo call</button><button type="button" class="nx-link" id="landingSignup2">Or create your account</button></div>
       </div>
     </section>
     <footer class="lx-footer"><p class="meta footer-legal"><a href="/terms.html">Terms of Service</a> · <a href="/privacy.html">Privacy Policy</a></p>
@@ -1123,7 +1028,7 @@
 <script src="lang.js?v=70e1770f2a" defer></script>
 <script src="natasha.js?v=f224fb953e" defer></script>
 <script src="plans.js?v=b3970d449d" defer></script>
-<script src="landing.js?v=05e8a75985" defer></script>
+<script src="landing.js?v=73cd39067b" defer></script>
 <script src="pwa.js?v=d2673f834b" defer></script>
 
 </body>

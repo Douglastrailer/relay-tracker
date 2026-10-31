@@ -1,10 +1,10 @@
-RelayFleet - new landing page ("the repair order")
+RelayFleet - new landing page (Night shift, follows the scroll, light and dark)
 
-ORDER (same day):
- 1. Run migration 0052_demo_requests.sql in the Supabase SQL Editor.
- 2. Upload ALL website files to GitHub and commit. IMPORTANT: this includes a new folder, fonts/ (7 font files and their license).
-    On GitHub: Add file > Upload files, and drag the whole fonts folder in, so the files land in fonts/.
+ORDER:
+ 1. If not done yet: run migration 0052_demo_requests.sql in the Supabase SQL Editor.
+ 2. Upload ALL website files to GitHub and commit, INCLUDING the two folders:
+      fonts/  (Bricolage Grotesque + license)
+      img/    (three Relay screens)
+    On GitHub: Add file > Upload files, and drag each whole folder in, so the files land inside fonts/ and img/.
+    You can delete the old fonts/overpass-* files on GitHub if you uploaded the previous version.
  3. Refresh relayfleet.us with Cmd+Shift+R.
-
-New files: demo-admin.js, fonts/ (Overpass, Open Font License).
-Demo requests appear in Admin > Requests, at the top, live.
