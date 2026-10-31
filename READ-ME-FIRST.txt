@@ -1,10 +1,10 @@
-RelayFleet - Reports: revenue split, comparison, CSV (batch 2 of 2)
+RelayFleet - new landing page ("the repair order")
 
 ORDER (same day):
- 1. Run migration 0051_reports_split.sql in the Supabase SQL Editor (needs 0050).
- 2. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
+ 1. Run migration 0052_demo_requests.sql in the Supabase SQL Editor.
+ 2. Upload ALL website files to GitHub and commit. IMPORTANT: this includes a new folder, fonts/ (7 font files and their license).
+    On GitHub: Add file > Upload files, and drag the whole fonts folder in, so the files land in fonts/.
+ 3. Refresh relayfleet.us with Cmd+Shift+R.
 
-What changed in Reports:
-- Every figure shows its change against the previous period of the same length (green = better; for times, lower is better).
-- "What revenue is made of": labor (hours billed, effective rate), parts (cost, margin), fees and mileage, other, tax and adjustments.
-- Download CSV: the figures (this period, previous period, change) and the revenue split.
+New files: demo-admin.js, fonts/ (Overpass, Open Font License).
+Demo requests appear in Admin > Requests, at the top, live.

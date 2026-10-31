@@ -1406,7 +1406,7 @@ function enterApp(){
   if(typeof prepareRoute === 'function') prepareRoute();   // the saved section is set before the screen is drawn
   if(session.role === 'mechanic'){ document.getElementById('mechanicView').classList.remove('hidden'); initMechanicView(); }
   else if(session.role === 'shop'){ document.getElementById('shopView').classList.remove('hidden'); initShopView(); if(typeof checkShopSetupGate === 'function') checkShopSetupGate(); if(typeof maybeStartTour === 'function') maybeStartTour(); }
-  else if(session.role === 'admin'){ document.getElementById('adminView').classList.remove('hidden'); initAdminView(); }
+  else if(session.role === 'admin'){ document.getElementById('adminView').classList.remove('hidden'); initAdminView(); if(typeof watchDemoRequests === 'function') watchDemoRequests(); if(typeof renderDemoRequests === 'function') renderDemoRequests(); }
   else { document.getElementById('fleetView').classList.remove('hidden'); initFleetView(); }
   // a refresh comes back to the same screen, section and work order (route.js)
   if(typeof restoreRoute === 'function') restoreRoute();

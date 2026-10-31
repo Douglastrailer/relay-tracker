@@ -1,58 +1,98 @@
 // ============================================================
-// RelayFleet landing — the hero scene: one roadside call, from
-// dispatch to invoice, in ~14 seconds. Pauses when off-screen or
-// when the tab is hidden; shows the finished job, still, to anyone
-// whose device asks for reduced motion.
+// RelayFleet landing — the repair order.
+// One example order plays from the road call to paid, and each copy (shop, mechanic, customer)
+// shows the same moment from that person's side. Pauses on hover or focus, off screen, when the
+// tab is hidden, or with the Pause button; people who ask for reduced motion see the finished
+// order, still. The demo slip books a call through request_demo (migration 0052).
 // ============================================================
 (function(){
-  const scene = document.getElementById('lxScene');
-  if(!scene) return;
-  const $ = id => document.getElementById(id);
-  const route = $('lxRoute'), mech = $('lxMech'), eta = $('lxEta'), etaMin = $('lxEtaMin');
-  const status = $('lxStatus'), accept = $('lxAccept'), labor = $('lxLabor'), parts = $('lxParts'), total = $('lxTotal'), foot = $('lxFoot');
-  const LEN = route.getTotalLength ? route.getTotalLength() : 0;
-  const RATE = 135, TIRE = 412, LOOP = 14000;
-  const money = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
-  const setStatus = (s, label) => { if(status.dataset.s !== s){ status.dataset.s = s; status.textContent = label; } };
-  function place(p){
-    if(!LEN) return;
-    const pt = route.getPointAtLength(LEN * Math.max(0, Math.min(1, p)));
-    mech.style.left = (pt.x / 520 * 100) + '%'; mech.style.top = (pt.y / 360 * 100) + '%';
+  const ro = document.getElementById('rfRo'); if(!ro) return;
+  const paper = ro.querySelector('.rf-paper'), stamp = ro.querySelector('.rf-stamp'), play = document.getElementById('rfPlay');
+  const tabs = [...ro.querySelectorAll('[role="tab"]')], panel = document.getElementById('rfCopy');
+  const LINES = {
+    shop: ['New road call, 2 minutes ago', 'Dispatched to Logan R., about 18 minutes away', 'Logan is on site. Estimate sent to the customer.', 'Estimate approved by Ana Ruiz. The order moved on by itself.', 'Repaired. Invoice INV-4029 emailed.', 'Paid, $371.00. Review requested.'],
+    mech: ['New call: I-4, mile 72', 'Driving, 14 miles to go', 'On site, timer running', 'Approved. Go ahead with the repair.', 'Job done in 52 minutes', 'Paid. Ready for the next call.'],
+    cust: ['We have your request.', 'Logan is on the way. Arrives in about 18 minutes.', 'Logan has arrived at your truck.', 'You approved the estimate: $371.00', 'Your truck is ready to roll.', 'Paid. Thank you.']
+  };
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let step = 0, timer = null, paused = false, hovering = false, visible = true;
+
+  function render(){
+    paper.dataset.step = String(step);
+    ro.querySelectorAll('.rf-steps li').forEach(li => { const s = Number(li.dataset.s); li.classList.toggle('is-done', s <= step); li.classList.toggle('is-now', s === step); });
+    ro.querySelectorAll('.rf-check li').forEach(li => li.classList.toggle('is-done', Number(li.dataset.s) <= step));
+    ro.querySelectorAll('[data-live]').forEach(el => { el.textContent = LINES[el.dataset.live][step]; });
+    const word = step >= 5 ? 'Paid' : step >= 3 ? 'Approved' : '';
+    if(stamp.textContent !== word){
+      stamp.textContent = word; stamp.classList.remove('is-on');
+      if(word){ void stamp.offsetWidth; stamp.classList.add('is-on'); }
+    }
   }
-  const ease = x => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
-  function frame(t){            // t: ms into the loop
-    const drive = Math.max(0, Math.min(1, (t - 1200) / 6000));
-    place(ease(drive));
-    scene.classList.toggle('lx-driving', t >= 1200 && t < 7200);
-    if(t < 1200){ setStatus('assigned', 'Assigned'); accept.textContent = 'Waiting to accept'; accept.className = ''; eta.classList.remove('show', 'arrived'); }
-    else { accept.textContent = 'Accepted'; accept.className = 'ok'; }
-    if(t >= 1200 && t < 7200){ setStatus('enroute', 'En route'); eta.classList.add('show'); eta.classList.remove('arrived'); etaMin.textContent = String(Math.max(1, Math.round(18 * (1 - ease(drive))))); eta.lastElementChild.textContent = 'min away'; }
-    if(t >= 7200){ eta.classList.add('show', 'arrived'); etaMin.textContent = '✓'; eta.lastElementChild.textContent = 'Arrived'; }
-    if(t >= 7200 && t < 8200) setStatus('onsite', 'On site');
-    const workMin = t < 8200 ? 0 : Math.min(75, (t - 8200) / 3300 * 75);   // 1 h 15 m of labor, sped up
-    if(t >= 8200 && t < 11500) setStatus('repairing', 'Repairing');
-    labor.textContent = Math.floor(workMin / 60) + ':' + String(Math.floor(workMin % 60)).padStart(2, '0');
-    const hasPart = t >= 9300;
-    parts.textContent = hasPart ? 'Steer tire · ' + money(TIRE) : '—';
-    total.textContent = money(workMin / 60 * RATE + (hasPart ? TIRE : 0));
-    if(t >= 11500){ setStatus('done', 'Completed'); foot.textContent = 'Invoice #1048 sent · ' + money(75 / 60 * RATE + TIRE); foot.classList.add('sent'); }
-    else { foot.textContent = t >= 7200 ? 'ABC Logistics sees the repair live' : t >= 1200 ? 'ABC Logistics is watching the ETA' : 'Customer can follow along'; foot.classList.remove('sent'); }
+  function tick(){ step = step >= 5 ? 0 : step + 1; render(); schedule(); }
+  function schedule(){
+    clearTimeout(timer);
+    if(reduce || paused || hovering || !visible || document.hidden) return;
+    timer = setTimeout(tick, step >= 5 ? 5200 : 2600);
   }
-  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(reduced || !LEN){ frame(13000); return; }
-  let start = null, raf = null, visible = true, paused = 0;
-  function loop(now){
-    if(start === null) start = now - paused;
-    const t = (now - start) % LOOP;
-    paused = t; frame(t);
-    raf = requestAnimationFrame(loop);
+  function setCopy(name, focus){
+    tabs.forEach(t => { const on = t.dataset.copy === name; t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; if(on && focus) t.focus(); });
+    paper.dataset.copy = name;
+    panel.setAttribute('aria-labelledby', 'rfTab-' + name);
+    panel.querySelectorAll('.rf-view').forEach(v => { v.hidden = v.dataset.view !== name; });
   }
-  const run = () => { if(raf === null && visible && !document.hidden){ start = null; raf = requestAnimationFrame(loop); } };
-  const stop = () => { if(raf !== null){ cancelAnimationFrame(raf); raf = null; } };
-  if('IntersectionObserver' in window) new IntersectionObserver(es => { visible = es[0].isIntersecting; visible ? run() : stop(); }, { threshold: .15 }).observe(scene);
-  document.addEventListener('visibilitychange', () => document.hidden ? stop() : run());
-  frame(0); run();
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => setCopy(t.dataset.copy));
+    t.addEventListener('keydown', e => {
+      const k = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if(!k) return;
+      e.preventDefault(); setCopy(tabs[(i + k + tabs.length) % tabs.length].dataset.copy, true);
+    });
+  });
+  ro.addEventListener('mouseenter', () => { hovering = true; schedule(); });
+  ro.addEventListener('mouseleave', () => { hovering = false; schedule(); });
+  ro.addEventListener('focusin', () => { hovering = true; schedule(); });
+  ro.addEventListener('focusout', () => { hovering = false; schedule(); });
+  if(play){
+    if(reduce) play.hidden = true;
+    play.addEventListener('click', () => { paused = !paused; play.textContent = paused ? 'Play' : 'Pause'; play.setAttribute('aria-pressed', String(paused)); schedule(); });
+  }
+  document.addEventListener('visibilitychange', schedule);
+  if('IntersectionObserver' in window) new IntersectionObserver(es => { visible = es[0].isIntersecting; schedule(); }).observe(ro);
+  if(reduce) step = 5;   // the finished order, still
+  render(); schedule();
 })();
 
-// "Get started" buttons further down the page do the same as the one at the top
+// ---- the demo slip ----
+(function(){
+  const form = document.getElementById('rfDemoForm'); if(!form) return;
+  const msg = document.getElementById('rfDemoMsg'), btn = document.getElementById('rfDemoBtn');
+  const val = id => (document.getElementById(id).value || '').trim();
+  const say = (t, ok) => { msg.textContent = t; msg.classList.toggle('is-ok', !!ok); };
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    form.querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute('aria-invalid'));
+    const name = val('rfName'), email = val('rfEmail'), phone = val('rfPhone');
+    if(!name){ document.getElementById('rfName').setAttribute('aria-invalid', 'true'); document.getElementById('rfName').focus(); say('Please add your name.'); return; }
+    if(!email && !phone){ document.getElementById('rfPhone').setAttribute('aria-invalid', 'true'); document.getElementById('rfPhone').focus(); say('Please add a phone number or an email so we can reach you.'); return; }
+    if(email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ document.getElementById('rfEmail').setAttribute('aria-invalid', 'true'); document.getElementById('rfEmail').focus(); say('That email address does not look right.'); return; }
+    if(typeof sb === 'undefined' || !sb){ say('We could not reach Relay just now. Please email support@relayfleet.us.'); return; }
+    btn.disabled = true; btn.textContent = 'Sending…'; say('');
+    const kind = (form.querySelector('input[name="kind"]:checked') || {}).value || 'repair_shop';
+    const { error } = await sb.rpc('request_demo', { p_name: name, p_business: val('rfBiz') || null, p_kind: kind, p_email: email || null, p_phone: phone || null, p_best_time: val('rfWhen') || null, p_note: null });
+    btn.disabled = false; btn.textContent = 'Book my demo';
+    if(error){ say(typeof friendlyError === 'function' ? friendlyError(error, 'Could not send your request').message : (error.message || 'Could not send your request.')); return; }
+    form.classList.add('is-done');
+    const first = name.split(/\s+/)[0];
+    const thanks = document.createElement('div'); thanks.className = 'rf-thanks';
+    const b = document.createElement('b'); b.textContent = 'Thanks, ' + first + '.';
+    thanks.append(b, document.createTextNode('We will call you' + (val('rfWhen') ? ' (' + val('rfWhen') + ')' : '') + ' to set up your demo. Nothing else to do for now.'));
+    form.insertBefore(thanks, msg); say('', true);
+  });
+  // "Book a demo call" further down the page brings you back to the slip
+  document.querySelectorAll('[data-rf-demo]').forEach(b => b.addEventListener('click', () => {
+    if(form.scrollIntoView) form.scrollIntoView({ behavior: window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+    setTimeout(() => { const n = document.getElementById('rfName'); if(n) n.focus({ preventScroll: true }); }, 350);
+  }));
+})();
+
+// any remaining "Get started" buttons do the same as the account button in the slip
 document.querySelectorAll('[data-lx-start]').forEach(b => b.addEventListener('click', () => { const s = document.getElementById('landingSignup'); if(s) s.click(); }));
