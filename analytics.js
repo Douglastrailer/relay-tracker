@@ -39,7 +39,13 @@ async function refreshAnalyticsV2(){
   anLocationPicker();
   const args = { p_from: rg.from.toISOString(), p_to: rg.to.toISOString() };
   if(anState.loc) args.p_location = anState.loc;   // 'all', or a location id; none = the location being worked in
-  const { data, error } = await sb.rpc('shop_analytics', args);
+  // the period just before, of the same length, is asked for at the same time (for the comparison)
+  const span = rg.to.getTime() - rg.from.getTime();
+  const prevArgs = Object.assign({}, args, { p_from: new Date(rg.from.getTime() - span).toISOString(), p_to: rg.from.toISOString() });
+  const [cur, prevRes] = await Promise.all([sb.rpc('shop_analytics', args), sb.rpc('shop_analytics', prevArgs)]);
+  const { data, error } = cur;
+  anState.prev = prevRes && !prevRes.error && prevRes.data ? prevRes.data : null;
+  anState.prevFrom = new Date(rg.from.getTime() - span); anState.prevTo = new Date(rg.from.getTime() - 1);
   if(error || !data || !data.summary){ out.innerHTML = `<p class="form-error">The report couldn't be worked out${error ? ': ' + esc(error.message) : '.'}</p>`; return; }
   anState.data = data; anState.from = rg.from; anState.to = rg.to;
   renderAnalyticsV2();
@@ -50,23 +56,29 @@ function renderAnalyticsV2(){
   const d = anState.data; if(!d || !d.summary) return;   // nothing loaded yet
   const s = d.summary;
   const marginPct = Number(s.revenue) > 0 ? Math.round(Number(s.gross_margin) / Number(s.revenue) * 100) : null;
-  const tile = (label, value, sub, cls) => `<div class="an-tile${cls ? ' ' + cls : ''}"><span>${esc(label)}</span><b>${value}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
+  const ps = (anState.prev && anState.prev.summary) || null;
+  // the change against the previous period; for times, lower is better
+  const delta = (key, lowerIsBetter) => anDeltaHtml(s[key], ps ? ps[key] : null, lowerIsBetter);
+  const tile = (label, value, sub, cls, d) => `<div class="an-tile${cls ? ' ' + cls : ''}"><span>${esc(label)}</span><b>${value}</b>${sub ? `<em>${sub}</em>` : ''}${d || ''}</div>`;
   const toLabel = new Date(anState.to.getTime() - 1);
   document.getElementById('anOut').innerHTML = `
     <p class="meta an-period">${anState.from.toLocaleDateString()} – ${toLabel.toLocaleDateString()}${d.location && (d.location.all || d.location.name) ? ' · <span>' + esc(d.location.all ? 'All locations' : d.location.name) + '</span>' : ''}</p>
     ${anByLocationHtml(d.by_location)}
     <div class="an-tiles">
-      ${tile('Revenue billed', anMoney0(s.revenue), relayFmt(s.invoices === 1 ? '{n} invoice' : '{n} invoices', { n: s.invoices }))}
-      ${tile('Collected', anMoney0(s.collected), 'payments received in this period')}
-      ${tile('Average work order', anMoney(s.avg_ro), '')}
-      ${tile('Gross margin', anMoney0(s.gross_margin), marginPct == null ? 'after parts cost' : relayFmt('{p}% after {m} parts cost', { p: marginPct, m: anMoney0(s.parts_cost) }))}
-      ${tile('Jobs completed', s.jobs_completed, relayFmt('{n} opened', { n: s.jobs_opened }))}
-      ${tile('Response time', anMinutes(s.avg_response_minutes), 'request to work started')}
-      ${tile('Roadside arrival', anMinutes(s.avg_roadside_minutes), 'request to on site')}
-      ${tile('Repair time', anHours(s.avg_repair_hours), 'opened to completed')}
-      ${tile('Labor hours', anHours(s.labor_hours), 'from mechanics\' timers')}
+      ${tile('Revenue billed', anMoney0(s.revenue), relayFmt(s.invoices === 1 ? '{n} invoice' : '{n} invoices', { n: s.invoices }), '', delta('revenue', false))}
+      ${tile('Collected', anMoney0(s.collected), 'payments received in this period', '', delta('collected', false))}
+      ${tile('Average work order', anMoney(s.avg_ro), '', '', delta('avg_ro', false))}
+      ${tile('Gross margin', anMoney0(s.gross_margin), marginPct == null ? 'after parts cost' : relayFmt('{p}% after {m} parts cost', { p: marginPct, m: anMoney0(s.parts_cost) }), '', delta('gross_margin', false))}
+      ${tile('Jobs completed', s.jobs_completed, relayFmt('{n} opened', { n: s.jobs_opened }), '', delta('jobs_completed', false))}
+      ${tile('Response time', anMinutes(s.avg_response_minutes), 'request to work started', '', delta('avg_response_minutes', true))}
+      ${tile('Roadside arrival', anMinutes(s.avg_roadside_minutes), 'request to on site', '', delta('avg_roadside_minutes', true))}
+      ${tile('Repair time', anHours(s.avg_repair_hours), 'opened to completed', '', delta('avg_repair_hours', true))}
+      ${tile('Labor hours', anHours(s.labor_hours), 'from mechanics\' timers', '', delta('labor_hours', false))}
       ${tile('Unpaid invoices', anMoney0(s.unpaid_total), `${esc(relayFmt('{n} open', { n: s.unpaid_count }))}${Number(s.overdue_total) ? ` · <b class="neg">${esc(relayFmt('{m} overdue', { m: anMoney0(s.overdue_total) }))}</b>` : ''}`, Number(s.overdue_total) ? 'warn' : '')}
     </div>
+    ${anState.prev ? `<p class="meta an-vs">${esc(relayFmt('Compared with {from} – {to}', { from: anState.prevFrom.toLocaleDateString(relayLocale()), to: anState.prevTo.toLocaleDateString(relayLocale()) }))}</p>` : ''}
+    <div class="an-csv-row"><button type="button" class="text-btn" data-csv="summary">${esc(relayFmt('Download these figures (CSV)'))}</button></div>
+    ${anSplitHtml(d.split, anState.prev && anState.prev.split)}
     <section class="ro-sec"><h4>${esc(relayFmt('Revenue by {b}', { b: relayFmt(d.bucket) }))}</h4>${trendChart(d.trend, d.bucket)}</section>
     ${anTable('Technicians', 'tech', ['Mechanic','Jobs done','Roadside / in-shop','Labor','Drive','Avg completion','Revenue'],
       d.technicians.map(t => [esc(t.name) + (t.active ? '' : ' <span class="meta">(inactive)</span>'), t.jobs_completed, `${t.roadside} / ${t.inshop}`, anHours(t.labor_hours), anHours(t.drive_hours), anHours(t.avg_completion_hours), anMoney(t.revenue)]),
@@ -112,10 +124,18 @@ function downloadAnCsv(key){
     cust: [['Customer','Revenue','Invoices','Avg ticket','Jobs opened','Repeat','Owes now'], d.customers.map(c => [c.name, c.revenue, c.invoices, c.avg_ticket, c.jobs, c.repeat ? 'yes' : 'no', c.outstanding])],
     unit: [['Unit','Type','Customer','Repair cost','Repairs opened','Downtime hours','Last service'], d.units.map(u => [u.unit_number, u.unit_type, u.customer, u.cost, u.repairs, u.downtime_hours, u.last_service ? new Date(u.last_service).toLocaleDateString() : ''])]
   };
+  const pv = (anState.prev && anState.prev.summary) || {}, sp = d.split || {}, ppv = (anState.prev && anState.prev.split) || {};
+  const ch = (a, b) => (b == null || Number(b) === 0 || a == null) ? '' : Math.round((Number(a) - Number(b)) / Math.abs(Number(b)) * 1000) / 10 + '%';
+  const figs = [['Revenue billed', 'revenue'], ['Invoices', 'invoices'], ['Collected', 'collected'], ['Average work order', 'avg_ro'], ['Gross margin', 'gross_margin'], ['Parts cost', 'parts_cost'],
+    ['Jobs opened', 'jobs_opened'], ['Jobs completed', 'jobs_completed'], ['Response time (minutes)', 'avg_response_minutes'], ['Roadside arrival (minutes)', 'avg_roadside_minutes'],
+    ['Repair time (hours)', 'avg_repair_hours'], ['Labor hours', 'labor_hours'], ['Unpaid invoices', 'unpaid_total'], ['Overdue', 'overdue_total']];
+  sets.summary = [['Figure', 'This period', 'Previous period', 'Change'], figs.map(([l, k]) => [l, d.summary[k], pv[k], ch(d.summary[k], pv[k])])];
+  const parts = [['Labor', 'labor'], ['Labor hours billed', 'labor_hours'], ['Parts', 'parts'], ['Parts cost', 'parts_cost'], ['Parts margin', 'parts_margin'], ['Fees and mileage', 'fees'], ['Other', 'other'], ['Tax and adjustments', 'tax_and_adjustments']];
+  sets.split = [['Part of revenue', 'This period', 'Previous period', 'Change'], parts.map(([l, k]) => [l, sp[k], ppv[k], ch(sp[k], ppv[k])])];
   const [head, rows] = sets[key];
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([[head, ...rows].map(r => r.map(q).join(',')).join('\r\n')], { type:'text/csv' }));
-  a.download = `relay-${key === 'tech' ? 'technicians' : key === 'cust' ? 'customers' : 'units'}-${anState.from.toISOString().slice(0, 10)}.csv`;
+  a.download = `relay-${({ tech: 'technicians', cust: 'customers', unit: 'units', summary: 'figures', split: 'revenue-split' })[key]}-${anState.from.toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a); a.click(); a.remove();
 }
 
@@ -154,4 +174,33 @@ function anByLocationHtml(rows){
     <thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead>
     <tbody>${rows.map(r => `<tr><td><b>${esc(r.name)}</b></td><td>${anMoney0(r.revenue)}</td><td>${Number(r.invoices || 0)}</td><td>${anMoney0(r.collected)}</td><td>${Number(r.jobs_opened || 0)}</td><td>${Number(r.jobs_completed || 0)}</td><td>${anMoney0(r.unpaid_total)}</td><td class="${Number(r.overdue_total) > 0 ? 'an-over' : ''}">${anMoney0(r.overdue_total)}</td></tr>`).join('')}</tbody>
   </table></div></div>`;
+}
+
+
+// ---- comparison with the previous period ----
+function anDeltaHtml(cur, prev, lowerIsBetter, neutral){
+  if(cur == null || prev == null || Number(prev) === 0) return '';
+  const pct = (Number(cur) - Number(prev)) / Math.abs(Number(prev)) * 100;
+  if(!isFinite(pct)) return '';
+  const r = Math.round(pct);
+  if(r === 0) return `<small class="an-delta">${esc(relayFmt('Same as previous period'))}</small>`;
+  const better = lowerIsBetter ? r < 0 : r > 0;
+  return `<small class="an-delta${neutral ? '' : better ? ' is-up' : ' is-down'}">${r > 0 ? '▲' : '▼'} ${esc(relayFmt('{p}% vs previous period', { p: Math.abs(r) }))}</small>`;
+}
+
+// ---- what revenue is made of ----
+function anSplitHtml(sp, prev){
+  if(!sp) return '';
+  const total = ['labor', 'parts', 'fees', 'other', 'tax_and_adjustments'].reduce((a, k) => a + Math.max(0, Number(sp[k] || 0)), 0);
+  if(!total) return '';
+  const pct = v => Math.max(0, Number(v || 0)) / total * 100;
+  const rows = [['labor', 'Labor'], ['parts', 'Parts'], ['fees', 'Fees and mileage'], ['other', 'Other'], ['tax_and_adjustments', 'Tax and adjustments']];
+  const rate = Number(sp.labor_hours) ? Number(sp.labor) / Number(sp.labor_hours) : null;
+  const pm = Number(sp.parts) ? Math.round(Number(sp.parts_margin) / Number(sp.parts) * 100) : null;
+  const extra = { labor: rate != null ? relayFmt('{h} h billed · {r} per hour', { h: Math.round(Number(sp.labor_hours) * 10) / 10, r: anMoney(rate) }) : '',
+                  parts: relayFmt('cost {c} · margin {m}', { c: anMoney0(sp.parts_cost), m: anMoney0(sp.parts_margin) }) + (pm != null ? ' (' + pm + '%)' : '') };
+  return `<section class="ro-sec an-split"><div class="an-split-head"><h4>${esc(relayFmt('What revenue is made of'))}</h4><button type="button" class="text-btn" data-csv="split">${esc(relayFmt('Download CSV'))}</button></div>
+    <div class="an-split-bar" role="img" aria-label="${esc(rows.map(([k, l]) => relayFmt(l) + ' ' + Math.round(pct(sp[k])) + '%').join(', '))}">${rows.map(([k]) => pct(sp[k]) > 0 ? `<span class="an-seg an-seg-${k}" style="width:${pct(sp[k]).toFixed(2)}%"></span>` : '').join('')}</div>
+    <div class="an-split-rows">${rows.map(([k, l]) => `<div class="an-split-row"><i class="an-dot an-seg-${k}" aria-hidden="true"></i><span class="an-split-label">${esc(relayFmt(l))}</span>
+      <b>${anMoney0(sp[k])}</b><span class="meta">${Math.round(pct(sp[k]))}%${extra[k] ? ' · ' + esc(extra[k]) : ''}</span>${anDeltaHtml(sp[k], prev ? prev[k] : null, false, k === 'tax_and_adjustments')}</div>`).join('')}</div></section>`;
 }

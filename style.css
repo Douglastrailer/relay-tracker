@@ -2793,3 +2793,19 @@ body.nav-collapsed .nav-fly-wrap.fly-show .nav-fly{ display:flex; }
 @media (max-width:640px){ .appt-row{ grid-template-columns:1fr 1fr; } .sch-bar h3{ order:5; flex-basis:100%; } }
 .sch-head.is-today b{ display:flex; margin:2px auto 0; }
 #schNew{ padding:8px 18px; border-radius:var(--r-md); border:1px solid var(--accent); background:var(--accent); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
+
+/* Reports: comparison with the previous period, and what revenue is made of */
+.an-delta{ display:block; margin-top:6px; font-size:.78rem; font-weight:700; color:var(--ink-soft); }
+.an-delta.is-up{ color:#2f8f5b; }
+.an-delta.is-down{ color:#B3261E; }
+.an-vs{ margin:-4px 0 6px; }
+.an-csv-row{ margin:0 0 10px; }
+.an-split-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.an-split-bar{ display:flex; height:16px; border-radius:999px; overflow:hidden; background:var(--line); margin:10px 0 14px; }
+.an-seg{ display:block; height:100%; }
+.an-seg-labor{ background:#0D5C6E; } .an-seg-parts{ background:#3E9AAE; } .an-seg-fees{ background:#E8B931; } .an-seg-other{ background:#8A93A0; } .an-seg-tax_and_adjustments{ background:#C9D3D8; }
+.an-split-rows{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px 18px; }
+.an-split-row{ display:grid; grid-template-columns:14px 1fr auto; column-gap:8px; row-gap:2px; align-items:center; padding:10px 12px; border:1px solid var(--line); border-radius:var(--r-md); background:var(--panel); }
+.an-split-row .meta, .an-split-row .an-delta{ grid-column:2 / -1; margin:0; }
+.an-dot{ width:12px; height:12px; border-radius:3px; display:inline-block; }
+.an-split-label{ font-weight:600; }

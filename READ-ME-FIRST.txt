@@ -1,9 +1,10 @@
-RelayFleet - live updates (batch 1 of 2)
+RelayFleet - Reports: revenue split, comparison, CSV (batch 2 of 2)
 
 ORDER (same day):
- 1. Run migration 0050_live_updates.sql in the Supabase SQL Editor (needs 0049).
- 2. Upload ALL website files to GitHub and commit (new file: live.js). Refresh with Cmd+Shift+R.
+ 1. Run migration 0051_reports_split.sql in the Supabase SQL Editor (needs 0050).
+ 2. Upload ALL website files to GitHub and commit. Refresh with Cmd+Shift+R.
 
-To check live updates are switched on, run in the SQL Editor:
-   select tablename from pg_publication_tables where pubname = \x27supabase_realtime\x27 order by 1;
-You should see: appointments, invoices, job_comments, jobs, locations, payments, shop_notifications, work_requests.
+What changed in Reports:
+- Every figure shows its change against the previous period of the same length (green = better; for times, lower is better).
+- "What revenue is made of": labor (hours billed, effective rate), parts (cost, margin), fees and mileage, other, tax and adjustments.
+- Download CSV: the figures (this period, previous period, change) and the revenue split.
