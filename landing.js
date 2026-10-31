@@ -128,3 +128,38 @@
     setTimeout(() => { const n = document.getElementById('rfName'); if(n) n.focus({ preventScroll: true }); }, 450);
   }));
 })();
+
+// ---- the screen showcase: Board, Work orders, Work order, Schedule, Reports ----
+// Moves on every few seconds (a bar fills along the active tab); pauses on hover or focus, off
+// screen and when the tab is hidden. Tabs and arrow keys jump straight to a screen.
+(function(){
+  const box = document.getElementById('nxScreens'); if(!box) return;
+  const screens = [...box.querySelectorAll('.nx-screen')], tabs = [...document.querySelectorAll('.nx-tab')];
+  const area = box.closest('.nx-stage'), DWELL = 4200;
+  const reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  let i = 0, timer = null, held = false, visible = true;
+  area.style.setProperty('--nx-dwell', DWELL + 'ms');
+  function show(n, focus){
+    i = (n + screens.length) % screens.length;
+    screens.forEach((s, k) => { s.classList.toggle('is-on', k === i); s.classList.toggle('is-past', k < i); });
+    tabs.forEach((t, k) => { const on = k === i; t.classList.toggle('is-on', on); t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; t.classList.remove('is-timing'); if(on && focus) t.focus(); });
+    plan();
+  }
+  function plan(){
+    clearTimeout(timer); const on = tabs[i];
+    if(reduce || held || !visible || document.hidden){ if(on) on.classList.remove('is-timing'); return; }
+    if(on){ on.classList.remove('is-timing'); void on.offsetWidth; on.classList.add('is-timing'); }
+    timer = setTimeout(() => show(i + 1), DWELL);
+  }
+  tabs.forEach((t, k) => {
+    t.addEventListener('click', () => show(k));
+    t.addEventListener('keydown', e => { const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if(!d) return; e.preventDefault(); show(i + d, true); });
+  });
+  [area].forEach(el => {
+    el.addEventListener('mouseenter', () => { held = true; plan(); }); el.addEventListener('mouseleave', () => { held = false; plan(); });
+    el.addEventListener('focusin', () => { held = true; plan(); }); el.addEventListener('focusout', () => { held = false; plan(); });
+  });
+  document.addEventListener('visibilitychange', plan);
+  if('IntersectionObserver' in window) new IntersectionObserver(es => { visible = es[0].isIntersecting; plan(); }).observe(box);
+  show(0);
+})();

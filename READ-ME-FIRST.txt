@@ -1,7 +1,4 @@
-RelayFleet - landing page: stronger motion, smooth mouse wheel, images and fonts fixed
+RelayFleet - landing page: full width, five real screens
 
-Upload ALL files to GitHub and commit. There are NO folders this time:
-the 3 images (relay-*.webp) and 3 fonts (bricolage-*.woff2) sit next to index.html.
-Then refresh relayfleet.us with Cmd+Shift+R (Ctrl+Shift+R on Windows).
-
-Optional tidy-up on GitHub: the img/ and fonts/ folders from the previous upload are no longer used.
+Upload ALL files to GitHub and commit (no folders). New files: relay-board.webp, relay-workorders.webp, relay-workorder.webp.
+Then refresh relayfleet.us with Ctrl+Shift+R (Cmd+Shift+R on a Mac).
