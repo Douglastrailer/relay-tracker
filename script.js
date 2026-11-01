@@ -2082,10 +2082,15 @@ function setUpRequestLink(){
 }
 
 async function fetchPendingWorkRequests(){
-  const { data, error } = await sb.from('work_requests')
-    .select('id, customer_name, company_name, customer_phone, customer_email, vehicle, issue_description, job_type, breakdown_lat, breakdown_lng, breakdown_address, eta_to_shop, photo_paths, created_at')
+  // phone requests (migration 0053) carry their source, language, deadline and held slot; before 0053 the old fields still load
+  const voiceCols = ', source, language, urgency, confirm_by, held_appointment_id, held:appointments!work_requests_held_appointment_id_fkey(starts_label, status)';
+  let { data, error } = await sb.from('work_requests')
+    .select('id, customer_name, company_name, customer_phone, customer_email, vehicle, issue_description, job_type, breakdown_lat, breakdown_lng, breakdown_address, eta_to_shop, photo_paths, created_at' + voiceCols)
     .eq('org_id', session.orgId).eq('status', 'pending')
     .order('created_at', { ascending:false });
+  if(error && /source|held|language|relationship|column/i.test(error.message || '')){
+    ({ data, error } = await sb.from('work_requests').select('id, customer_name, company_name, customer_phone, customer_email, vehicle, issue_description, job_type, breakdown_lat, breakdown_lng, breakdown_address, eta_to_shop, photo_paths, created_at').eq('org_id', session.orgId).eq('status', 'pending').order('created_at', { ascending:false }));
+  }
   if(error){ console.error('fetchPendingWorkRequests', error); return []; }
   return data || [];
 }
@@ -2094,9 +2099,16 @@ function workRequestCardHtml(req){
   const isInshop = req.job_type === 'inshop';
   const contact = [req.customer_phone, req.customer_email].filter(Boolean).join(' · ');
   const nameLine = req.company_name ? `${esc(req.customer_name)} — ${esc(req.company_name)}` : esc(req.customer_name);
-  const typeDetail = isInshop
-    ? `<div class="meta" style="margin-top:4px;">Bringing it in: ${esc(req.eta_to_shop)}</div>`
-    : `<div class="meta" style="margin-top:4px;">Location: ${esc(req.breakdown_address)}</div>`;
+  const isVoice = req.source === 'voice';
+  const held = isVoice && req.held && req.held.status === 'held' ? req.held : null;
+  const late = isVoice && req.confirm_by && new Date(req.confirm_by) < new Date();
+  const typeDetail = isVoice
+    ? `<div class="voice-req"><span class="voice-tag">${esc(relayFmt('AI phone call'))}${req.language === 'ru' ? ' · ' + esc(relayFmt('Russian')) : ''}${req.urgency === 'urgent' ? ' · <b>' + esc(relayFmt('Urgent')) + '</b>' : ''}</span>
+        <span class="meta">${held ? esc(relayFmt('Held: {t}', { t: held.starts_label })) : esc(relayFmt('No time held'))}</span>
+        ${req.confirm_by ? `<span class="meta${late ? ' voice-late' : ''}">${esc(relayFmt('Confirm by {t}', { t: new Date(req.confirm_by).toLocaleString(relayLocale(), { weekday: 'short', hour: 'numeric', minute: '2-digit' }) }))}</span>` : ''}</div>`
+    : isInshop
+      ? `<div class="meta" style="margin-top:4px;">Bringing it in: ${esc(req.eta_to_shop)}</div>`
+      : `<div class="meta" style="margin-top:4px;">Location: ${esc(req.breakdown_address)}</div>`;
   return `<div class="job-card">
     <div class="job-card-top">
       <div><span class="doc-kind-tag">${isInshop ? 'IN-SHOP' : 'MOBILE'}</span><b>${nameLine}</b><div class="meta">${esc(req.vehicle)} · ${new Date(req.created_at).toLocaleString()}</div></div>
@@ -2106,6 +2118,7 @@ function workRequestCardHtml(req){
     <div style="margin-top:8px; font-size:0.85rem;">${esc(req.issue_description)}</div>
     ${(req.photo_paths || []).length ? `<div class="wreq-photos" data-paths="${esc(JSON.stringify(req.photo_paths))}"><span class="meta">Loading photos…</span></div>` : ''}
     <div style="margin-top:10px; display:flex; gap:8px;">
+      ${held ? `<button class="text-btn wreq-confirm-btn" data-id="${req.id}">${esc(relayFmt('Confirm booking'))}</button><button class="text-btn wreq-release-btn" data-id="${req.id}">${esc(relayFmt('Release hold'))}</button>` : ''}
       <button class="text-btn wreq-accept-btn" data-id="${req.id}">Accept</button>
       <button class="text-btn wreq-decline-btn" data-id="${req.id}">Decline</button>
     </div>
@@ -2132,6 +2145,17 @@ async function refreshWorkRequests(){
   // Declining needs a reason: the customer is emailed it. See openDeclineRequest (safety.js).
   list.querySelectorAll('.wreq-decline-btn').forEach(btn=>{
     btn.onclick = ()=> { if(typeof openDeclineRequest === 'function') openDeclineRequest(Number(btn.dataset.id), refreshWorkRequests); };
+  });
+  // phone requests: confirm the held time as a booking, or let it go
+  list.querySelectorAll('.wreq-confirm-btn').forEach(btn => btn.onclick = async () => {
+    btn.disabled = true; const { error: e } = await sb.rpc('confirm_voice_booking', { p_request: Number(btn.dataset.id) });
+    if(e){ btn.disabled = false; relayFail(e, 'Could not confirm the booking'); return; }
+    recordsToast(relayFmt('Booking confirmed. It is on the Schedule.')); refreshWorkRequests();
+  });
+  list.querySelectorAll('.wreq-release-btn').forEach(btn => btn.onclick = async () => {
+    btn.disabled = true; const { error: e } = await sb.rpc('release_voice_hold', { p_request: Number(btn.dataset.id) });
+    if(e){ btn.disabled = false; relayFail(e, 'Could not release the hold'); return; }
+    recordsToast(relayFmt('Hold released')); refreshWorkRequests();
   });
   list.querySelectorAll('.wreq-accept-btn').forEach(btn=>{
     btn.onclick = ()=>{

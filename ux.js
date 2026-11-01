@@ -109,8 +109,8 @@ function woDraftRestore(){
 // Settings as tabs: one section at a time instead of one long page.
 // The sections themselves are drawn by other files; this only groups them and shows one.
 // ============================================================
-const SETTINGS_TABS = [['company', 'Company & rates'], ['plan', 'Plan & billing'], ['locations', 'Locations'], ['updates', 'Customer updates'], ['costs', 'Technician costs'], ['bays', 'Shop bays']];
-const SETTINGS_GROUP = { planBox:'plan', exportBox:'plan', mfaBox:'plan', locSettings:'locations', notifySettings:'updates', techCostBox:'costs', baySettings:'bays' };
+const SETTINGS_TABS = [['company', 'Company & rates'], ['plan', 'Plan & billing'], ['locations', 'Locations'], ['updates', 'Customer updates'], ['costs', 'Technician costs'], ['bays', 'Shop bays'], ['phone', 'AI phone line']];
+const SETTINGS_GROUP = { planBox:'plan', exportBox:'plan', mfaBox:'plan', locSettings:'locations', notifySettings:'updates', techCostBox:'costs', baySettings:'bays', voiceSettings:'phone' };
 function uxSettingsTabs(){
   const panel = document.getElementById('shop-billing'); if(!panel) return;
   const kids = [...panel.children].filter(c => !c.classList.contains('settings-tabs'));

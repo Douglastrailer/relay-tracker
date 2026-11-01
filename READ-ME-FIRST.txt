@@ -1,4 +1,8 @@
-RelayFleet - landing page: full width, five real screens
+RelayFleet - AI phone line
 
-Upload ALL files to GitHub and commit (no folders). New files: relay-board.webp, relay-workorders.webp, relay-workorder.webp.
-Then refresh relayfleet.us with Ctrl+Shift+R (Cmd+Shift+R on a Mac).
+ORDER:
+ 1. Supabase SQL Editor: run migration 0053_voice_intake.sql (needs 0052).
+ 2. Supabase Edge Functions: create a function named voice-intake, paste 7-voice-intake.ts, Deploy.
+    In its settings turn OFF "Verify JWT" (the voice provider sends the line secret instead).
+ 3. Upload ALL website files to GitHub and commit (new file: phoneline.js). Refresh with Ctrl+Shift+R.
+ 4. In Relay: Settings > AI phone line > set up the line. Copy the server address, line id and secret into your voice provider.
