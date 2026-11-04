@@ -14,7 +14,7 @@
 
 const OFFLINE_KEY = 'relay.queue.v1';
 const OFFLINE_MAX = 200;                      // a sane limit for one shift
-const OFFLINE_SENDABLE = { job_action: 1, job_note: 1, use_part: 1 };
+const OFFLINE_SENDABLE = { job_action: 1, job_note: 1, use_part: 1, inspection_item: 1, inspection_odometer: 1 };
 let offlineSending = false, offlineQueueCache = null;
 
 function offlineQueue(){
@@ -67,6 +67,9 @@ async function offlineSend(item){
   if(item.kind === 'job_action') return await sb.rpc('job_action', { p_job: a.job, p_action: a.action, p_at: item.at });
   if(item.kind === 'job_note') return await sb.from('job_notes').insert([{ job_id: a.job, org_id: a.org_id, body: a.body, created_by: a.created_by, created_at: item.at }]);
   if(item.kind === 'use_part') return await sb.rpc('use_part', { p_job: a.job, p_item: a.item, p_location: a.location, p_qty: a.qty });
+  // an inspection check: the whole current state of one item (result, notes, recommend), so the last one sent wins
+  if(item.kind === 'inspection_item') return await sb.from('inspection_items').update({ result: a.result, notes: a.notes, recommend: a.recommend }).eq('id', a.id);
+  if(item.kind === 'inspection_odometer') return await sb.rpc('set_inspection_odometer', { p_inspection: a.inspection, p_odometer: a.odometer });
   return { error: { message: 'Unknown queued action' } };
 }
 

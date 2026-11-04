@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Inspection report · RelayFleet</title>
+<style>
+  :root{ --ink:#1B2430; --soft:#566172; --line:#E1DDD3; --bg:#F4F1EA; --accent:#0D5C6E; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif; }
+  main{ max-width:960px; margin:0 auto; padding:12px; }
+  .bar{ display:flex; justify-content:flex-end; gap:8px; margin:4px 0 10px; }
+  .bar button{ font:inherit; font-weight:700; min-height:44px; padding:10px 16px; border-radius:10px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; }
+  .msg{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:24px; text-align:center; color:var(--soft); }
+  .paper{ background:#fff; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  footer{ text-align:center; color:var(--soft); font-size:13px; padding:10px 0 30px; }
+  @media print{ body{ background:#fff; } main{ padding:0; } .bar, footer{ display:none !important; } .paper{ box-shadow:none; border-radius:0; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="bar" id="bar" hidden><button type="button" id="printBtn">Print / Save as PDF</button></div>
+  <div class="paper" id="app"><div class="msg">Loading the inspection report…</div></div>
+</main>
+<footer>Inspection report by RelayFleet</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="report-render.js"></script>
+<script>
+(function(){
+  const SUPABASE_URL = 'https://okcogufppsubntrchfuf.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_Z8qgdFjVetqSOfmZKhxkpQ_XX2tYHDp';
+  const app = document.getElementById('app');
+  const token = new URLSearchParams(location.search).get('t') || '';
+  const msg = (text) => { app.innerHTML = '<div class="msg">' + text + '</div>'; };
+
+  if(!/^[0-9a-f-]{36}$/i.test(token)){ msg('This report link is not valid.'); return; }
+  RelayReport.ensureCss();
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ persistSession:false } });
+
+  sb.rpc('get_inspection_report', { p_token: token }).then(async ({ data, error }) => {
+    if(error){ msg('This report could not be loaded. Please try again later.'); return; }
+    if(!data){ msg('This report is no longer available. Ask the shop for a new link.'); return; }
+    if(data.logo_path){
+      data.logo_url = SUPABASE_URL + '/storage/v1/object/public/shop-logos/' + data.logo_path;
+    }
+    app.innerHTML = RelayReport.build(data);
+    document.title = (data.unit ? 'Unit ' + data.unit + ' · ' : '') + 'Inspection report · RelayFleet';
+    document.getElementById('bar').hidden = false;
+  }).catch(() => msg('This report could not be loaded. Please check your connection and try again.'));
+
+  document.getElementById('printBtn').onclick = () => window.print();
+})();
+</script>
+</body>
+</html>
