@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=df2c5e811e"/>
+<link rel="stylesheet" href="style.css?v=8c36322dad"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -869,14 +869,20 @@
     <div class="dash-panel hidden" id="admin-accounts">
       <div class="section">
         <div class="section-head"><h2>Current users</h2></div>
-        <div class="field" style="max-width:280px; margin-bottom:18px;">
-          <label for="accountsRoleFilter">Showing</label>
-          <select id="accountsRoleFilter">
-            <option value="mechanic">Mechanics</option>
-            <option value="fleet">Fleet managers</option>
-            <option value="shop">Shop owners</option>
-            <option value="admin">Admins</option>
-          </select>
+        <div class="acc-filters">
+          <div class="field">
+            <label for="accountsRoleFilter">Showing</label>
+            <select id="accountsRoleFilter">
+              <option value="mechanic">Mechanics</option>
+              <option value="fleet">Fleet managers</option>
+              <option value="shop">Shop owners</option>
+              <option value="admin">Admins</option>
+            </select>
+          </div>
+          <div class="field acc-search">
+            <label for="accountsSearch">Search</label>
+            <input type="search" id="accountsSearch" placeholder="Name, company or email" autocomplete="off">
+          </div>
         </div>
         <div id="adminAccounts"></div>
       </div>
@@ -906,6 +912,15 @@
       <div class="section">
         <div class="section-head"><h2>Recent errors</h2></div>
         <p style="font-size:0.82rem; color:var(--ink-soft); margin-bottom:16px;">Anything that breaks in a customer's browser shows up here automatically.</p>
+        <div class="acc-filters">
+          <div class="field">
+            <label for="errorsRange">Showing</label>
+            <select id="errorsRange">
+              <option value="day">Last 24 hours</option>
+              <option value="all">All recent</option>
+            </select>
+          </div>
+        </div>
         <div id="adminErrors"></div>
       </div>
     </div>
@@ -961,7 +976,8 @@
 <script src="schedule.js?v=434487356b" defer></script>
 <script src="live.js?v=d14d2a574d" defer></script>
 <script src="demo-admin.js?v=acf0682d2b" defer></script>
-<script src="phoneline.js?v=3d97184153" defer></script>
+<script src="phoneline.js?v=954649e519" defer></script>
+<script src="voice-admin.js?v=ee0a687a9e" defer></script>
 <script src="setup-gate.js?v=5769da0b03" defer></script>
 <script src="track-share.js?v=e9c22b7dcb" defer></script>
 <script src="wo-side.js?v=f349490875" defer></script>
@@ -970,10 +986,9 @@
 <script src="header.js?v=93f54bf858" defer></script>
 <script src="nav-subs.js?v=312012477f" defer></script>
 <script src="route.js?v=0442405b9b" defer></script>
-<script src="script.js?v=c0f8900287" defer></script>
+<script src="script.js?v=420abe1de2" defer></script>
 <script src="ro.js?v=1554ccd1f5" defer></script>
-<script src="report-render.js?v=0a5f89415f" defer></script>
-<script src="insp.js?v=42be78746e" defer></script>
+<script src="insp.js?v=0b443cc84f" defer></script>
 <script src="est.js?v=a4b9006a58" defer></script>
 <script src="tech.js?v=984f0cff6b" defer></script>
 <script src="fleet.js?v=a086c7040d" defer></script>
@@ -1025,7 +1040,7 @@
 <script src="subs.js?v=4fe8f6c1d5" defer></script>
 <script src="nav.js?v=23acef8e27" defer></script>
 <script src="safety.js?v=939c988e6d" defer></script>
-<script src="offline.js?v=0562bdffca" defer></script>
+<script src="offline.js?v=59b2632a55" defer></script>
 <script src="account.js?v=3ea11cb6c1" defer></script>
 <script src="completed.js?v=8576c5a1b9" defer></script>
 <script src="docs.js?v=2577b823e7" defer></script>
