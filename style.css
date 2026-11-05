@@ -554,7 +554,7 @@ main{ padding-top:36px; }
 
 /* ===== error log ===== */
 .error-card{
-  background:var(--panel); border:1px solid var(--line); border-radius:10px;
+  background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--live); border-radius:10px;
   padding:14px 16px; margin-bottom:10px;
 }
 .error-card .err-msg{ font-family:var(--font-mono); font-size:0.82rem; color:var(--ink); word-break:break-word; }
@@ -3117,53 +3117,16 @@ main:has(> #homeView.nx:not(.hidden)){ max-width:none; padding:0; margin:0; }
 .va-shop, .va-usage{ display:flex; flex-direction:column; gap:2px; min-width:0; } .va-num input{ width:80px; min-height:36px; } .va-allow{ display:flex; gap:6px; align-items:center; }
 @media (max-width:900px){ .voice-admin-row{ grid-template-columns:1fr 1fr; } .voice-usage{ grid-template-columns:1fr; } }
 
-/* ---- Admin: filters, searchable accounts, clickable overview counts ---- */
-.acc-filters{ display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; margin-bottom:18px; }
-.acc-filters .field{ margin:0; min-width:200px; flex:0 1 240px; }
-.acc-filters .acc-search{ flex:1 1 280px; max-width:420px; }
-.stat-link{ cursor:pointer; text-align:left; font:inherit; color:inherit; width:100%; transition:border-color 0.15s ease; }
-.stat-link:hover{ border-color:var(--accent); }
-.stat-link:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
-
-/* Placeholder text meets the 4.5:1 contrast floor on light panels (the search boxes use it too). */
-input::placeholder, textarea::placeholder{ color:var(--ink-faint); opacity:1; }
-
-/* ---- Admin panel (Operate): tables, one toolbar pattern, plain states ---- */
-.adm-page{ display:flex; flex-direction:column; gap:20px; max-width:1180px; }
-.adm-head h2{ font-family:var(--font-display); font-size:1.25rem; font-weight:800; color:var(--ink); margin:0; line-height:1.25; letter-spacing:-0.01em; }
-.adm-head-gap{ margin-top:12px; }
-.adm-sub{ font-size:0.84rem; color:var(--ink-soft); margin:4px 0 0; line-height:1.5; max-width:70ch; }
-.adm-toolbar{ display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; }
-.adm-toolbar .field{ margin:0; flex:0 1 220px; min-width:180px; }
-.adm-toolbar .adm-search{ flex:1 1 280px; max-width:420px; }
-.adm-toolbar .adm-count{ margin:0 0 10px auto; font-size:0.8rem; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
-.adm-table-wrap{ background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
-.adm-table{ width:100%; border-collapse:collapse; font-size:0.88rem; color:var(--ink); }
-.adm-table th, .adm-table td{ padding:11px 14px; text-align:left; vertical-align:middle; border-bottom:1px solid var(--line); }
-.adm-table tbody tr:last-child th, .adm-table tbody tr:last-child td{ border-bottom:none; }
-.adm-table thead th{ font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-soft); background:var(--panel-2); border-bottom:1px solid var(--line); white-space:nowrap; }
-.adm-table tbody th{ font-weight:600; }
-.adm-table tbody tr:hover{ background:var(--panel-2); }
-.adm-table .num{ text-align:right; font-variant-numeric:tabular-nums; }
-.adm-table .adm-act{ text-align:right; width:1%; white-space:nowrap; }
-.adm-table .adm-nowrap{ white-space:nowrap; }
-.adm-empty{ text-align:center; color:var(--ink-soft); padding:28px 14px !important; }
-.adm-muted{ color:var(--ink-soft); }
-.adm-small{ display:block; font-size:0.76rem; margin-top:2px; }
-.adm-link{ background:none; border:1px solid var(--line); color:var(--accent); font:inherit; font-weight:600; font-size:0.82rem; padding:6px 12px; border-radius:8px; cursor:pointer; }
-.adm-link:hover{ border-color:var(--accent); background:var(--panel-2); }
-.adm-link:focus-visible, .adm-table button:focus-visible, .adm-table select:focus-visible, .adm-table input:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
-.adm-table .arole-select, .adm-table .acompany-input{ width:100%; min-width:140px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--panel-2); color:var(--ink); font:inherit; font-size:0.86rem; }
-.adm-table .acompany-input{ min-width:180px; }
-.adm-table .toggle-btn{ font:inherit; font-size:0.8rem; font-weight:700; padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink-soft); cursor:pointer; }
-.adm-table .toggle-btn.on{ color:var(--accent); border-color:var(--accent); }
-.adm-table .toggle-btn:hover{ border-color:var(--accent); }
-.adm-table .errors-empty{ color:var(--ink-soft); }
-.adm-errors .err-msg{ font-family:var(--font-mono); font-size:0.8rem; color:var(--ink); word-break:break-word; }
-.adm-errors details{ margin-top:6px; }
-.adm-errors summary{ font-size:0.76rem; color:var(--accent); cursor:pointer; }
-.adm-errors pre{ font-size:0.72rem; white-space:pre-wrap; word-break:break-word; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px; margin:8px 0 0; max-height:260px; overflow:auto; }
-@media (max-width:760px){
-  .adm-table th, .adm-table td{ padding:9px 10px; }
-  .adm-toolbar .adm-count{ margin:0; width:100%; }
-}
+/* Admin: Relay logo in Settings and account deletion */
+.logo-box{ display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+.logo-preview{ width:160px; height:96px; border:1px dashed var(--line); border-radius:var(--r-md); display:flex; align-items:center; justify-content:center; background:var(--panel); overflow:hidden; flex:0 0 auto; }
+.logo-preview img{ max-width:100%; max-height:100%; object-fit:contain; }
+.logo-actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; min-width:0; flex:1 1 260px; }
+.logo-actions input[type=file]{ max-width:100%; }
+.acc-delete{ background:transparent; color:var(--crit); border:1px solid var(--crit-soft); border-radius:var(--r-sm); padding:6px 10px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; min-height:36px; }
+.acc-delete:hover{ background:var(--crit-soft); }
+.del-options{ display:flex; flex-direction:column; gap:8px; margin:14px 0 4px; }
+.del-opt{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:var(--r-md); background:var(--panel); color:var(--ink); font:inherit; cursor:pointer; min-height:44px; }
+.del-opt b{ font-size:15px; } .del-opt span{ font-size:13px; color:var(--ink-soft); line-height:1.4; }
+.del-opt:hover{ border-color:var(--accent); }
+.del-opt.is-danger{ border-color:var(--crit-soft); } .del-opt.is-danger b{ color:var(--crit); }

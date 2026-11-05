@@ -292,6 +292,17 @@ async function renderAdminSettings(){
     </div>
     <p class="form-error" id="regErr"></p>
     <div id="regList">${skelRows(4)}</div>
+    <div class="section-head" style="margin-top:28px;"><h2>Relay logo</h2></div>
+    <p class="meta">PNG, JPG or WebP, up to 2 MB.</p>
+    <div class="card logo-box" id="platLogoBox">
+      <div class="logo-preview" id="platLogoPreview">${settings.logo_path ? `<img src="${esc(billingLogoPublicUrl(settings.logo_path))}" alt="${esc(relayFmt('Relay logo'))}">` : `<span class="meta">${esc(relayFmt('No logo yet'))}</span>`}</div>
+      <div class="logo-actions">
+        <input type="file" id="platLogoFile" accept="image/png,image/jpeg,image/webp" aria-label="${esc(relayFmt('Choose a logo'))}">
+        <button type="button" id="platLogoUpload" disabled>${esc(relayFmt('Upload logo'))}</button>
+        ${settings.logo_path ? `<button type="button" id="platLogoRemove" class="acc-delete">${esc(relayFmt('Remove logo'))}</button>` : ''}
+      </div>
+      <p class="form-error" id="platLogoErr"></p>
+    </div>
     <div class="section-head" style="margin-top:28px;"><h2>Relay's details on invoices</h2></div>
     <p class="meta">These appear at the top of every subscription invoice, PDF and email.</p>
     <form class="card rec-form" id="pfForm" style="max-width:640px;" autocomplete="off">
@@ -308,6 +319,42 @@ async function renderAdminSettings(){
       <p class="form-error" id="pfErr"></p>
       <div class="job-actions"><button type="submit" id="pfSave">Save details</button></div>
     </form>`;
+  // logo: pick a file, preview it, then upload and save the path
+  const logoFile = box.querySelector('#platLogoFile');
+  const logoUpload = box.querySelector('#platLogoUpload');
+  const logoErr = box.querySelector('#platLogoErr');
+  let chosenLogo = null;
+  logoFile.onchange = () => {
+    logoErr.textContent = '';
+    const f = logoFile.files && logoFile.files[0];
+    if(!f){ chosenLogo = null; logoUpload.disabled = true; return; }
+    if(!/^image\/(png|jpeg|webp)$/.test(f.type)){ logoErr.textContent = relayFmt('Use a PNG, JPG or WebP image.'); logoFile.value = ''; chosenLogo = null; logoUpload.disabled = true; return; }
+    if(f.size > 2 * 1024 * 1024){ logoErr.textContent = relayFmt('This image is larger than 2 MB. Choose a smaller one.'); logoFile.value = ''; chosenLogo = null; logoUpload.disabled = true; return; }
+    chosenLogo = f; logoUpload.disabled = false;
+    box.querySelector('#platLogoPreview').innerHTML = `<img src="${esc(URL.createObjectURL(f))}" alt="${esc(relayFmt('Relay logo'))}">`;
+  };
+  logoUpload.onclick = async () => {
+    if(!chosenLogo) return;
+    logoUpload.disabled = true; logoErr.textContent = '';
+    const ext = chosenLogo.type === 'image/png' ? 'png' : chosenLogo.type === 'image/webp' ? 'webp' : 'jpg';
+    const path = `platform/logo-${Date.now()}.${ext}`;
+    const { error: upErr } = await sb.storage.from('shop-logos').upload(path, chosenLogo, { contentType: chosenLogo.type, upsert: false });
+    if(upErr){ logoErr.textContent = relayFmt('Could not upload the logo. Try again.'); logoUpload.disabled = false; return; }
+    const { error } = await sb.rpc('set_platform_logo', { p_path: path });
+    if(error){ logoErr.textContent = error.message; logoUpload.disabled = false; return; }
+    if(settings.logo_path) sb.storage.from('shop-logos').remove([settings.logo_path]);   // the old file is no longer used
+    subState.settings = null; recordsToast(relayFmt('Logo saved'));
+    renderAdminSettings();
+  };
+  const logoRemove = box.querySelector('#platLogoRemove');
+  if(logoRemove) logoRemove.onclick = async () => {
+    const { error } = await sb.rpc('set_platform_logo', { p_path: null });
+    if(error){ logoErr.textContent = error.message; return; }
+    sb.storage.from('shop-logos').remove([settings.logo_path]);
+    subState.settings = null; recordsToast(relayFmt('Logo removed'));
+    renderAdminSettings();
+  };
+
   box.querySelector('#pfForm').onsubmit = async (e) => {
     e.preventDefault();
     const btn = box.querySelector('#pfSave'); btn.disabled = true;

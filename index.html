@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="style.css?v=17f85f6f6b"/>
+<link rel="stylesheet" href="style.css?v=a2f1414b8c"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -847,13 +847,7 @@
     </nav>
 
     <div class="dash-panel" id="admin-overview">
-      <div class="adm-page">
-        <div class="adm-table-wrap">
-          <table class="adm-table adm-counts">
-            <tbody id="adminStats"></tbody>
-          </table>
-        </div>
-      </div>
+      <div class="stat-strip" id="adminStats"></div>
     </div>
 
     <div class="dash-panel hidden" id="admin-requests">
@@ -873,28 +867,18 @@
       <div class="section" id="adminSubsBox"></div>
     </div>
     <div class="dash-panel hidden" id="admin-accounts">
-      <div class="adm-page">
-        <div class="adm-toolbar">
-          <div class="field">
-            <label for="accountsRoleFilter">Role</label>
-            <select id="accountsRoleFilter">
-              <option value="mechanic">Mechanics</option>
-              <option value="fleet">Fleet managers</option>
-              <option value="shop">Shop owners</option>
-              <option value="admin">Admins</option>
-            </select>
-          </div>
-          <div class="field adm-search">
-            <label for="accountsSearch">Search</label>
-            <input type="search" id="accountsSearch" placeholder="Name, company or email" autocomplete="off">
-          </div>
+      <div class="section">
+        <div class="section-head"><h2>Current users</h2></div>
+        <div class="field" style="max-width:280px; margin-bottom:18px;">
+          <label for="accountsRoleFilter">Showing</label>
+          <select id="accountsRoleFilter">
+            <option value="mechanic">Mechanics</option>
+            <option value="fleet">Fleet managers</option>
+            <option value="shop">Shop owners</option>
+            <option value="admin">Admins</option>
+          </select>
         </div>
-        <div class="adm-table-wrap">
-          <table class="adm-table adm-accounts">
-            <thead><tr><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Status</th></tr></thead>
-            <tbody id="adminAccounts"></tbody>
-          </table>
-        </div>
+        <div id="adminAccounts"></div>
       </div>
     </div>
 
@@ -919,22 +903,10 @@
       <div class="section" id="adminFeedbackBox"></div>
     </div>
     <div class="dash-panel hidden" id="admin-errors">
-      <div class="adm-page">
-        <div class="adm-toolbar">
-          <div class="field">
-            <label for="errorsRange">Showing</label>
-            <select id="errorsRange">
-              <option value="day">Last 24 hours</option>
-              <option value="all">All recent</option>
-            </select>
-          </div>
-        </div>
-        <div class="adm-table-wrap">
-          <table class="adm-table adm-errors">
-            <thead><tr><th scope="col">When</th><th scope="col">Error</th><th scope="col">Page</th></tr></thead>
-            <tbody id="adminErrors"></tbody>
-          </table>
-        </div>
+      <div class="section">
+        <div class="section-head"><h2>Recent errors</h2></div>
+        <p style="font-size:0.82rem; color:var(--ink-soft); margin-bottom:16px;">Anything that breaks in a customer's browser shows up here automatically.</p>
+        <div id="adminErrors"></div>
       </div>
     </div>
   </div>
@@ -999,7 +971,7 @@
 <script src="header.js?v=93f54bf858" defer></script>
 <script src="nav-subs.js?v=312012477f" defer></script>
 <script src="route.js?v=0442405b9b" defer></script>
-<script src="script.js?v=067154414c" defer></script>
+<script src="script.js?v=67d7fadb5a" defer></script>
 <script src="ro.js?v=1554ccd1f5" defer></script>
 <script src="insp.js?v=0b443cc84f" defer></script>
 <script src="est.js?v=a4b9006a58" defer></script>
@@ -1050,7 +1022,7 @@
 <script src="migrate.js?v=acd66e88ae" defer></script>
 <script src="training.js?v=c536d26d9a" defer></script>
 <script src="ux.js?v=ef78b00dfb" defer></script>
-<script src="subs.js?v=4fe8f6c1d5" defer></script>
+<script src="subs.js?v=5a4b8be1eb" defer></script>
 <script src="nav.js?v=23acef8e27" defer></script>
 <script src="safety.js?v=939c988e6d" defer></script>
 <script src="offline.js?v=59b2632a55" defer></script>

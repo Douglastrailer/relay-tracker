@@ -304,7 +304,7 @@ async function populateFleetSelect(){
 async function fetchAllProfiles(){
   // Capped: the admin list is paged in the UI, so pulling every account on the platform
   // into the browser is never needed. The exact total comes from a count-only query.
-  const { data, error } = await sb.from('profiles').select('id, name, active, company, org_id, role, email, phone').order('created_at', { ascending:true }).limit(1000);
+  const { data, error } = await sb.from('profiles').select('id, name, active, company, org_id, role, email, phone').is('deleted_at', null).order('created_at', { ascending:true }).limit(1000);
   if(error){ console.error('fetchAllProfiles', error); return []; }
   return data || [];
 }
@@ -2920,12 +2920,6 @@ async function refreshFleetData(){
 let adminOpsMap = null;
 const adminMarkers = {};
 
-// overview counts jump to the tab that acts on them (delegated, so it works after every refresh)
-document.addEventListener('click', e => {
-  const b = e.target.closest && e.target.closest('#adminStats [data-admin-go]'); if(!b) return;
-  const tab = document.querySelector(`.dash-tab[data-target="${b.dataset.adminGo}"]`); if(tab) tab.click();
-});
-
 function initAdminView(){
   if(adminOpsMap){ adminOpsMap.remove(); adminOpsMap = null; } // same guard as the other three view-init maps
   // The admin Overview shows the Shops on Relay map only; the live mechanics map was removed.
@@ -2933,6 +2927,30 @@ function initAdminView(){
 
   refreshAdminData();
   everyWhileVisible(refreshAdminData, 120000); // fallback only - Realtime handles instant updates
+}
+
+// Shown when an admin deletes an account: three ways, each explained in plain words. Resolves to 'off' | 'archive' | 'erase' | null.
+function chooseDeleteMode(name){
+  return new Promise(resolve => {
+    const wrap = document.createElement('div');
+    wrap.className = 'relay-dlg-backdrop';
+    wrap.innerHTML = `<div class="relay-dlg relay-dlg-confirm" role="dialog" aria-modal="true" aria-labelledby="delModeT">
+      <h2 id="delModeT">${relayEsc(relayFmt('Delete {name}?', { name }))}</h2>
+      <div class="del-options">
+        <button type="button" class="del-opt" data-mode="archive"><b>${relayEsc(relayFmt('Remove login, keep history'))}</b><span>${relayEsc(relayFmt('They can no longer sign in. Their name stays on past jobs, time and invoices. The account is hidden from this list.'))}</span></button>
+        <button type="button" class="del-opt is-danger" data-mode="erase"><b>${relayEsc(relayFmt('Erase personal details'))}</b><span>${relayEsc(relayFmt('The login is removed, and the name, email and phone are wiped. Past work stays but shows "Deleted account". Cannot be undone.'))}</span></button>
+        <button type="button" class="del-opt" data-mode="off"><b>${relayEsc(relayFmt('Switch off only'))}</b><span>${relayEsc(relayFmt('Keeps the account. It can be turned back on later.'))}</span></button>
+      </div>
+      <div class="relay-dlg-actions"><button type="button" class="relay-dlg-no">${relayEsc(relayFmt('Cancel'))}</button></div>
+    </div>`;
+    document.body.appendChild(wrap);
+    const done = (v) => { document.removeEventListener('keydown', onKey); wrap.remove(); resolve(v); };
+    const onKey = (e) => { if(e.key === 'Escape') done(null); };
+    document.addEventListener('keydown', onKey);
+    wrap.querySelectorAll('.del-opt').forEach(b => b.onclick = () => done(b.dataset.mode));
+    wrap.querySelector('.relay-dlg-no').onclick = () => done(null);
+    wrap.querySelector('.del-opt').focus();
+  });
 }
 
 async function refreshAdminData(){
@@ -2970,6 +2988,10 @@ async function refreshAdminData(){
   // thousands. This is what Phase 15 of the audit asks for: efficient
   // aggregation instead of scanning the whole table into the browser.
   const completeCount = completeRes.count;
+  document.getElementById('adminStats').innerHTML = `
+    <div class="stat-box"><b>${profiles.length}</b><span>Total accounts</span></div>
+    <div class="stat-box"><b>${activeJobs.length}</b><span>Active jobs</span></div>
+    <div class="stat-box"><b>${completeCount || 0}</b><span>Completed jobs</span></div>`;
 
   // live map
   for(const m of mechanics){
@@ -2987,28 +3009,26 @@ async function refreshAdminData(){
   const accBox = document.getElementById('adminAccounts');
 
   function accountRowHtml(p, companyLine){
-    const roleOpt = (v, label) => `<option value="${v}" ${p.role===v?'selected':''}>${esc(relayFmt(label))}</option>`;
-    const companyInput = p.role === 'fleet'
-      ? `<input type="text" class="acompany-input" aria-label="${esc(relayFmt('Company'))}" placeholder="${esc(relayFmt('Company (fleet only)'))}" value="${esc(p.company||'')}">`
-      : '';
     return `
-    <tr class="account-row" data-id="${p.id}" data-name="${esc(p.name)}">
-      <th scope="row"><span class="aname">${esc(p.name)}</span><span class="adm-muted adm-small">${companyLine}</span>${companyInput}</th>
-      <td><select class="arole-select" aria-label="${esc(relayFmt('Role'))}">
-        ${roleOpt('mechanic','Mechanic')}${roleOpt('shop','Shop owner')}${roleOpt('fleet','Fleet manager')}${roleOpt('admin','Admin')}
-      </select></td>
-      <td><button class="toggle-btn ${p.active?'on':'off'}" data-active="${p.active}" aria-pressed="${p.active?'true':'false'}">${p.active?relayFmt('Active'):relayFmt('Inactive')}</button></td>
-      <td class="adm-act"><button class="adm-link acc-save" hidden>${esc(relayFmt('Save'))}</button></td>
-    </tr>`;
+    <div class="account-row" data-id="${p.id}" data-name="${esc(p.name)}">
+      <div class="aname">${esc(p.name)}<div class="meta" style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-faint); margin-top:2px;">${companyLine}</div></div>
+      <select class="arole-select">
+        <option value="mechanic" ${p.role==='mechanic'?'selected':''}>Mechanic</option>
+        <option value="shop" ${p.role==='shop'?'selected':''}>Shop owner</option>
+        <option value="fleet" ${p.role==='fleet'?'selected':''}>Fleet manager</option>
+        <option value="admin" ${p.role==='admin'?'selected':''}>Admin</option>
+      </select>
+      <input type="text" class="acompany-input" placeholder="Company (fleet only)" value="${esc(p.company||'')}">
+      <div style="display:flex; gap:8px;">
+        <button class="toggle-btn ${p.active?'on':'off'}" data-active="${p.active}">${p.active?'Active':'Inactive'}</button>
+        <button class="j-edit acc-save">Save</button>
+        <button class="acc-delete">${esc(relayFmt('Delete'))}</button>
+      </div>
+    </div>`;
   }
 
   function renderAccountsForRole(role){
-    const q = (accountQuery || '').trim().toLowerCase();
-    const filtered = visibleProfiles.filter(p=>p.role===role).filter(p=>{
-      if(!q) return true;
-      return [p.name, p.company, p.email, p.phone, role === 'shop' || role === 'mechanic' ? orgName(p.org_id) : '']
-        .some(v => v && String(v).toLowerCase().includes(q));
-    });
+    const filtered = visibleProfiles.filter(p=>p.role===role);
     const companyLine = p =>
       role === 'shop' ? 'Company: ' + esc(orgName(p.org_id)) :
       role === 'mechanic' ? 'Works for: ' + esc(orgName(p.org_id)) :
@@ -3016,27 +3036,26 @@ async function refreshAdminData(){
       'Platform admin';
     accBox.innerHTML = filtered.length
       ? filtered.map(p=>accountRowHtml(p, companyLine(p))).join('')
-      : `<tr><td colspan="4" class="adm-empty">${relayFmt(q ? 'No accounts match this search.' : 'None yet.')}</td></tr>`;
-    const countEl = document.getElementById('accountsCount');
-    if(countEl) countEl.textContent = relayFmt('{n} shown', { n: filtered.length });
+      : '<div class="empty-note">None yet.</div>';
     accBox.querySelectorAll('.account-row').forEach(row=>{
       const id = row.dataset.id;
-      const showSave = () => { const sv = row.querySelector('.acc-save'); if(sv) sv.hidden = false; };
-      row.querySelector('.arole-select').onchange = showSave;
-      const ci = row.querySelector('.acompany-input'); if(ci) ci.oninput = showSave;
-      row.querySelector('.toggle-btn').onclick = async (e)=>{
-        const btn = e.currentTarget;
-        const newActive = btn.dataset.active !== 'true';
-        if(!newActive){
-          const ok = await relayConfirm({
-            title: relayFmt('Turn off this account?'),
-            message: relayFmt('{name} will be switched off. You can turn the account back on later.', { name: row.dataset.name || '' }),
-            confirmText: relayFmt('Turn off'), danger: true
-          });
-          if(!ok) return;
+      row.querySelector('.acc-delete').onclick = async ()=>{
+        const mode = await chooseDeleteMode(row.dataset.name || '');
+        if(!mode) return;
+        if(mode === 'erase'){
+          const sure = await relayConfirm({ title: relayFmt('Erase this account?'), message: relayFmt('The login and personal details are removed. This cannot be undone.'), confirmText: relayFmt('Erase'), danger: true });
+          if(!sure) return;
         }
+        const { error } = await sb.rpc('admin_delete_account', { p_user: id, p_mode: mode });
+        if(error){ relayFail(error, 'Could not delete the account'); return; }
+        if(typeof recordsToast === 'function') recordsToast(mode === 'off' ? relayFmt('Account switched off') : relayFmt('Account deleted'));
+        refreshAdminData();
+      };
+      row.querySelector('.toggle-btn').onclick = async (e)=>{
+        const btn = e.target;
+        const newActive = btn.dataset.active !== 'true';
         const { error } = await sb.from('profiles').update({ active:newActive }).eq('id', id);
-        if(error) relayFail(error, 'Could not update the account'); else refreshAdminData();
+        if(!error) refreshAdminData();
       };
       row.querySelector('.acc-save').onclick = async ()=>{
         const newRole = row.querySelector('.arole-select').value;
@@ -3048,10 +3067,8 @@ async function refreshAdminData(){
   }
 
   const roleFilter = document.getElementById('accountsRoleFilter');
-  const searchBox = document.getElementById('accountsSearch');
   renderAccountsForRole(roleFilter.value);
   roleFilter.onchange = ()=> renderAccountsForRole(roleFilter.value);
-  searchBox.oninput = ()=>{ accountQuery = searchBox.value; renderAccountsForRole(roleFilter.value); };
 
 
   // pending company requests
@@ -3176,48 +3193,14 @@ async function refreshAdminData(){
   if(recentErrors.length > 0){ errBadge.textContent = recentErrors.length; errBadge.classList.remove('hidden'); }
   else { errBadge.classList.add('hidden'); }
 
-  adminErrorRows = errors || [];
-  const errRange = document.getElementById('errorsRange');
-  errRange.onchange = renderAdminErrors;
-  renderAdminErrors();
-
-  // stats: every number is a shortcut to the tab that acts on it
-  document.getElementById('adminStats').innerHTML = [
-    ['admin-requests', pendingOrgs.length, 'Pending requests', 'Review'],
-    ['admin-errors', recentErrors.length, 'Errors in the last 24 hours', 'View'],
-    ['admin-accounts', profiles.length, 'Total accounts', 'Open'],
-    ['admin-jobs', activeJobs.length, 'Active jobs', 'Open']
-  ].map(([tab, n, label, act]) => `<tr>
-      <th scope="row">${esc(relayFmt(label))}</th>
-      <td class="num">${n}</td>
-      <td class="adm-act"><button type="button" class="adm-link" data-admin-go="${tab}">${esc(relayFmt(act))}</button></td>
-    </tr>`).join('');
-}
-
-// rows come from refreshAdminData; the range select only changes what is shown
-let adminErrorRows = [];
-let accountQuery = '';
-function renderAdminErrors(){
-  const box = document.getElementById('adminErrors'); if(!box) return;
-  const range = document.getElementById('errorsRange');
-  const countEl = document.getElementById('errorsCount');
-  const day = Date.now() - 24*60*60*1000;
-  const recent = adminErrorRows.filter(e => new Date(e.created_at).getTime() >= day);
-  const shown = range && range.value === 'all' ? adminErrorRows : recent;
-  const empty = (text) => `<tr><td colspan="3" class="adm-empty">${text}</td></tr>`;
-  if(countEl) countEl.textContent = relayFmt('{n} shown', { n: shown.length });
-  if(adminErrorRows.length === 0){ box.innerHTML = empty(esc(relayFmt("No errors logged. That's a good sign."))); return; }
-  if(shown.length === 0){
-    box.innerHTML = empty(`${esc(relayFmt('No errors in the last 24 hours.'))} ${esc(relayFmt('{n} older errors are under All recent.', { n: adminErrorRows.length }))}`);
-    return;
-  }
-  box.innerHTML = shown.map(er => `
-      <tr class="error-card">
-        <td class="adm-nowrap">${new Date(er.created_at).toLocaleString()}</td>
-        <td><span class="err-msg">${esc(er.message || relayFmt('Unknown error'))}</span>
-          ${er.stack ? `<details><summary>${esc(relayFmt('Stack trace'))}</summary><pre>${esc(er.stack)}</pre></details>` : ''}</td>
-        <td class="adm-nowrap">${esc((er.page_url||'').split('/').pop() || '—')}</td>
-      </tr>`).join('');
+  const errBox = document.getElementById('adminErrors');
+  errBox.innerHTML = (!errors || errors.length === 0) ? '<div class="empty-note">No errors logged. That\'s a good sign.</div>' :
+    errors.map(er => `
+      <div class="error-card">
+        <div class="err-msg">${esc(er.message || 'Unknown error')}</div>
+        <div class="err-meta">${new Date(er.created_at).toLocaleString()} · Role: ${esc(er.user_role||'—')} · Page: ${esc((er.page_url||'').split('/').pop() || '—')}</div>
+        ${er.stack ? `<details><summary>Stack trace</summary><pre>${esc(er.stack)}</pre></details>` : ''}
+      </div>`).join('');
 }
 
 // ================= theme toggle =================
