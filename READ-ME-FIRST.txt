@@ -1,8 +1,5 @@
-RelayFleet - AI phone line
+RelayFleet - AI phone lines: turn on/off from Admin
 
-ORDER:
- 1. Supabase SQL Editor: run migration 0053_voice_intake.sql (needs 0052).
- 2. Supabase Edge Functions: create a function named voice-intake, paste 7-voice-intake.ts, Deploy.
-    In its settings turn OFF "Verify JWT" (the voice provider sends the line secret instead).
- 3. Upload ALL website files to GitHub and commit (new file: phoneline.js). Refresh with Ctrl+Shift+R.
- 4. In Relay: Settings > AI phone line > set up the line. Copy the server address, line id and secret into your voice provider.
+Upload ALL files to GitHub (changed: voice-admin.js, style.css, index.html, sw.js).
+Deploy the NEW voice-provision function (8-voice-provision.ts, Verify JWT ON) and migration 0054 (updated).
+Then refresh with Ctrl+Shift+R.

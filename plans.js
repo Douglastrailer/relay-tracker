@@ -114,6 +114,7 @@ function initPlansUI(){
     if(ls && !document.getElementById('planBox')) ls.insertAdjacentHTML('beforebegin', '<div id="planBox"></div>');
     document.querySelectorAll('.dash-tab[data-target="shop-billing"]').forEach(t => t.addEventListener('click', renderPlanBox));
     renderPlanBox(); renderTrialBanner();
+    if(typeof renderVoiceSettings === 'function') renderVoiceSettings();   // AI phone line: drawn on load too
   }
   if(session.role === 'admin'){
     const ov = document.getElementById('admin-overview');
@@ -123,6 +124,7 @@ function initPlansUI(){
     if(ov && !document.getElementById('adminUsageBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminUsageBox"></div>');
     if(typeof renderShopUsage === 'function') renderShopUsage();
     if(typeof renderSubscriptions === 'function') renderSubscriptions();
+    if(typeof renderVoiceAdmin === 'function') renderVoiceAdmin();   // AI phone lines: drawn on load, not only on a tab click
     if(typeof renderAdminSettings === 'function') renderAdminSettings();
     if(typeof renderAdminFeedback === 'function') renderAdminFeedback();   // also fills the count on the Feedback tab
     if(ov && !document.getElementById('adminPlansBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminPlansBox"></div>');

@@ -304,7 +304,7 @@ async function populateFleetSelect(){
 async function fetchAllProfiles(){
   // Capped: the admin list is paged in the UI, so pulling every account on the platform
   // into the browser is never needed. The exact total comes from a count-only query.
-  const { data, error } = await sb.from('profiles').select('id, name, active, company, org_id, role, email, phone').is('deleted_at', null).order('created_at', { ascending:true }).limit(1000);
+  const { data, error } = await sb.from('profiles').select('id, name, active, company, org_id, role, email, phone').order('created_at', { ascending:true }).limit(1000);
   if(error){ console.error('fetchAllProfiles', error); return []; }
   return data || [];
 }
@@ -2929,30 +2929,6 @@ function initAdminView(){
   everyWhileVisible(refreshAdminData, 120000); // fallback only - Realtime handles instant updates
 }
 
-// Shown when an admin deletes an account: three ways, each explained in plain words. Resolves to 'off' | 'archive' | 'erase' | null.
-function chooseDeleteMode(name){
-  return new Promise(resolve => {
-    const wrap = document.createElement('div');
-    wrap.className = 'relay-dlg-backdrop';
-    wrap.innerHTML = `<div class="relay-dlg relay-dlg-confirm" role="dialog" aria-modal="true" aria-labelledby="delModeT">
-      <h2 id="delModeT">${relayEsc(relayFmt('Delete {name}?', { name }))}</h2>
-      <div class="del-options">
-        <button type="button" class="del-opt" data-mode="archive"><b>${relayEsc(relayFmt('Remove login, keep history'))}</b><span>${relayEsc(relayFmt('They can no longer sign in. Their name stays on past jobs, time and invoices. The account is hidden from this list.'))}</span></button>
-        <button type="button" class="del-opt is-danger" data-mode="erase"><b>${relayEsc(relayFmt('Erase personal details'))}</b><span>${relayEsc(relayFmt('The login is removed, and the name, email and phone are wiped. Past work stays but shows "Deleted account". Cannot be undone.'))}</span></button>
-        <button type="button" class="del-opt" data-mode="off"><b>${relayEsc(relayFmt('Switch off only'))}</b><span>${relayEsc(relayFmt('Keeps the account. It can be turned back on later.'))}</span></button>
-      </div>
-      <div class="relay-dlg-actions"><button type="button" class="relay-dlg-no">${relayEsc(relayFmt('Cancel'))}</button></div>
-    </div>`;
-    document.body.appendChild(wrap);
-    const done = (v) => { document.removeEventListener('keydown', onKey); wrap.remove(); resolve(v); };
-    const onKey = (e) => { if(e.key === 'Escape') done(null); };
-    document.addEventListener('keydown', onKey);
-    wrap.querySelectorAll('.del-opt').forEach(b => b.onclick = () => done(b.dataset.mode));
-    wrap.querySelector('.relay-dlg-no').onclick = () => done(null);
-    wrap.querySelector('.del-opt').focus();
-  });
-}
-
 async function refreshAdminData(){
   if(typeof renderAdminShopMap === 'function') renderAdminShopMap();
   if(typeof initPlansUI === 'function') initPlansUI();   // Billing section (it only ran for shops before)
@@ -3010,7 +2986,7 @@ async function refreshAdminData(){
 
   function accountRowHtml(p, companyLine){
     return `
-    <div class="account-row" data-id="${p.id}" data-name="${esc(p.name)}">
+    <div class="account-row" data-id="${p.id}">
       <div class="aname">${esc(p.name)}<div class="meta" style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-faint); margin-top:2px;">${companyLine}</div></div>
       <select class="arole-select">
         <option value="mechanic" ${p.role==='mechanic'?'selected':''}>Mechanic</option>
@@ -3022,7 +2998,6 @@ async function refreshAdminData(){
       <div style="display:flex; gap:8px;">
         <button class="toggle-btn ${p.active?'on':'off'}" data-active="${p.active}">${p.active?'Active':'Inactive'}</button>
         <button class="j-edit acc-save">Save</button>
-        <button class="acc-delete">${esc(relayFmt('Delete'))}</button>
       </div>
     </div>`;
   }
@@ -3039,18 +3014,6 @@ async function refreshAdminData(){
       : '<div class="empty-note">None yet.</div>';
     accBox.querySelectorAll('.account-row').forEach(row=>{
       const id = row.dataset.id;
-      row.querySelector('.acc-delete').onclick = async ()=>{
-        const mode = await chooseDeleteMode(row.dataset.name || '');
-        if(!mode) return;
-        if(mode === 'erase'){
-          const sure = await relayConfirm({ title: relayFmt('Erase this account?'), message: relayFmt('The login and personal details are removed. This cannot be undone.'), confirmText: relayFmt('Erase'), danger: true });
-          if(!sure) return;
-        }
-        const { error } = await sb.rpc('admin_delete_account', { p_user: id, p_mode: mode });
-        if(error){ relayFail(error, 'Could not delete the account'); return; }
-        if(typeof recordsToast === 'function') recordsToast(mode === 'off' ? relayFmt('Account switched off') : relayFmt('Account deleted'));
-        refreshAdminData();
-      };
       row.querySelector('.toggle-btn').onclick = async (e)=>{
         const btn = e.target;
         const newActive = btn.dataset.active !== 'true';
