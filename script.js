@@ -2987,21 +2987,20 @@ async function refreshAdminData(){
   const accBox = document.getElementById('adminAccounts');
 
   function accountRowHtml(p, companyLine){
+    const roleOpt = (v, label) => `<option value="${v}" ${p.role===v?'selected':''}>${esc(relayFmt(label))}</option>`;
+    const companyCell = p.role === 'fleet'
+      ? `<input type="text" class="acompany-input" aria-label="${esc(relayFmt('Company'))}" placeholder="${esc(relayFmt('Company (fleet only)'))}" value="${esc(p.company||'')}">`
+      : `<span class="adm-muted">${companyLine}</span>`;
     return `
-    <div class="account-row" data-id="${p.id}" data-name="${esc(p.name)}">
-      <div class="aname">${esc(p.name)}<div class="meta" style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-faint); margin-top:2px;">${companyLine}</div></div>
-      <select class="arole-select">
-        <option value="mechanic" ${p.role==='mechanic'?'selected':''}>Mechanic</option>
-        <option value="shop" ${p.role==='shop'?'selected':''}>Shop owner</option>
-        <option value="fleet" ${p.role==='fleet'?'selected':''}>Fleet manager</option>
-        <option value="admin" ${p.role==='admin'?'selected':''}>Admin</option>
-      </select>
-      <input type="text" class="acompany-input" placeholder="Company (fleet only)" value="${esc(p.company||'')}">
-      <div style="display:flex; gap:8px;">
-        <button class="toggle-btn ${p.active?'on':'off'}" data-active="${p.active}">${p.active?relayFmt('Active'):relayFmt('Inactive')}</button>
-        <button class="j-edit acc-save">Save</button>
-      </div>
-    </div>`;
+    <tr class="account-row" data-id="${p.id}" data-name="${esc(p.name)}">
+      <th scope="row"><span class="aname">${esc(p.name)}</span><span class="adm-muted adm-small">${esc(p.email || p.phone || '')}</span></th>
+      <td><select class="arole-select" aria-label="${esc(relayFmt('Role'))}">
+        ${roleOpt('mechanic','Mechanic')}${roleOpt('shop','Shop owner')}${roleOpt('fleet','Fleet manager')}${roleOpt('admin','Admin')}
+      </select></td>
+      <td>${companyCell}</td>
+      <td><button class="toggle-btn ${p.active?'on':'off'}" data-active="${p.active}" aria-pressed="${p.active?'true':'false'}">${p.active?relayFmt('Active'):relayFmt('Inactive')}</button></td>
+      <td class="adm-act"><button class="adm-link acc-save">${esc(relayFmt('Save'))}</button></td>
+    </tr>`;
   }
 
   function renderAccountsForRole(role){
@@ -3018,7 +3017,9 @@ async function refreshAdminData(){
       'Platform admin';
     accBox.innerHTML = filtered.length
       ? filtered.map(p=>accountRowHtml(p, companyLine(p))).join('')
-      : `<div class="empty-note">${relayFmt(q ? 'No accounts match this search.' : 'None yet.')}</div>`;
+      : `<tr><td colspan="5" class="adm-empty">${relayFmt(q ? 'No accounts match this search.' : 'None yet.')}</td></tr>`;
+    const countEl = document.getElementById('accountsCount');
+    if(countEl) countEl.textContent = relayFmt('{n} shown', { n: filtered.length });
     accBox.querySelectorAll('.account-row').forEach(row=>{
       const id = row.dataset.id;
       row.querySelector('.toggle-btn').onclick = async (e)=>{
@@ -3180,12 +3181,28 @@ async function refreshAdminData(){
 
   // stats: every number is a shortcut to the tab that acts on it
   document.getElementById('adminStats').innerHTML = [
-    ['admin-accounts', profiles.length, 'Total accounts'],
-    ['admin-requests', pendingOrgs.length, 'Pending requests'],
-    ['admin-jobs', activeJobs.length, 'Active jobs'],
-    ['admin-jobs', completeCount || 0, 'Completed jobs'],
-    ['admin-errors', recentErrors.length, 'Errors, last 24 h']
-  ].map(([tab, n, label]) => `<button type="button" class="stat-box stat-link" data-admin-go="${tab}"><b>${n}</b><span>${esc(relayFmt(label))}</span></button>`).join('');
+    ['admin-accounts', profiles.length, 'Total accounts', 'Open accounts'],
+    ['admin-requests', pendingOrgs.length, 'Pending requests', 'Review requests'],
+    ['admin-errors', recentErrors.length, 'Errors in the last 24 hours', 'View errors'],
+    ['admin-jobs', activeJobs.length, 'Active jobs', 'Open jobs'],
+    ['admin-jobs', completeCount || 0, 'Completed jobs', 'Open jobs']
+  ].map(([tab, n, label, act]) => `<tr>
+      <th scope="row">${esc(relayFmt(label))}</th>
+      <td class="num">${n}</td>
+      <td class="adm-act"><button type="button" class="adm-link" data-admin-go="${tab}">${esc(relayFmt(act))}</button></td>
+    </tr>`).join('');
+
+  // companies: approval, people on the team, jobs still open
+  const statusWord = { approved: relayFmt('Approved'), pending: relayFmt('Pending'), rejected: relayFmt('Rejected') };
+  const companiesBox = document.getElementById('adminCompanies');
+  companiesBox.innerHTML = orgs.length
+    ? orgs.slice().sort((a,b)=> String(a.name||'').localeCompare(String(b.name||''))).map(o => `<tr>
+        <th scope="row">${esc(o.name || '—')}</th>
+        <td>${esc(statusWord[o.status] || o.status || '—')}</td>
+        <td class="num">${profiles.filter(p => p.org_id === o.id).length}</td>
+        <td class="num">${activeJobs.filter(j => j.org_id === o.id).length}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="4" class="adm-empty">${esc(relayFmt('No companies yet.'))}</td></tr>`;
 }
 
 // rows come from refreshAdminData; the range select only changes what is shown
@@ -3194,20 +3211,25 @@ let accountQuery = '';
 function renderAdminErrors(){
   const box = document.getElementById('adminErrors'); if(!box) return;
   const range = document.getElementById('errorsRange');
+  const countEl = document.getElementById('errorsCount');
   const day = Date.now() - 24*60*60*1000;
   const recent = adminErrorRows.filter(e => new Date(e.created_at).getTime() >= day);
   const shown = range && range.value === 'all' ? adminErrorRows : recent;
-  if(adminErrorRows.length === 0){ box.innerHTML = `<div class="empty-note">${relayFmt("No errors logged. That's a good sign.")}</div>`; return; }
+  const empty = (text) => `<tr><td colspan="4" class="adm-empty">${text}</td></tr>`;
+  if(countEl) countEl.textContent = relayFmt('{n} shown', { n: shown.length });
+  if(adminErrorRows.length === 0){ box.innerHTML = empty(esc(relayFmt("No errors logged. That's a good sign."))); return; }
   if(shown.length === 0){
-    box.innerHTML = `<div class="empty-note">${relayFmt('No errors in the last 24 hours.')} ${relayFmt('{n} older errors are under All recent.', { n: adminErrorRows.length })}</div>`;
+    box.innerHTML = empty(`${esc(relayFmt('No errors in the last 24 hours.'))} ${esc(relayFmt('{n} older errors are under All recent.', { n: adminErrorRows.length }))}`);
     return;
   }
   box.innerHTML = shown.map(er => `
-      <div class="error-card">
-        <div class="err-msg">${esc(er.message || relayFmt('Unknown error'))}</div>
-        <div class="err-meta">${new Date(er.created_at).toLocaleString()} · ${esc(relayFmt('Role'))}: ${esc(er.user_role||'—')} · ${esc(relayFmt('Page'))}: ${esc((er.page_url||'').split('/').pop() || '—')}</div>
-        ${er.stack ? `<details><summary>${esc(relayFmt('Stack trace'))}</summary><pre>${esc(er.stack)}</pre></details>` : ''}
-      </div>`).join('');
+      <tr class="error-card">
+        <td class="adm-nowrap">${new Date(er.created_at).toLocaleString()}</td>
+        <td><span class="err-msg">${esc(er.message || relayFmt('Unknown error'))}</span>
+          ${er.stack ? `<details><summary>${esc(relayFmt('Stack trace'))}</summary><pre>${esc(er.stack)}</pre></details>` : ''}</td>
+        <td>${esc(er.user_role||'—')}</td>
+        <td class="adm-nowrap">${esc((er.page_url||'').split('/').pop() || '—')}</td>
+      </tr>`).join('');
 }
 
 // ================= theme toggle =================
