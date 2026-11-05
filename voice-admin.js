@@ -6,7 +6,8 @@
 const vaMoney = n => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 async function renderVoiceAdmin(){
-  const panel = document.getElementById('admin-subs'); if(!panel || !session || session.role !== 'admin') return;
+  // Shown on the main Admin page (Overview), so it does not depend on opening Subscriptions.
+  const panel = document.getElementById('admin-overview'); if(!panel || !session || session.role !== 'admin') return;
   let box = document.getElementById('voiceAdminBox');
   if(!box){ box = document.createElement('section'); box.id = 'voiceAdminBox'; box.className = 'voice-admin'; panel.appendChild(box); }
   const { data, error } = await sb.rpc('admin_voice_usage', {});
@@ -55,4 +56,4 @@ async function renderVoiceAdmin(){
     recordsToast('AI phone line is off'); renderVoiceAdmin();
   });
 }
-document.addEventListener('click', e => { if(e.target.closest && e.target.closest('.dash-tab[data-target="admin-subs"]')) setTimeout(renderVoiceAdmin, 0); });
+document.addEventListener('click', e => { if(e.target.closest && e.target.closest('.dash-tab[data-target="admin-overview"]')) setTimeout(renderVoiceAdmin, 0); });

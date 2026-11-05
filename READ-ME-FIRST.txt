@@ -1,5 +1,4 @@
-RelayFleet - AI phone lines: turn on/off from Admin
+RelayFleet website: AI phone lines now on the main Admin page
 
-Upload ALL files to GitHub (changed: voice-admin.js, style.css, index.html, sw.js).
-Deploy the NEW voice-provision function (8-voice-provision.ts, Verify JWT ON) and migration 0054 (updated).
-Then refresh with Ctrl+Shift+R.
+Upload ALL files to GitHub and commit. Changed: voice-admin.js (and the fingerprinted index.html, sw.js).
+Then refresh relayfleet.us with Ctrl+Shift+R. Admin: the AI phone lines section is on the Overview page.
