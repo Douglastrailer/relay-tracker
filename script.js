@@ -2988,18 +2988,17 @@ async function refreshAdminData(){
 
   function accountRowHtml(p, companyLine){
     const roleOpt = (v, label) => `<option value="${v}" ${p.role===v?'selected':''}>${esc(relayFmt(label))}</option>`;
-    const companyCell = p.role === 'fleet'
+    const companyInput = p.role === 'fleet'
       ? `<input type="text" class="acompany-input" aria-label="${esc(relayFmt('Company'))}" placeholder="${esc(relayFmt('Company (fleet only)'))}" value="${esc(p.company||'')}">`
-      : `<span class="adm-muted">${companyLine}</span>`;
+      : '';
     return `
     <tr class="account-row" data-id="${p.id}" data-name="${esc(p.name)}">
-      <th scope="row"><span class="aname">${esc(p.name)}</span><span class="adm-muted adm-small">${esc(p.email || p.phone || '')}</span></th>
+      <th scope="row"><span class="aname">${esc(p.name)}</span><span class="adm-muted adm-small">${companyLine}</span>${companyInput}</th>
       <td><select class="arole-select" aria-label="${esc(relayFmt('Role'))}">
         ${roleOpt('mechanic','Mechanic')}${roleOpt('shop','Shop owner')}${roleOpt('fleet','Fleet manager')}${roleOpt('admin','Admin')}
       </select></td>
-      <td>${companyCell}</td>
       <td><button class="toggle-btn ${p.active?'on':'off'}" data-active="${p.active}" aria-pressed="${p.active?'true':'false'}">${p.active?relayFmt('Active'):relayFmt('Inactive')}</button></td>
-      <td class="adm-act"><button class="adm-link acc-save">${esc(relayFmt('Save'))}</button></td>
+      <td class="adm-act"><button class="adm-link acc-save" hidden>${esc(relayFmt('Save'))}</button></td>
     </tr>`;
   }
 
@@ -3017,11 +3016,14 @@ async function refreshAdminData(){
       'Platform admin';
     accBox.innerHTML = filtered.length
       ? filtered.map(p=>accountRowHtml(p, companyLine(p))).join('')
-      : `<tr><td colspan="5" class="adm-empty">${relayFmt(q ? 'No accounts match this search.' : 'None yet.')}</td></tr>`;
+      : `<tr><td colspan="4" class="adm-empty">${relayFmt(q ? 'No accounts match this search.' : 'None yet.')}</td></tr>`;
     const countEl = document.getElementById('accountsCount');
     if(countEl) countEl.textContent = relayFmt('{n} shown', { n: filtered.length });
     accBox.querySelectorAll('.account-row').forEach(row=>{
       const id = row.dataset.id;
+      const showSave = () => { const sv = row.querySelector('.acc-save'); if(sv) sv.hidden = false; };
+      row.querySelector('.arole-select').onchange = showSave;
+      const ci = row.querySelector('.acompany-input'); if(ci) ci.oninput = showSave;
       row.querySelector('.toggle-btn').onclick = async (e)=>{
         const btn = e.currentTarget;
         const newActive = btn.dataset.active !== 'true';
@@ -3181,28 +3183,15 @@ async function refreshAdminData(){
 
   // stats: every number is a shortcut to the tab that acts on it
   document.getElementById('adminStats').innerHTML = [
-    ['admin-accounts', profiles.length, 'Total accounts', 'Open accounts'],
-    ['admin-requests', pendingOrgs.length, 'Pending requests', 'Review requests'],
-    ['admin-errors', recentErrors.length, 'Errors in the last 24 hours', 'View errors'],
-    ['admin-jobs', activeJobs.length, 'Active jobs', 'Open jobs'],
-    ['admin-jobs', completeCount || 0, 'Completed jobs', 'Open jobs']
+    ['admin-requests', pendingOrgs.length, 'Pending requests', 'Review'],
+    ['admin-errors', recentErrors.length, 'Errors in the last 24 hours', 'View'],
+    ['admin-accounts', profiles.length, 'Total accounts', 'Open'],
+    ['admin-jobs', activeJobs.length, 'Active jobs', 'Open']
   ].map(([tab, n, label, act]) => `<tr>
       <th scope="row">${esc(relayFmt(label))}</th>
       <td class="num">${n}</td>
       <td class="adm-act"><button type="button" class="adm-link" data-admin-go="${tab}">${esc(relayFmt(act))}</button></td>
     </tr>`).join('');
-
-  // companies: approval, people on the team, jobs still open
-  const statusWord = { approved: relayFmt('Approved'), pending: relayFmt('Pending'), rejected: relayFmt('Rejected') };
-  const companiesBox = document.getElementById('adminCompanies');
-  companiesBox.innerHTML = orgs.length
-    ? orgs.slice().sort((a,b)=> String(a.name||'').localeCompare(String(b.name||''))).map(o => `<tr>
-        <th scope="row">${esc(o.name || '—')}</th>
-        <td>${esc(statusWord[o.status] || o.status || '—')}</td>
-        <td class="num">${profiles.filter(p => p.org_id === o.id).length}</td>
-        <td class="num">${activeJobs.filter(j => j.org_id === o.id).length}</td>
-      </tr>`).join('')
-    : `<tr><td colspan="4" class="adm-empty">${esc(relayFmt('No companies yet.'))}</td></tr>`;
 }
 
 // rows come from refreshAdminData; the range select only changes what is shown
@@ -3215,7 +3204,7 @@ function renderAdminErrors(){
   const day = Date.now() - 24*60*60*1000;
   const recent = adminErrorRows.filter(e => new Date(e.created_at).getTime() >= day);
   const shown = range && range.value === 'all' ? adminErrorRows : recent;
-  const empty = (text) => `<tr><td colspan="4" class="adm-empty">${text}</td></tr>`;
+  const empty = (text) => `<tr><td colspan="3" class="adm-empty">${text}</td></tr>`;
   if(countEl) countEl.textContent = relayFmt('{n} shown', { n: shown.length });
   if(adminErrorRows.length === 0){ box.innerHTML = empty(esc(relayFmt("No errors logged. That's a good sign."))); return; }
   if(shown.length === 0){
@@ -3227,7 +3216,6 @@ function renderAdminErrors(){
         <td class="adm-nowrap">${new Date(er.created_at).toLocaleString()}</td>
         <td><span class="err-msg">${esc(er.message || relayFmt('Unknown error'))}</span>
           ${er.stack ? `<details><summary>${esc(relayFmt('Stack trace'))}</summary><pre>${esc(er.stack)}</pre></details>` : ''}</td>
-        <td>${esc(er.user_role||'—')}</td>
         <td class="adm-nowrap">${esc((er.page_url||'').split('/').pop() || '—')}</td>
       </tr>`).join('');
 }
