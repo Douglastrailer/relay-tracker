@@ -122,12 +122,9 @@ function initPlansUI(){
     const subsPanel = document.getElementById('admin-subs');
     // The old billing box duplicated the Subscriptions screen; that screen is now the one place for billing.
     if(ov && !document.getElementById('adminUsageBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminUsageBox"></div>');
-    if(typeof renderShopUsage === 'function') renderShopUsage();
-    if(typeof renderSubscriptions === 'function') renderSubscriptions();
-    if(typeof renderVoiceAdmin === 'function') renderVoiceAdmin();   // AI phone lines: drawn on load, not only on a tab click
-    if(typeof renderAdminSettings === 'function') renderAdminSettings();
-    if(typeof renderAdminFeedback === 'function') renderAdminFeedback();   // also fills the count on the Feedback tab
+    // Only the count on the Feedback tab is drawn at start-up. Every other admin screen
+    // loads when its tab is opened (runAdminTabLoad in admin-overview.js), so start-up stays fast.
+    if(typeof renderAdminFeedback === 'function') renderAdminFeedback();
     if(ov && !document.getElementById('adminPlansBox')) ov.insertAdjacentHTML('beforeend', '<div class="section" id="adminPlansBox"></div>');
-    renderAdminPlans();
   }
 }

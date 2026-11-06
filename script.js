@@ -1305,7 +1305,7 @@ function refreshCurrentViewNow(){
   if(!appEntered) return;
   if(session.role === 'mechanic') renderMechJobs();
   else if(session.role === 'shop') refreshShopData();
-  else if(session.role === 'admin') refreshAdminData();
+  else if(session.role === 'admin') runAdminTabLoad(adminActiveTab());
   else if(session.role === 'fleet') refreshFleetData();
 }
 // Location pings happen constantly (every few seconds per live mechanic) —
@@ -2925,20 +2925,21 @@ function initAdminView(){
   // The admin Overview shows the Shops on Relay map only; the live mechanics map was removed.
   if(document.getElementById('adminOpsMap')){ adminOpsMap = L.map('adminOpsMap', { attributionControl:false }).setView([42.45, -83.25], 9); addBaseMapToggle(adminOpsMap); }
 
-  refreshAdminData();
-  everyWhileVisible(refreshAdminData, 120000); // fallback only - Realtime handles instant updates
+  runAdminTabLoad('admin-overview');   // only the screen that is open loads
+  everyWhileVisible(() => runAdminTabLoad(adminActiveTab()), 120000); // fallback only - Realtime handles instant updates
 }
 
+// Loads only the people screens (Accounts, Requests, Jobs), and only the one that is open.
+// Overview, Shops, AI phone lines, Subscriptions and the rest load in runAdminTabLoad (admin-overview.js).
 async function refreshAdminData(){
-  if(typeof renderAdminShopMap === 'function') renderAdminShopMap();
-  if(typeof initPlansUI === 'function') initPlansUI();   // Billing section (it only ran for shops before)
-  if(typeof renderAdminPlans === 'function') renderAdminPlans();
-  // Accounts, shops, active jobs and the completed count are independent: load them together.
-  const [profiles, orgs, activeJobs, completeRes] = await Promise.all([
+  const tab = adminActiveTab();
+  if(!['admin-accounts','admin-requests','admin-jobs'].includes(tab)) return;
+  const wantJobs = tab === 'admin-jobs';
+  const wantAccounts = tab === 'admin-accounts';
+  const [profiles, orgs, activeJobs] = await Promise.all([
     fetchAllProfiles(),
     fetchAllOrganizations(),
-    fetchActiveJobs(),
-    sb.from('jobs').select('*', { count:'exact', head:true }).in('status', DONE_STATUSES)
+    wantJobs ? fetchActiveJobs() : Promise.resolve([])
   ]);
   const mechanics = profiles.filter(p=>p.role==='mechanic');
   const orgName = id => (orgs.find(o=>o.id===id) || {}).name || '—';
@@ -2946,28 +2947,14 @@ async function refreshAdminData(){
 
   // Fleet managers can belong to multiple shops now — build the full list
   // per fleet manager instead of just showing their first/primary one.
-  const { data: allFleetLinks } = await sb.from('fleet_shop_links').select('fleet_id, org_id').limit(5000);
+  const { data: allFleetLinks } = wantAccounts ? await sb.from('fleet_shop_links').select('fleet_id, org_id').limit(5000) : { data: [] };
   const fleetShopsById = {};
   (allFleetLinks || []).forEach(l=>{
     if(!fleetShopsById[l.fleet_id]) fleetShopsById[l.fleet_id] = [];
     fleetShopsById[l.fleet_id].push(orgName(l.org_id));
   });
 
-  // stats
-  let liveCount = 0;
-  for(const m of mechanics){
-    const loc = locByMechanic[m.id];
-    if(loc && Date.now() - loc.updatedAt < 30000) liveCount++;
-  }
-  // Exact counts via a head-only query — gets the real total without
-  // downloading every row, which matters once job history is in the
-  // thousands. This is what Phase 15 of the audit asks for: efficient
-  // aggregation instead of scanning the whole table into the browser.
-  const completeCount = completeRes.count;
-  document.getElementById('adminStats').innerHTML = `
-    <div class="stat-box"><b>${profiles.length}</b><span>Total accounts</span></div>
-    <div class="stat-box"><b>${activeJobs.length}</b><span>Active jobs</span></div>
-    <div class="stat-box"><b>${completeCount || 0}</b><span>Completed jobs</span></div>`;
+
 
   // live map
   for(const m of mechanics){
@@ -3083,7 +3070,7 @@ async function refreshAdminData(){
   // jobs
   const mechName = id => (profiles.find(p=>p.id===id) || {}).name || 'Unassigned';
   const active = activeJobs; // already fetched above for the stats
-  const history = await fetchCompletedJobs(30);
+  const history = wantJobs ? await fetchCompletedJobs(30) : [];
 
   const list = document.getElementById('adminJobList');
   const _s1 = preserveOpenChatNodes(list);

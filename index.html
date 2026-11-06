@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link rel="stylesheet" href="style.css?v=351b231931"/>
+<link rel="stylesheet" href="admin-v2.css?v=2554f40727">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -827,7 +828,7 @@
   </div>
 
   <!-- ================= ADMIN ================= -->
-  <div id="adminView" class="hidden" data-theme="dark">
+  <div id="adminView" class="hidden">
     <nav class="dash-tabs" aria-label="Admin">
       <button class="dash-tab active" data-target="admin-overview" title="Overview" aria-current="page"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span class="nav-label">Overview</span></button>
       <div class="nav-group">Shops and people</div>
@@ -851,6 +852,11 @@
 
     <div class="dash-panel" id="admin-overview">
       <div class="stat-strip" id="adminStats"></div>
+      <div class="admin-ov-grid">
+        <div class="section" id="adminOvShops"></div>
+        <div class="section" id="adminOvLines"></div>
+      </div>
+      <div class="section" id="adminOvAttention"></div>
     </div>
 
     <div class="dash-panel hidden" id="admin-shops">
@@ -975,6 +981,7 @@
 <script src="phoneline.js?v=954649e519" defer></script>
 <script src="voice-admin.js?v=a8c4aef681" defer></script>
 <script src="admin-console.js?v=00ebc229fb" defer></script>
+<script src="admin-overview.js?v=457e764b68" defer></script>
 <script src="setup-gate.js?v=5769da0b03" defer></script>
 <script src="track-share.js?v=e9c22b7dcb" defer></script>
 <script src="wo-side.js?v=f349490875" defer></script>
@@ -983,7 +990,7 @@
 <script src="header.js?v=93f54bf858" defer></script>
 <script src="nav-subs.js?v=312012477f" defer></script>
 <script src="route.js?v=0442405b9b" defer></script>
-<script src="script.js?v=c0f8900287" defer></script>
+<script src="script.js?v=caa121ec8a" defer></script>
 <script src="ro.js?v=1554ccd1f5" defer></script>
 <script src="insp.js?v=0b443cc84f" defer></script>
 <script src="est.js?v=a4b9006a58" defer></script>
@@ -1043,7 +1050,7 @@
 <script src="docs.js?v=2577b823e7" defer></script>
 <script src="lang.js?v=70e1770f2a" defer></script>
 <script src="natasha.js?v=f224fb953e" defer></script>
-<script src="plans.js?v=eb1d794434" defer></script>
+<script src="plans.js?v=cab7a04338" defer></script>
 <script src="landing.js?v=5d5ba041de" defer></script>
 <script src="pwa.js?v=d2673f834b" defer></script>
 

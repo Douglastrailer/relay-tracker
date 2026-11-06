@@ -1,0 +1,104 @@
+/* ============================================================
+   RelayFleet — Admin look (2026). Applies only inside #adminView.
+   Dark, professional: a dark rail grouped by job, cards with quiet borders,
+   teal used for the active item and main actions only.
+   Loaded after style.css. Shop and mechanic screens are not affected.
+   ============================================================ */
+
+#adminView{
+  --bg:#0B0E12; --panel:#12161C; --panel-2:#171C24; --rail:#080A0D;
+  --ink:#E9EDF2; --ink-soft:#9AA5B1; --ink-faint:#6B7682;
+  --line:#222A34; --line-strong:#2D3642;
+  --accent:#2BA5BF; --accent-2:#3BB8D3; --accent-soft:rgba(43,165,191,.14);
+  --ok:#3DD68C; --warn:#F5B94E; --danger:#FF6B6B; --live:#FF8A5C; --pending:#F5B94E; --done:#3DD68C; --info:#6EA0FF;
+  color-scheme:dark;
+  color:var(--ink);
+  background:var(--bg);
+  min-height:100vh;
+  font-size:14px;
+}
+
+/* the page behind the admin takes the same dark background */
+body.has-sidebar:has(#adminView:not(.hidden)){ background:#0B0E12; }
+body.has-sidebar:has(#adminView:not(.hidden)) main{ background:#0B0E12; }
+
+/* ---------- rail ---------- */
+#adminView .dash-tabs{
+  background:var(--rail); border-right:1px solid var(--line); padding:14px 10px 16px;
+}
+#adminView .nav-group{
+  color:var(--ink-faint); text-transform:uppercase; letter-spacing:.08em; font-size:.68rem;
+  font-weight:600; padding:18px 12px 6px;
+}
+#adminView .nav-group:first-child{ padding-top:6px; }
+#adminView .dash-tab{ border-radius:8px; color:var(--ink-soft); font-size:.875rem; font-weight:500; min-height:36px; }
+#adminView .dash-tab:hover:not(.active){ background:var(--panel-2); color:var(--ink); }
+#adminView .dash-tab.active{
+  background:var(--accent-soft); color:var(--ink); font-weight:600;
+  box-shadow:inset 2px 0 0 var(--accent);
+}
+#adminView .nav-ico{ color:var(--ink-faint); }
+#adminView .dash-tab.active .nav-ico{ color:var(--accent); }
+#adminView .nav-foot{ color:var(--ink-faint); }
+#adminView .req-badge, #adminView .nav-badge{ background:var(--accent); color:#041116; }
+
+/* ---------- page title and summary cards ---------- */
+#adminView .section-head h2, #adminView .section-head h3{ color:var(--ink); }
+#adminView .section-head > .meta, #adminView .meta{ color:var(--ink-soft); }
+#adminView .stat-strip{ grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:12px; margin-bottom:28px; }
+#adminView .stat-box{
+  background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 20px;
+}
+#adminView .stat-box b{ color:var(--ink); font-size:1.75rem; font-weight:650; letter-spacing:-.01em; }
+#adminView .stat-box span{ color:var(--ink-soft); font-size:.8rem; }
+
+/* ---------- cards and tables ---------- */
+#adminView .section{ margin-bottom:36px; }
+#adminView .cw-wrap{ background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+#adminView .cw-table th{ color:var(--ink-faint); background:var(--panel-2); border-bottom:1px solid var(--line); }
+#adminView .cw-table td{ color:var(--ink); border-bottom:1px solid var(--line); }
+#adminView .cw-table tr:hover td{ background:var(--panel-2); }
+#adminView .cw-table td .meta{ color:var(--ink-faint); }
+
+#adminView .voice-admin-row, #adminView .admin-shop-row, #adminView .account-row{
+  background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:10px; color:var(--ink);
+}
+#adminView .voice-admin-row:hover, #adminView .admin-shop-row:hover{ border-color:var(--line-strong); }
+#adminView .va-shop b, #adminView .aname{ color:var(--ink); }
+#adminView .va-allow, #adminView .va-num, #adminView .va-usage span{ color:var(--ink-soft); }
+#adminView .va-usage b{ color:var(--ink); }
+#adminView .voice-on{ color:var(--ok); }
+#adminView .voice-off{ color:var(--danger); }
+
+/* ---------- form fields and buttons ---------- */
+#adminView input:not([type=checkbox]):not([type=radio]), #adminView select, #adminView textarea{
+  background:var(--panel-2); color:var(--ink); border:1px solid var(--line-strong);
+}
+#adminView input::placeholder{ color:var(--ink-faint); }
+#adminView input[type=checkbox]{ accent-color:var(--accent); }
+#adminView .field label, #adminView label{ color:var(--ink-soft); }
+#adminView .ghost-btn{ background:var(--panel-2); border:1px solid var(--line-strong); color:var(--ink); }
+#adminView .ghost-btn:hover{ border-color:var(--accent); color:var(--ink); }
+#adminView .ghost-btn:disabled{ opacity:.45; cursor:not-allowed; }
+#adminView .text-btn{ color:var(--accent-2); }
+#adminView .text-btn.danger{ color:var(--danger); }
+#adminView .toggle-btn{ background:var(--panel-2); border-color:var(--line-strong); color:var(--ink-soft); }
+#adminView .toggle-btn.on{ background:rgba(61,214,140,.14); border-color:rgba(61,214,140,.4); color:var(--ok); }
+#adminView .toggle-btn.off{ background:var(--panel-2); border-color:var(--line-strong); color:var(--ink-faint); }
+#adminView .empty-note{ color:var(--ink-faint); }
+#adminView .form-error{ color:var(--danger); }
+
+#adminView .dash-panel{ min-width:0; }
+
+/* ---------- Overview: shops beside AI phone lines, then needs-attention ---------- */
+#adminView .admin-ov-grid{ display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:16px; margin-bottom:28px; align-items:start; }
+#adminView .admin-ov-grid > .section{ margin-bottom:0; min-width:0; }
+#adminView .admin-ov-note{ margin:-16px 0 20px; }
+#adminView .att-box{ background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+#adminView .att-row{ display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--line); }
+#adminView .att-row:last-child{ border-bottom:0; }
+#adminView .att-dot{ width:8px; height:8px; border-radius:50%; flex:none; background:var(--warn); }
+#adminView .att-dot.danger{ background:var(--danger); }
+#adminView .att-dot.ok{ background:var(--ok); }
+#adminView .att-text{ flex:1; min-width:0; color:var(--ink); }
+@media (max-width:1100px){ #adminView .admin-ov-grid{ grid-template-columns:1fr; } }
