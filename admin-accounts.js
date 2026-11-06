@@ -97,7 +97,12 @@ function renderAdminAccounts(o){
 
 async function runAccountAction(profileId, action, p){
   const { data, error } = await sb.functions.invoke('admin-account', { body: { profile_id: profileId, action } });
-  const msg = error ? (error.message || 'Something went wrong') : (data && data.error);
+  // When the function answers with an error, the real reason is in the response body, not in error.message.
+  let serverMsg = '';
+  if(error && error.context && typeof error.context.json === 'function'){
+    try { const b = await error.context.json(); serverMsg = (b && b.error) || ''; } catch(e){}
+  }
+  const msg = error ? (serverMsg || error.message || 'Something went wrong') : (data && data.error);
   if(msg){ relayFail({ message: msg }, action === 'restore' ? 'Could not turn the login back on' : 'Could not delete the account'); return; }
   const res = data || {};
   const name = res.name || (p && p.name) || 'Account';
