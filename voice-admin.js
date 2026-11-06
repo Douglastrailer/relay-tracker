@@ -6,8 +6,8 @@
 const vaMoney = n => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 async function renderVoiceAdmin(){
-  // Shown on the main Admin page (Overview), so it does not depend on opening Subscriptions.
-  const panel = document.getElementById('admin-overview'); if(!panel || !session || session.role !== 'admin') return;
+  // Shown on its own Admin tab, "AI phone lines".
+  const panel = document.getElementById('adminLinesBox'); if(!panel || !session || session.role !== 'admin') return;
   let box = document.getElementById('voiceAdminBox');
   if(!box){ box = document.createElement('section'); box.id = 'voiceAdminBox'; box.className = 'voice-admin'; panel.appendChild(box); }
   const { data, error } = await sb.rpc('admin_voice_usage', {});
@@ -21,7 +21,7 @@ async function renderVoiceAdmin(){
       const failed = !live && !busy ? (r.lines || []).find(l => l.status === 'failed') : null;
       const status = live ? `<span class="voice-on">${esc(live.phone)} · on</span>` : busy ? `<span class="meta">Setting up…</span>` : failed ? `<span class="voice-off">Failed: ${esc(failed.error || 'unknown error')}</span>` : `<span class="meta">Off</span>`;
       const action = live
-        ? `<button type="button" class="text-btn danger" data-vaoff="${esc(r.org_id)}" data-line="${esc(live.id || '')}">Turn off</button>`
+        ? `<span class="va-on"><input type="text" inputmode="numeric" maxlength="3" placeholder="New area code" data-va="area2" aria-label="New area code for ${esc(r.shop)}"><button type="button" class="ghost-btn" data-vachange="${esc(r.org_id)}" data-line="${esc(live.id || '')}">Change number</button></span><button type="button" class="text-btn danger" data-vaoff="${esc(r.org_id)}" data-line="${esc(live.id || '')}">Turn off</button>`
         : busy ? '' : `<span class="va-on"><input type="text" inputmode="numeric" maxlength="3" placeholder="Area code" data-va="area" aria-label="Area code for ${esc(r.shop)}"><button type="button" class="ghost-btn" data-vaon="${esc(r.org_id)}" ${r.allowed ? '' : 'disabled title="Approve the shop first"'}>Turn on</button></span>`;
       return `<div class="voice-admin-row" data-org="${esc(r.org_id)}">
         <div class="va-shop"><b>${esc(r.shop)}</b>${status}</div>
@@ -49,6 +49,18 @@ async function renderVoiceAdmin(){
     if(e || (data && data.ok === false)){ relayFail(e || { message: data.error }, 'Could not turn on the line'); renderVoiceAdmin(); return; }
     recordsToast(`AI phone line on: ${data.phone_number}`); renderVoiceAdmin();
   });
+  box.querySelectorAll('[data-vachange]').forEach(b => b.onclick = async () => {
+    const row = b.closest('.voice-admin-row'), shop = row.querySelector('b').textContent;
+    const area = row.querySelector('[data-va="area2"]').value.replace(/\D/g, '');
+    if(area.length !== 3){ relayNotice('Enter a 3-digit area code for the new number.'); return; }
+    if(!(await relayConfirm({ message: `Change the AI phone number for ${shop}? The current number is released now and a new number with area code ${area} is bought. Calls to the old number stop working.`, confirmText: 'Change number', danger: true }))) return;
+    b.disabled = true; b.textContent = 'Changing…';
+    const off = await sb.functions.invoke('voice-provision', { body: { action: 'deprovision', org_id: b.dataset.vachange, line_id: b.dataset.line } });
+    if(off.error || (off.data && off.data.ok === false)){ relayFail(off.error || { message: off.data.error }, 'Could not release the current number'); renderVoiceAdmin(); return; }
+    const on = await sb.functions.invoke('voice-provision', { body: { action: 'provision', org_id: b.dataset.vachange, area_code: area } });
+    if(on.error || (on.data && on.data.ok === false)){ relayFail(on.error || { message: on.data.error }, 'The old number was released, but the new one could not be set up. Turn the line on again with an area code.'); renderVoiceAdmin(); return; }
+    recordsToast(`New AI phone number: ${on.data.phone_number}`); renderVoiceAdmin();
+  });
   box.querySelectorAll('[data-vaoff]').forEach(b => b.onclick = async () => {
     if(!(await relayConfirm({ message: 'Turn off this AI phone line? The number is released and calls stop being answered by the AI.', confirmText: 'Turn off', danger: true }))) return;
     const { data, error: e } = await sb.functions.invoke('voice-provision', { body: { action: 'deprovision', org_id: b.dataset.vaoff, line_id: b.dataset.line } });
@@ -56,4 +68,4 @@ async function renderVoiceAdmin(){
     recordsToast('AI phone line is off'); renderVoiceAdmin();
   });
 }
-document.addEventListener('click', e => { if(e.target.closest && e.target.closest('.dash-tab[data-target="admin-overview"]')) setTimeout(renderVoiceAdmin, 0); });
+document.addEventListener('click', e => { if(e.target.closest && e.target.closest('.dash-tab[data-target="admin-lines"]')) setTimeout(renderVoiceAdmin, 0); });

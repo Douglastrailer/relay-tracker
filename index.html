@@ -831,6 +831,8 @@
     <nav class="dash-tabs" aria-label="Admin">
       <div class="nav-group">Platform</div>
       <button class="dash-tab active" data-target="admin-overview" title="Overview" aria-current="page"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span class="nav-label">Overview</span></button>
+      <button class="dash-tab" data-target="admin-shops" title="Shops"><span class="nav-label">Shops</span></button>
+      <button class="dash-tab" data-target="admin-lines" title="AI phone lines"><span class="nav-label">AI phone lines</span></button>
       <button class="dash-tab" data-target="admin-requests" title="Requests"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><span class="nav-label">Requests</span> <span id="requestsBadge" class="req-badge hidden">0</span></button>
       <button class="dash-tab" data-target="admin-subs" title="Subscriptions">💳 <span class="nav-label">Subscriptions</span></button>
       <button class="dash-tab" data-target="admin-vin" title="VIN lookup"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M8 11h6M11 8v6"/></svg><span class="nav-label">VIN lookup</span></button>
@@ -848,6 +850,14 @@
 
     <div class="dash-panel" id="admin-overview">
       <div class="stat-strip" id="adminStats"></div>
+    </div>
+
+    <div class="dash-panel hidden" id="admin-shops">
+      <div class="section" id="adminShopsBox"></div>
+    </div>
+
+    <div class="dash-panel hidden" id="admin-lines">
+      <div class="section" id="adminLinesBox"></div>
     </div>
 
     <div class="dash-panel hidden" id="admin-requests">
@@ -962,7 +972,8 @@
 <script src="live.js?v=d14d2a574d" defer></script>
 <script src="demo-admin.js?v=acf0682d2b" defer></script>
 <script src="phoneline.js?v=954649e519" defer></script>
-<script src="voice-admin.js?v=d0859ed663" defer></script>
+<script src="voice-admin.js?v=a8c4aef681" defer></script>
+<script src="admin-console.js?v=00ebc229fb" defer></script>
 <script src="setup-gate.js?v=5769da0b03" defer></script>
 <script src="track-share.js?v=e9c22b7dcb" defer></script>
 <script src="wo-side.js?v=f349490875" defer></script>
