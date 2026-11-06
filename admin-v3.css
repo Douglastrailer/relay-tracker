@@ -136,3 +136,14 @@ body.has-sidebar.nav-collapsed #adminView .nav-group{ font-size:0; height:1px; p
 #adminView .section{ margin-bottom:28px; }
 @media (max-width:1100px){ #adminView .admin-ov-grid{ grid-template-columns:1fr; } }
 
+
+/* ---------- Accounts: name, sign-in email, company, controls ---------- */
+#adminView .acct-tools{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+#adminView .acct-tools input[type=search]{ flex:1; min-width:220px; max-width:420px; padding:9px 14px; }
+#adminView .acct-row{ display:flex; gap:16px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; }
+#adminView .acct-who{ min-width:220px; flex:1 1 260px; }
+#adminView .acct-email{ color:var(--ink); font-size:.86rem; margin-top:2px; word-break:break-all; }
+#adminView .acct-co{ color:var(--ink-faint); font-size:.78rem; margin-top:3px; }
+#adminView .acct-off{ display:inline-block; margin-left:6px; font-size:.7rem; font-weight:600; color:var(--red); }
+#adminView .acct-ctl{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-end; flex:1 1 360px; }
+#adminView .acct-ctl select, #adminView .acct-ctl input{ max-width:170px; }

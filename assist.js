@@ -20,7 +20,7 @@ function assistTextHtml(t){
 function assistRender(){
   const log = document.getElementById('assistLog');
   if(!log) return;
-  log.innerHTML = (assistMsgs.length ? '' : `<div class="assist-hello"><b>Ask about your shop.</b><span>${session && ['mechanic','fleet'].includes(session.role) ? 'I look things up in Relay for you.' : 'I look things up in Relay and can prepare work orders, estimates and technician changes for you to confirm.'}</span>
+  log.innerHTML = (assistMsgs.length ? '' : `<div class="assist-hello">${!session ? '<b>Hi, I’m Natasha.</b><span>Ask me what Relay does, how it works, or how to get started. I can’t see any shop’s data from here.</span>' : '<b>Ask about your shop.</b><span>' + (['mechanic','fleet'].includes(session.role) ? 'I look things up in Relay for you.' : 'I look things up in Relay and can prepare work orders, estimates and technician changes for you to confirm.') + '</span>'}
       <div class="assist-sugg">${assistSuggest().map(s => `<button type="button" class="assist-chip" data-q="${esc(s)}">${esc(s)}</button>`).join('')}</div></div>`)
     + assistMsgs.map((m, i) => `<div class="assist-msg ${m.role}">${m.role === 'user' ? esc(m.content) : assistTextHtml(m.content || '')}
         ${m.action ? assistActionHtml(m.action, i) : ''}${m.error ? `<div class="assist-err">${esc(m.error)}</div>` : ''}</div>`).join('')
@@ -132,7 +132,8 @@ function initAssist(){
   const fab = document.getElementById('assistFab');
   if(!fab) return;
   // Everyone signed in: what each person can see is decided by their own login.
-  const allowed = !!session && ['shop','admin','mechanic','fleet'].includes(session.role);
+  // Visitors (no one signed in) get Natasha too: general questions about Relay only, no shop data.
+  const allowed = !session || ['shop','admin','mechanic','fleet'].includes(session.role);
   fab.classList.toggle('hidden', !allowed);
   if(!allowed) return;
   fab.onclick = () => (document.getElementById('assistPanel').classList.contains('hidden') ? openAssist() : closeAssist());
@@ -141,3 +142,6 @@ function initAssist(){
   document.getElementById('assistMic').onclick = assistVoice;
   document.getElementById('assistForm').onsubmit = (e) => { e.preventDefault(); const i = document.getElementById('assistInput'); const v = i.value; i.value = ''; assistAsk(v); };
 }
+
+// Visitors on the public pages get Natasha as soon as the page loads (signed-in users get it when the app starts).
+document.addEventListener('DOMContentLoaded', () => { if(typeof session !== 'undefined' && !session && typeof initAssist === 'function') initAssist(); });

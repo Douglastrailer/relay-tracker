@@ -25,7 +25,7 @@ function shopRowHtml(r){
   const archiveBtn = r.archived
     ? `<button type="button" class="ghost-btn" data-shop-restore="${esc(r.org_id)}">Restore</button>`
     : `<button type="button" class="ghost-btn" data-shop-archive="${esc(r.org_id)}" ${aiBlocks ? 'disabled title="Turn off the AI phone line first"' : ''}>Archive</button>`;
-  const deleteBtn = `<button type="button" class="text-btn danger" data-shop-delete="${esc(r.org_id)}" ${r.archived ? '' : 'disabled title="Archive the shop first"'}>Delete permanently</button>`;
+  const deleteBtn = `<button type="button" class="text-btn danger" data-shop-delete="${esc(r.org_id)}" title="${r.archived ? 'Delete this shop for good' : 'Archives the shop first, then deletes it'}">Delete permanently</button>`;
   return `<div class="voice-admin-row admin-shop-row" data-org="${esc(r.org_id)}" data-name="${esc(r.name)}">
     <div class="va-shop"><b>${esc(r.name)}</b> ${shopStateBadge(r)}<div class="meta">${esc(shopMetaLine(r))}</div>
       ${r.archived_at ? `<div class="meta">Archived ${esc(new Date(r.archived_at).toLocaleDateString('en-US'))}</div>` : ''}</div>
@@ -54,7 +54,10 @@ async function renderAdminShops(){
   filterEl.oninput = () => { adminShopsState.filter = filterEl.value; renderAdminShops(); };
   box.querySelectorAll('[data-shop-archive]').forEach(b => b.onclick = () => archiveShop(b.dataset.shopArchive, b.closest('.admin-shop-row').dataset.name));
   box.querySelectorAll('[data-shop-restore]').forEach(b => b.onclick = () => restoreShop(b.dataset.shopRestore, b.closest('.admin-shop-row').dataset.name));
-  box.querySelectorAll('[data-shop-delete]').forEach(b => b.onclick = () => openDeleteShop(b.dataset.shopDelete, b.closest('.admin-shop-row').dataset.name));
+  box.querySelectorAll('[data-shop-delete]').forEach(b => b.onclick = () => {
+    const row = adminShopsState.rows.find(r => r.org_id === b.dataset.shopDelete);
+    openDeleteShop(b.dataset.shopDelete, b.closest('.admin-shop-row').dataset.name, !!(row && row.archived));
+  });
 }
 
 async function archiveShop(orgId, name){
@@ -72,7 +75,17 @@ async function restoreShop(orgId, name){
 }
 
 // ---------- Permanent delete: preview, then type the exact name ----------
-function openDeleteShop(orgId, name){
+// An active shop is archived first (after a confirm), then the permanent-delete dialog opens.
+async function openDeleteShop(orgId, name, archived){
+  if(!archived){
+    if(!(await relayConfirm({ message: `${name} is active. Archive it now and then delete it? Its people will be switched off first.`, confirmText: 'Archive and continue', danger: true }))) return;
+    const { error } = await sb.rpc('admin_archive_shop', { p_org: orgId, p_archived: true });
+    if(error){ relayFail(error, 'Could not archive the shop'); return; }
+    renderAdminShops();
+  }
+  openDeleteShopDialog(orgId, name);
+}
+function openDeleteShopDialog(orgId, name){
   const wrap = document.createElement('div');
   wrap.className = 'relay-dlg-backdrop';
   wrap.innerHTML = `<div class="relay-dlg relay-dlg-confirm" role="alertdialog" aria-modal="true" aria-labelledby="dsTitle">

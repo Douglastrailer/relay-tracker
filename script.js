@@ -810,6 +810,7 @@ async function initPublicRequestPage(orgId){
 }
 
 function showPublicView(which){
+  if(!session && typeof initAssist === 'function') initAssist();   // Natasha is available to visitors too
   [homeView, contactView, publicAuthView].forEach(v=>v.classList.add('hidden'));
   [navHome, navSignin, navContact].forEach(b=>b.classList.remove('active'));
   if(which === 'home'){ homeView.classList.remove('hidden'); navHome.classList.add('active'); }
@@ -2966,59 +2967,13 @@ async function refreshAdminData(){
     else adminMarkers[m.id] = L.marker([loc.lat, loc.lng], { icon: pinIcon(isLive?'mech':'offline') }).addTo(adminOpsMap).bindPopup(esc(m.name));
   }
 
-  // accounts — only show members of approved companies (pending/rejected show under Requests instead)
+  // accounts — only members of approved companies (pending/rejected show under Requests instead).
+  // The screen itself lives in admin-accounts.js: name, sign-in email, company, search, delete.
   const approvedOrgIds = new Set(orgs.filter(o=>o.status==='approved').map(o=>o.id));
   const visibleProfiles = profiles.filter(p => p.role === 'admin' || approvedOrgIds.has(p.org_id));
-  const accBox = document.getElementById('adminAccounts');
-
-  function accountRowHtml(p, companyLine){
-    return `
-    <div class="account-row" data-id="${p.id}">
-      <div class="aname">${esc(p.name)}<div class="meta" style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-faint); margin-top:2px;">${companyLine}</div></div>
-      <select class="arole-select">
-        <option value="mechanic" ${p.role==='mechanic'?'selected':''}>Mechanic</option>
-        <option value="shop" ${p.role==='shop'?'selected':''}>Shop owner</option>
-        <option value="fleet" ${p.role==='fleet'?'selected':''}>Fleet manager</option>
-        <option value="admin" ${p.role==='admin'?'selected':''}>Admin</option>
-      </select>
-      <input type="text" class="acompany-input" placeholder="Company (fleet only)" value="${esc(p.company||'')}">
-      <div style="display:flex; gap:8px;">
-        <button class="toggle-btn ${p.active?'on':'off'}" data-active="${p.active}">${p.active?'Active':'Inactive'}</button>
-        <button class="j-edit acc-save">Save</button>
-      </div>
-    </div>`;
+  if(wantAccounts && typeof renderAdminAccounts === 'function'){
+    renderAdminAccounts({ profiles: visibleProfiles, orgName, fleetShopsById });
   }
-
-  function renderAccountsForRole(role){
-    const filtered = visibleProfiles.filter(p=>p.role===role);
-    const companyLine = p =>
-      role === 'shop' ? 'Company: ' + esc(orgName(p.org_id)) :
-      role === 'mechanic' ? 'Works for: ' + esc(orgName(p.org_id)) :
-      role === 'fleet' ? 'Customer of: ' + esc((fleetShopsById[p.id]||[]).join(', ') || orgName(p.org_id)) + ' · Company: ' + esc(p.company||'—') :
-      'Platform admin';
-    accBox.innerHTML = filtered.length
-      ? filtered.map(p=>accountRowHtml(p, companyLine(p))).join('')
-      : '<div class="empty-note">None yet.</div>';
-    accBox.querySelectorAll('.account-row').forEach(row=>{
-      const id = row.dataset.id;
-      row.querySelector('.toggle-btn').onclick = async (e)=>{
-        const btn = e.target;
-        const newActive = btn.dataset.active !== 'true';
-        const { error } = await sb.from('profiles').update({ active:newActive }).eq('id', id);
-        if(!error) refreshAdminData();
-      };
-      row.querySelector('.acc-save').onclick = async ()=>{
-        const newRole = row.querySelector('.arole-select').value;
-        const company = row.querySelector('.acompany-input').value.trim();
-        const { error } = await sb.from('profiles').update({ role:newRole, company: newRole==='fleet' ? company : null }).eq('id', id);
-        if(error) relayFail(error, 'Could not update'); else refreshAdminData();
-      };
-    });
-  }
-
-  const roleFilter = document.getElementById('accountsRoleFilter');
-  renderAccountsForRole(roleFilter.value);
-  roleFilter.onchange = ()=> renderAccountsForRole(roleFilter.value);
 
 
   // pending company requests

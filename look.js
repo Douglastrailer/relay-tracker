@@ -58,15 +58,11 @@
 
   apply(read());
 
-  // ----- the Aa button and its panel (every page, including sign-in) -----
+  // ----- where the panel opens from -----
+  // Signed in: "Appearance" is an item in the avatar menu (top right).
+  // Public pages (home, sign-in): a small Aa button next to the moon/sun toggle.
   function build(){
-    if(document.getElementById('lookBtn')) return;
-    var btn = document.createElement('button');
-    btn.type = 'button'; btn.id = 'lookBtn'; btn.className = 'look-fab';
-    btn.setAttribute('aria-label', 'Appearance'); btn.setAttribute('aria-expanded', 'false');
-    btn.title = 'Appearance';
-    btn.textContent = 'Aa';
-
+    if(document.getElementById('lookPanel')) return;
     var panel = document.createElement('div');
     panel.id = 'lookPanel'; panel.className = 'look-panel hidden'; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Appearance');
     panel.innerHTML =
@@ -82,9 +78,22 @@
       '</div></div>' +
       '<div class="look-row"><label class="look-label" for="lookMotion">Moving water</label><input type="checkbox" id="lookMotion"></div>' +
       '<p class="look-note">Saved on this device. Turning on "Reduce motion" in your system settings also stops the water.</p>';
-
-    document.body.appendChild(btn);
     document.body.appendChild(panel);
+
+    // entry 1: the avatar menu (signed in)
+    var menu = document.getElementById('moreMenu');
+    var item = document.createElement('button');
+    item.type = 'button'; item.id = 'lookMenuItem'; item.className = 'look-menu-item'; item.textContent = 'Appearance';
+    if(menu) menu.appendChild(item);
+
+    // entry 2: a small button in the top bar (public pages)
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.id = 'lookBtn'; btn.className = 'look-top';
+    btn.setAttribute('aria-label', 'Appearance'); btn.setAttribute('aria-expanded', 'false'); btn.title = 'Appearance';
+    btn.textContent = 'Aa';
+    var group = document.querySelector('.topbar-right-group');
+    var toggle = document.getElementById('themeToggle');
+    if(group) group.insertBefore(btn, toggle ? toggle.nextSibling : group.firstChild);
 
     function sync(){
       var s = read();
@@ -97,16 +106,25 @@
     function open(on){
       panel.classList.toggle('hidden', !on);
       btn.setAttribute('aria-expanded', String(on));
-      if(on){ sync(); }
+      if(on) sync();
     }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); open(panel.classList.contains('hidden')); });
-    panel.querySelector('.look-close').addEventListener('click', function(){ open(false); btn.focus(); });
+    function isOpen(){ return !panel.classList.contains('hidden'); }
+
+    item.addEventListener('click', function(e){ e.stopPropagation(); if(menu) menu.classList.add('hidden'); open(!isOpen()); });
+    btn.addEventListener('click', function(e){ e.stopPropagation(); open(!isOpen()); });
+    panel.querySelector('.look-close').addEventListener('click', function(){ open(false); });
     panel.querySelectorAll('[data-mode]').forEach(function(b){ b.addEventListener('click', function(){ window.relayLook.set({ mode: b.dataset.mode }); sync(); }); });
     panel.querySelectorAll('[data-accent]').forEach(function(b){ b.addEventListener('click', function(){ window.relayLook.set({ accent: b.dataset.accent }); sync(); }); });
     document.getElementById('lookGlass').addEventListener('input', function(e){ window.relayLook.set({ glass: Number(e.target.value) }); sync(); });
     document.getElementById('lookMotion').addEventListener('change', function(e){ window.relayLook.set({ motion: e.target.checked ? 'on' : 'off' }); });
-    document.addEventListener('click', function(e){ if(!panel.classList.contains('hidden') && !panel.contains(e.target) && e.target !== btn) open(false); });
-    document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !panel.classList.contains('hidden')){ open(false); btn.focus(); } });
+    document.addEventListener('click', function(e){ if(isOpen() && !panel.contains(e.target) && e.target !== btn && e.target !== item) open(false); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && isOpen()){ open(false); btn.focus(); } });
+
+    // the top-bar button only shows when nobody is signed in (the avatar is hidden then)
+    var who = document.getElementById('whoBox');
+    function syncEntry(){ btn.classList.toggle('hidden', !!who && !who.classList.contains('hidden')); }
+    syncEntry();
+    if(who) new MutationObserver(syncEntry).observe(who, { attributes:true, attributeFilter:['class'] });
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build); else build();
 })();
