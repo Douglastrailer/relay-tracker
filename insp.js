@@ -114,10 +114,10 @@ async function openInspection(inspId){
   overlay.classList.remove('hidden');
   document.body.classList.add('modal-open');
   const { data: insp, error } = await sb.from('inspections')
-    .select('id, job_id, unit_id, template_name, status, odometer, notes, started_at, completed_at, inspected_by').eq('id', inspId).maybeSingle();
+    .select('id, job_id, unit_id, template_name, status, odometer, notes, started_at, completed_at, inspected_by, form').eq('id', inspId).maybeSingle();
   if(error || !insp){ body.innerHTML = '<div class="form-error" style="padding:24px;">This inspection could not be loaded, or you do not have access to it.</div>'; return; }
   const [itemsRes, jobRes, photosRes, byRes] = await Promise.all([
-    sb.from('inspection_items').select('id, position, section, label, result, notes, recommend').eq('inspection_id', inspId).order('position'),
+    sb.from('inspection_items').select('id, position, section, label, result, notes, recommend, repaired_date').eq('inspection_id', inspId).order('position'),
     sb.from('jobs').select('id, ro_number, customer, vehicle, mechanic_id, org_id').eq('id', insp.job_id).maybeSingle(),
     sb.from('job_attachments').select('id, file_path, file_name, file_type, inspection_item_id').eq('job_id', insp.job_id).not('inspection_item_id', 'is', null),
     insp.inspected_by ? sb.from('profiles').select('name').eq('id', insp.inspected_by).maybeSingle() : Promise.resolve({ data:null })
@@ -128,7 +128,8 @@ async function openInspection(inspId){
   (photosRes.data || []).forEach(p => { (photos[p.inspection_item_id] = photos[p.inspection_item_id] || []).push(p); });
   inspCurrent = { insp, items: itemsRes.data || [], job, photos, inspector: byRes.data ? byRes.data.name : '',
                   editable: canWork && insp.status === 'in_progress', canReopen: insp.status === 'completed' && (session.role === 'shop' || session.role === 'admin') };
-  if(inspCurrent.editable) renderInspectionEditor(); else renderInspectionReport();
+  if(isFmcsaInspection(insp)) renderFmcsaForm();   // the official FMCSA 396.17 sheet (fmcsa-form.js)
+  else if(inspCurrent.editable) renderInspectionEditor(); else renderInspectionReport();
   loadInspectionThumbs();
 }
 
