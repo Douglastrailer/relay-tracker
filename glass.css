@@ -1,0 +1,103 @@
+/* ============================================================
+   RelayFleet — Liquid glass theme for every signed-in screen
+   (shop owner, mechanic, fleet manager, admin). Light mode only:
+   the dark mode toggle keeps its own colours. Public pages are not changed.
+   Loaded after style.css and admin-v3.css. Motion is off when "Reduce motion" is on.
+   ============================================================ */
+
+:root:not([data-theme="dark"]){
+  --bg:#DCEAF5; --panel:rgba(255,255,255,.55); --panel-2:rgba(255,255,255,.72);
+  --ink:#0E1B2C; --ink-soft:#4B5B72; --ink-faint:#7A889D;
+  --line:rgba(14,27,44,.10); --line-strong:rgba(14,27,44,.18);
+  --accent:#0A6CD6; --accent-2:#0A84FF; --accent-soft:rgba(10,132,255,.13);
+  --shadow-pop:0 14px 40px rgba(25,50,95,.18);
+}
+
+/* the water behind every signed-in screen */
+:root:not([data-theme="dark"]) body.in-app{
+  background:#DCEAF5; position:relative;
+}
+:root:not([data-theme="dark"]) body.in-app::before{
+  content:""; position:fixed; inset:-10%; z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(42% 38% at 18% 22%, rgba(120,190,255,.80) 0%, rgba(120,190,255,0) 70%),
+    radial-gradient(40% 36% at 82% 18%, rgba(170,240,225,.75) 0%, rgba(170,240,225,0) 70%),
+    radial-gradient(44% 40% at 70% 85%, rgba(255,190,226,.65) 0%, rgba(255,190,226,0) 72%),
+    radial-gradient(36% 34% at 12% 88%, rgba(196,182,255,.65) 0%, rgba(196,182,255,0) 70%),
+    linear-gradient(160deg, #EAF3FB 0%, #D7E6F3 100%);
+  animation:relay-water 26s ease-in-out infinite alternate;
+}
+@keyframes relay-water{
+  0%   { transform:translate3d(-2%,-1%,0) scale(1.00) rotate(0deg); }
+  50%  { transform:translate3d(2%,1%,0) scale(1.05) rotate(2deg); }
+  100% { transform:translate3d(-1%,2%,0) scale(1.02) rotate(-1.5deg); }
+}
+
+/* glass surfaces */
+:root:not([data-theme="dark"]) .card,
+:root:not([data-theme="dark"]) .job-card,
+:root:not([data-theme="dark"]) .van-card,
+:root:not([data-theme="dark"]) .bay-card,
+:root:not([data-theme="dark"]) .stat-box,
+:root:not([data-theme="dark"]) .cw-wrap,
+:root:not([data-theme="dark"]) .request-card,
+:root:not([data-theme="dark"]) .auth-card,
+:root:not([data-theme="dark"]) .voice-admin-row,
+:root:not([data-theme="dark"]) .admin-shop-row,
+:root:not([data-theme="dark"]) .account-row{
+  background:rgba(255,255,255,.55);
+  border:1px solid rgba(255,255,255,.80);
+  backdrop-filter:blur(26px) saturate(170%); -webkit-backdrop-filter:blur(26px) saturate(170%);
+  box-shadow:0 10px 30px rgba(25,50,95,.10), inset 0 1px 0 rgba(255,255,255,.95);
+  border-radius:22px;
+}
+:root:not([data-theme="dark"]) .job-card, :root:not([data-theme="dark"]) .van-card,
+:root:not([data-theme="dark"]) .bay-card, :root:not([data-theme="dark"]) .card{ border-radius:20px; }
+
+/* sidebars and rails */
+:root:not([data-theme="dark"]) body.has-sidebar .dash-tabs{
+  background:rgba(255,255,255,.50); backdrop-filter:blur(30px) saturate(180%); -webkit-backdrop-filter:blur(30px) saturate(180%);
+  border-right:1px solid rgba(255,255,255,.80);
+}
+:root:not([data-theme="dark"]) .dash-tab.active{
+  background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.62));
+  box-shadow:0 6px 16px rgba(25,50,95,.10), inset 0 1px 0 #fff;
+}
+
+/* fields and buttons */
+:root:not([data-theme="dark"]) input:not([type=checkbox]):not([type=radio]),
+:root:not([data-theme="dark"]) select, :root:not([data-theme="dark"]) textarea{
+  background:rgba(255,255,255,.75); color:var(--ink);
+  border:1px solid rgba(14,27,44,.12); border-radius:14px;
+  box-shadow:inset 0 1px 2px rgba(25,50,95,.06);
+}
+:root:not([data-theme="dark"]) input:focus, :root:not([data-theme="dark"]) select:focus, :root:not([data-theme="dark"]) textarea:focus{
+  outline:none; border-color:var(--accent-2); box-shadow:0 0 0 4px var(--accent-soft);
+}
+:root:not([data-theme="dark"]) .ghost-btn, :root:not([data-theme="dark"]) .j-edit,
+:root:not([data-theme="dark"]) .toggle-btn, :root:not([data-theme="dark"]) .btn-secondary{
+  border-radius:999px;
+  background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.55));
+  border:1px solid rgba(255,255,255,.95); color:var(--ink);
+  box-shadow:0 4px 12px rgba(25,50,95,.10), inset 0 1px 0 #fff;
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+:root:not([data-theme="dark"]) .ghost-btn:hover, :root:not([data-theme="dark"]) .j-edit:hover{
+  transform:translateY(-1px); box-shadow:0 8px 18px rgba(25,50,95,.14), inset 0 1px 0 #fff;
+}
+:root:not([data-theme="dark"]) .primary-btn, :root:not([data-theme="dark"]) .btn-primary,
+:root:not([data-theme="dark"]) button.primary{
+  border-radius:999px; border:0;
+  background:linear-gradient(180deg, #2A8DFF, #0A6CD6); color:#fff;
+  box-shadow:0 6px 16px rgba(10,108,214,.30), inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+/* the top bar floats as glass too */
+:root:not([data-theme="dark"]) body.in-app .topbar{
+  background:rgba(255,255,255,.55); backdrop-filter:blur(26px) saturate(170%); -webkit-backdrop-filter:blur(26px) saturate(170%);
+  border-bottom:1px solid rgba(255,255,255,.85);
+}
+
+@media (prefers-reduced-motion: reduce){
+  :root:not([data-theme="dark"]) body.in-app::before{ animation:none; }
+}

@@ -91,9 +91,12 @@ function overviewLineLabel(voiceLine){
 
 function renderOverviewShops(active, archivedCount){
   const box = document.getElementById('adminOvShops'); if(!box) return;
-  const shown = active.slice(0, 10);
+  // The table shows approved shops only; pending and rejected ones are on the Shops and Requests screens.
+  const approved = active.filter(r => r.status === 'approved');
+  const other = active.length - approved.length;
+  const shown = approved.slice(0, 10);
   box.innerHTML = `<div class="section-head"><h2>Shops</h2>
-      <span class="meta">${active.length} active${archivedCount ? ' · ' + archivedCount + ' archived' : ''}</span>
+      <span class="meta">${approved.length} approved${other ? ' · ' + other + ' pending or rejected' : ''}${archivedCount ? ' · ' + archivedCount + ' archived' : ''}</span>
       <button type="button" class="ghost-btn" data-go="admin-shops">All shops</button></div>
     <div class="cw-wrap"><table class="cw-table"><thead><tr><th>Shop</th><th>Status</th><th>AI line</th><th>People</th></tr></thead><tbody>
       ${shown.map(r => `<tr><td><b>${esc(r.name)}</b><div class="meta">${esc(r.contact_email || 'no email on file')}</div></td>
@@ -118,10 +121,14 @@ function renderOverviewAttention({ pending, failed, overdue, overdueCount, overd
   const items = [
     ...pending.map(p => ({ tone:'warn', text:`${p.name} asked to join Relay`, action:'Review', go:'admin-requests' })),
     ...failed.map(f => ({ tone:'danger', text:`${f.name}: the AI phone line failed to set up`, action:'Open AI phone lines', go:'admin-lines' })),
-    ...overdue.slice(0, 10).map(o => ({ tone:'warn',
-      text:`${o.shop}: ${o.customer} owes $${Number(o.total).toFixed(2)} on ${o.doc_number || 'an invoice'}, ${o.days_late} day${o.days_late === 1 ? '' : 's'} late` }))
+    // A few overdue invoices are listed one by one; a long list becomes one summary row.
+    ...(overdue.length && overdueCount <= 3 ? overdue.map(o => ({ tone:'warn',
+      text:`${o.shop}: ${o.customer} owes $${Number(o.total).toFixed(2)} on ${o.doc_number || 'an invoice'}, ${o.days_late} day${o.days_late === 1 ? '' : 's'} late` })) : [])
   ];
-  const more = overdueCount > 10 ? `<div class="att-row"><span class="att-dot"></span><div class="att-text meta">${overdueCount - 10} more overdue · $${overdueTotal.toFixed(2)} in total</div></div>` : '';
+  const summaryRow = overdueCount > 3
+    ? `<div class="att-row"><span class="att-dot"></span><div class="att-text">${overdueCount} overdue invoices across shops · $${overdueTotal.toFixed(2)} unpaid</div><button type="button" class="ghost-btn" data-go="admin-invoices">Review</button></div>`
+    : '';
+  const more = summaryRow;
   box.innerHTML = `<div class="section-head"><h2>Needs your attention</h2><span class="meta">${total} item${total === 1 ? '' : 's'}</span></div>
     <div class="att-box">
       ${items.map(i => `<div class="att-row"><span class="att-dot ${i.tone}"></span><div class="att-text">${esc(i.text)}</div>
