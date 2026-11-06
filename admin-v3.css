@@ -7,41 +7,18 @@
    ============================================================ */
 
 #adminView{
-  --ink:#0E1B2C; --ink-soft:#4B5B72; --ink-faint:#8190A6;
-  --glass:rgba(255,255,255,.46); --glass-strong:rgba(255,255,255,.66); --glass-line:rgba(255,255,255,.78);
-  --edge:rgba(14,27,44,.08);
-  --blue:#0A84FF; --blue-2:#3FA2FF; --blue-soft:rgba(10,132,255,.14);
+  --glass:rgba(var(--g-rgb),var(--g-alpha));
+  --glass-strong:rgba(var(--g-rgb),calc(var(--g-alpha) + .2));
+  --glass-line:var(--g-edge);
+  --edge:var(--line);
+  --blue:var(--accent); --blue-2:var(--accent-2); --blue-soft:var(--accent-soft);
   --green:#1FA971; --amber:#D98A00; --red:#E0463C;
-  --shadow:0 10px 34px rgba(25,50,95,.12), 0 2px 6px rgba(25,50,95,.05);
+  --shadow:0 10px 34px var(--g-shadow), 0 2px 6px var(--g-shadow);
   color:var(--ink);
-  color-scheme:light;
   font-size:14px;
   min-height:100vh;
   position:relative;
   isolation:isolate;
-}
-
-/* The water: soft colour pools that drift under the glass */
-body.has-sidebar:has(#adminView:not(.hidden)){
-  background:#DCEAF5;
-  overflow-x:hidden;
-}
-body.has-sidebar:has(#adminView:not(.hidden)) main{ background:transparent; }
-body.has-sidebar:has(#adminView:not(.hidden))::before{
-  content:""; position:fixed; inset:-10%; z-index:-1; pointer-events:none;
-  background:
-    radial-gradient(42% 38% at 18% 22%, rgba(120,190,255,.85) 0%, rgba(120,190,255,0) 70%),
-    radial-gradient(40% 36% at 82% 18%, rgba(170,240,225,.80) 0%, rgba(170,240,225,0) 70%),
-    radial-gradient(44% 40% at 70% 85%, rgba(255,190,226,.70) 0%, rgba(255,190,226,0) 72%),
-    radial-gradient(36% 34% at 12% 88%, rgba(196,182,255,.70) 0%, rgba(196,182,255,0) 70%),
-    linear-gradient(160deg, #EAF3FB 0%, #D7E6F3 100%);
-  filter:saturate(120%);
-  animation:relay-water 26s ease-in-out infinite alternate;
-}
-@keyframes relay-water{
-  0%   { transform:translate3d(-2%,-1%,0) scale(1.00) rotate(0deg); }
-  50%  { transform:translate3d(2%,1%,0) scale(1.05) rotate(2deg); }
-  100% { transform:translate3d(-1%,2%,0) scale(1.02) rotate(-1.5deg); }
 }
 
 /* ---------- glass rail ---------- */
@@ -59,9 +36,9 @@ body.has-sidebar:has(#adminView:not(.hidden))::before{
   border-radius:14px; color:var(--ink-soft); font-size:.9rem; font-weight:500; min-height:38px;
   transition:background .25s ease, color .25s ease, transform .25s ease;
 }
-#adminView .dash-tab:hover:not(.active){ background:rgba(255,255,255,.55); color:var(--ink); }
+#adminView .dash-tab:hover:not(.active){ background:var(--glass); color:var(--ink); }
 #adminView .dash-tab.active{
-  background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.62));
+  background:linear-gradient(180deg, var(--glass-strong), var(--glass));
   color:var(--ink); font-weight:600;
   box-shadow:0 6px 16px rgba(25,50,95,.10), inset 0 1px 0 #fff, inset 0 0 0 1px rgba(255,255,255,.9);
 }
@@ -87,7 +64,7 @@ body.has-sidebar.nav-collapsed #adminView .nav-group{ font-size:0; height:1px; p
 /* specular sheen that moves across glass on hover, like light on water */
 #adminView .stat-box::after, #adminView .att-box::after{
   content:""; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .4s ease;
-  background:linear-gradient(115deg, rgba(255,255,255,0) 35%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 65%);
+  background:linear-gradient(115deg, rgba(255,255,255,0) 35%, var(--glass-strong) 50%, rgba(255,255,255,0) 65%);
   background-size:250% 100%; background-position:120% 0;
 }
 #adminView .stat-box:hover::after{ opacity:1; animation:relay-sheen 1.2s ease; }
@@ -101,7 +78,7 @@ body.has-sidebar.nav-collapsed #adminView .nav-group{ font-size:0; height:1px; p
   backdrop-filter:blur(28px) saturate(180%); -webkit-backdrop-filter:blur(28px) saturate(180%);
   box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.95);
 }
-#adminView .cw-table th{ color:var(--ink-faint); background:rgba(255,255,255,.35); border-bottom:1px solid var(--edge); font-size:.72rem; letter-spacing:.04em; text-transform:uppercase; }
+#adminView .cw-table th{ color:var(--ink-faint); background:var(--glass); border-bottom:1px solid var(--edge); font-size:.72rem; letter-spacing:.04em; text-transform:uppercase; }
 #adminView .cw-table td{ color:var(--ink); border-bottom:1px solid var(--edge); }
 #adminView .cw-table tr:hover td{ background:rgba(255,255,255,.45); }
 #adminView .cw-table td .meta{ color:var(--ink-faint); }
@@ -129,7 +106,7 @@ body.has-sidebar.nav-collapsed #adminView .nav-group{ font-size:0; height:1px; p
 
 /* ---------- buttons and fields ---------- */
 #adminView input:not([type=checkbox]):not([type=radio]), #adminView select, #adminView textarea{
-  background:rgba(255,255,255,.7); color:var(--ink); border:1px solid rgba(14,27,44,.12); border-radius:14px;
+  background:var(--panel-2); color:var(--ink); border:1px solid rgba(14,27,44,.12); border-radius:14px;
   box-shadow:inset 0 1px 2px rgba(25,50,95,.06);
 }
 #adminView input:focus, #adminView select:focus, #adminView textarea:focus{ outline:none; border-color:var(--blue); box-shadow:0 0 0 4px var(--blue-soft); }
@@ -138,7 +115,7 @@ body.has-sidebar.nav-collapsed #adminView .nav-group{ font-size:0; height:1px; p
 #adminView .field label, #adminView label{ color:var(--ink-soft); }
 #adminView .ghost-btn, #adminView .j-edit, #adminView .toggle-btn{
   border-radius:999px; padding:8px 16px; font-weight:600; font-size:.85rem;
-  background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.55));
+  background:linear-gradient(180deg, rgba(255,255,255,.95), var(--glass-strong));
   border:1px solid rgba(255,255,255,.95); color:var(--ink);
   box-shadow:0 4px 12px rgba(25,50,95,.10), inset 0 1px 0 #fff;
   transition:transform .2s ease, box-shadow .2s ease;
@@ -159,7 +136,3 @@ body.has-sidebar.nav-collapsed #adminView .nav-group{ font-size:0; height:1px; p
 #adminView .section{ margin-bottom:28px; }
 @media (max-width:1100px){ #adminView .admin-ov-grid{ grid-template-columns:1fr; } }
 
-@media (prefers-reduced-motion: reduce){
-  body.has-sidebar:has(#adminView:not(.hidden))::before{ animation:none; }
-  #adminView .stat-box:hover::after{ animation:none; }
-}

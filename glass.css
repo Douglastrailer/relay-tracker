@@ -1,103 +1,154 @@
 /* ============================================================
-   RelayFleet — Liquid glass theme for every signed-in screen
-   (shop owner, mechanic, fleet manager, admin). Light mode only:
-   the dark mode toggle keeps its own colours. Public pages are not changed.
-   Loaded after style.css and admin-v3.css. Motion is off when "Reduce motion" is on.
+   RelayFleet — Liquid glass theme for every screen: home, sign-in, shop owner,
+   mechanic, fleet manager and admin. Colours come from variables, so light and
+   dark mode (and the user's glass, colour and motion choices from look.js) all
+   use the same rules. Loaded after style.css and admin-v3.css.
    ============================================================ */
 
-:root:not([data-theme="dark"]){
-  --bg:#DCEAF5; --panel:rgba(255,255,255,.55); --panel-2:rgba(255,255,255,.72);
+/* ---------- light (default) ---------- */
+:root{
+  --g-rgb:255,255,255;            /* glass tint */
+  --g-alpha:.55;                  /* glass strength, set by the Glass slider */
+  --g-edge:rgba(255,255,255,.82); /* bright rim */
+  --g-shadow:rgba(25,50,95,.10);
+  --g-base:#DCEAF5; --g-base-2:#D7E6F3;
+  --g-w1:rgba(120,190,255,.80); --g-w2:rgba(170,240,225,.75); --g-w3:rgba(255,190,226,.65); --g-w4:rgba(196,182,255,.65);
+  --glass:rgba(var(--g-rgb),var(--g-alpha));
+  --glass-strong:rgba(var(--g-rgb),calc(var(--g-alpha) + .2));
+  --panel:rgba(255,255,255,.94);  /* menus and dialogs: near-solid so text behind never shows through */
+  --panel-2:rgba(255,255,255,.80);
+  --bg:var(--g-base);
   --ink:#0E1B2C; --ink-soft:#4B5B72; --ink-faint:#7A889D;
   --line:rgba(14,27,44,.10); --line-strong:rgba(14,27,44,.18);
-  --accent:#0A6CD6; --accent-2:#0A84FF; --accent-soft:rgba(10,132,255,.13);
-  --shadow-pop:0 14px 40px rgba(25,50,95,.18);
 }
 
-/* the water behind every signed-in screen */
-:root:not([data-theme="dark"]) body.in-app{
-  background:#DCEAF5; position:relative;
+/* ---------- dark ---------- */
+:root[data-theme="dark"]{
+  --g-rgb:34,42,56;
+  --g-edge:rgba(255,255,255,.14);
+  --g-shadow:rgba(0,0,0,.45);
+  --g-base:#0A0F15; --g-base-2:#0E1620;
+  --g-w1:rgba(40,96,150,.55); --g-w2:rgba(18,112,112,.42); --g-w3:rgba(118,44,96,.38); --g-w4:rgba(62,52,140,.42);
+  --panel:rgba(22,27,34,.95); --panel-2:rgba(30,37,47,.85);
+  --bg:var(--g-base);
+  --ink:#E7EAEE; --ink-soft:#A4ADB8; --ink-faint:#8A94A1;
+  --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.16);
 }
-:root:not([data-theme="dark"]) body.in-app::before{
+
+/* ---------- the water behind every page ---------- */
+body{ background:var(--g-base); }
+body::before{
   content:""; position:fixed; inset:-10%; z-index:-1; pointer-events:none;
   background:
-    radial-gradient(42% 38% at 18% 22%, rgba(120,190,255,.80) 0%, rgba(120,190,255,0) 70%),
-    radial-gradient(40% 36% at 82% 18%, rgba(170,240,225,.75) 0%, rgba(170,240,225,0) 70%),
-    radial-gradient(44% 40% at 70% 85%, rgba(255,190,226,.65) 0%, rgba(255,190,226,0) 72%),
-    radial-gradient(36% 34% at 12% 88%, rgba(196,182,255,.65) 0%, rgba(196,182,255,0) 70%),
-    linear-gradient(160deg, #EAF3FB 0%, #D7E6F3 100%);
+    radial-gradient(42% 38% at 18% 22%, var(--g-w1) 0%, transparent 70%),
+    radial-gradient(40% 36% at 82% 18%, var(--g-w2) 0%, transparent 70%),
+    radial-gradient(44% 40% at 70% 85%, var(--g-w3) 0%, transparent 72%),
+    radial-gradient(36% 34% at 12% 88%, var(--g-w4) 0%, transparent 70%),
+    linear-gradient(160deg, var(--g-base) 0%, var(--g-base-2) 100%);
   animation:relay-water 26s ease-in-out infinite alternate;
 }
+html[data-motion="off"] body::before{ animation:none; }
+@media (prefers-reduced-motion: reduce){ html:not([data-motion="on"]) body::before{ animation:none; } }
 @keyframes relay-water{
   0%   { transform:translate3d(-2%,-1%,0) scale(1.00) rotate(0deg); }
   50%  { transform:translate3d(2%,1%,0) scale(1.05) rotate(2deg); }
   100% { transform:translate3d(-1%,2%,0) scale(1.02) rotate(-1.5deg); }
 }
 
-/* glass surfaces */
-:root:not([data-theme="dark"]) .card,
-:root:not([data-theme="dark"]) .job-card,
-:root:not([data-theme="dark"]) .van-card,
-:root:not([data-theme="dark"]) .bay-card,
-:root:not([data-theme="dark"]) .stat-box,
-:root:not([data-theme="dark"]) .cw-wrap,
-:root:not([data-theme="dark"]) .request-card,
-:root:not([data-theme="dark"]) .auth-card,
-:root:not([data-theme="dark"]) .voice-admin-row,
-:root:not([data-theme="dark"]) .admin-shop-row,
-:root:not([data-theme="dark"]) .account-row{
-  background:rgba(255,255,255,.55);
-  border:1px solid rgba(255,255,255,.80);
+/* ---------- glass surfaces ---------- */
+.card, .job-card, .van-card, .bay-card, .stat-box, .cw-wrap, .request-card, .account-row,
+.voice-admin-row, .admin-shop-row, .att-box, .auth-card, .auth-side .auth-card, .landing-hero-card{
+  background:var(--glass);
+  border:1px solid var(--g-edge);
   backdrop-filter:blur(26px) saturate(170%); -webkit-backdrop-filter:blur(26px) saturate(170%);
-  box-shadow:0 10px 30px rgba(25,50,95,.10), inset 0 1px 0 rgba(255,255,255,.95);
+  box-shadow:0 10px 30px var(--g-shadow), inset 0 1px 0 var(--g-edge);
   border-radius:22px;
 }
-:root:not([data-theme="dark"]) .job-card, :root:not([data-theme="dark"]) .van-card,
-:root:not([data-theme="dark"]) .bay-card, :root:not([data-theme="dark"]) .card{ border-radius:20px; }
+.job-card, .van-card, .bay-card, .card{ border-radius:20px; }
+
+/* menus and dialogs stay readable: solid enough that text behind them never shows through */
+.notif-panel, .notif-head, .relay-dlg, .look-panel{
+  background:var(--panel) !important;
+  backdrop-filter:blur(30px) saturate(180%); -webkit-backdrop-filter:blur(30px) saturate(180%);
+  border:1px solid var(--g-edge);
+  box-shadow:0 18px 44px var(--g-shadow);
+}
+.notif-panel{ border-radius:20px; overflow:hidden; }
+.notif-item:hover, .notif-item:focus{ background:var(--panel-2); }
+
+/* the top bar floats as glass */
+body.in-app .topbar{
+  background:var(--glass); backdrop-filter:blur(26px) saturate(170%); -webkit-backdrop-filter:blur(26px) saturate(170%);
+  border-bottom:1px solid var(--g-edge);
+}
 
 /* sidebars and rails */
-:root:not([data-theme="dark"]) body.has-sidebar .dash-tabs{
-  background:rgba(255,255,255,.50); backdrop-filter:blur(30px) saturate(180%); -webkit-backdrop-filter:blur(30px) saturate(180%);
-  border-right:1px solid rgba(255,255,255,.80);
+body.has-sidebar .dash-tabs{
+  background:var(--glass); backdrop-filter:blur(30px) saturate(180%); -webkit-backdrop-filter:blur(30px) saturate(180%);
+  border-right:1px solid var(--g-edge);
 }
-:root:not([data-theme="dark"]) .dash-tab.active{
-  background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.62));
-  box-shadow:0 6px 16px rgba(25,50,95,.10), inset 0 1px 0 #fff;
+.dash-tab.active{
+  background:linear-gradient(180deg, var(--glass-strong), var(--glass));
+  box-shadow:0 6px 16px var(--g-shadow), inset 0 1px 0 var(--g-edge);
 }
 
 /* fields and buttons */
-:root:not([data-theme="dark"]) input:not([type=checkbox]):not([type=radio]),
-:root:not([data-theme="dark"]) select, :root:not([data-theme="dark"]) textarea{
-  background:rgba(255,255,255,.75); color:var(--ink);
-  border:1px solid rgba(14,27,44,.12); border-radius:14px;
-  box-shadow:inset 0 1px 2px rgba(25,50,95,.06);
+input:not([type=checkbox]):not([type=radio]), select, textarea{
+  background:var(--panel-2); color:var(--ink);
+  border:1px solid var(--line-strong); border-radius:14px;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.06);
 }
-:root:not([data-theme="dark"]) input:focus, :root:not([data-theme="dark"]) select:focus, :root:not([data-theme="dark"]) textarea:focus{
-  outline:none; border-color:var(--accent-2); box-shadow:0 0 0 4px var(--accent-soft);
-}
-:root:not([data-theme="dark"]) .ghost-btn, :root:not([data-theme="dark"]) .j-edit,
-:root:not([data-theme="dark"]) .toggle-btn, :root:not([data-theme="dark"]) .btn-secondary{
+input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--accent-2); box-shadow:0 0 0 4px var(--accent-soft); }
+.ghost-btn, .j-edit, .toggle-btn, .btn-secondary{
   border-radius:999px;
-  background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.55));
-  border:1px solid rgba(255,255,255,.95); color:var(--ink);
-  box-shadow:0 4px 12px rgba(25,50,95,.10), inset 0 1px 0 #fff;
+  background:linear-gradient(180deg, var(--glass-strong), var(--glass));
+  border:1px solid var(--g-edge); color:var(--ink);
+  box-shadow:0 4px 12px var(--g-shadow), inset 0 1px 0 var(--g-edge);
   transition:transform .2s ease, box-shadow .2s ease;
 }
-:root:not([data-theme="dark"]) .ghost-btn:hover, :root:not([data-theme="dark"]) .j-edit:hover{
-  transform:translateY(-1px); box-shadow:0 8px 18px rgba(25,50,95,.14), inset 0 1px 0 #fff;
-}
-:root:not([data-theme="dark"]) .primary-btn, :root:not([data-theme="dark"]) .btn-primary,
-:root:not([data-theme="dark"]) button.primary{
+.ghost-btn:hover, .j-edit:hover{ transform:translateY(-1px); box-shadow:0 8px 18px var(--g-shadow), inset 0 1px 0 var(--g-edge); }
+.ghost-btn:active, .j-edit:active{ transform:scale(.97); }
+.primary-btn, .btn-primary, button.primary{
   border-radius:999px; border:0;
-  background:linear-gradient(180deg, #2A8DFF, #0A6CD6); color:#fff;
-  box-shadow:0 6px 16px rgba(10,108,214,.30), inset 0 1px 0 rgba(255,255,255,.35);
+  background:linear-gradient(180deg, var(--accent-2), var(--accent)); color:#fff;
+  box-shadow:0 6px 16px var(--accent-soft), inset 0 1px 0 rgba(255,255,255,.35);
 }
 
-/* the top bar floats as glass too */
-:root:not([data-theme="dark"]) body.in-app .topbar{
-  background:rgba(255,255,255,.55); backdrop-filter:blur(26px) saturate(170%); -webkit-backdrop-filter:blur(26px) saturate(170%);
-  border-bottom:1px solid rgba(255,255,255,.85);
-}
+/* table cells that hold dates or statuses never wrap one word per line */
+.cw-table td.nowrap, .cw-table td.when, .cw-table td.status{ white-space:nowrap; }
 
-@media (prefers-reduced-motion: reduce){
-  :root:not([data-theme="dark"]) body.in-app::before{ animation:none; }
+/* ---------- home and sign-in ---------- */
+.auth-side .auth-card{ max-width:none; }
+.lx-footer{ border-top:1px solid var(--g-edge); }
+.auth-eyebrow{ color:var(--accent); }
+
+/* ---------- the Aa button and its panel ---------- */
+.look-fab{
+  position:fixed; left:14px; bottom:14px; z-index:1200;
+  width:44px; height:44px; border-radius:999px; border:1px solid var(--g-edge); cursor:pointer;
+  background:var(--glass-strong); color:var(--ink); font-weight:700; font-size:.95rem; letter-spacing:-.02em;
+  backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%);
+  box-shadow:0 8px 22px var(--g-shadow), inset 0 1px 0 var(--g-edge);
 }
+.look-fab:hover{ transform:translateY(-1px); }
+.look-panel{
+  position:fixed; left:14px; bottom:68px; z-index:1201; width:300px; max-width:calc(100vw - 28px);
+  border-radius:22px; padding:16px 16px 14px; color:var(--ink);
+}
+.look-panel.hidden{ display:none; }
+.look-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:1rem; }
+.look-close{ border:0; background:none; color:var(--ink-soft); font-size:1.4rem; line-height:1; cursor:pointer; padding:2px 6px; }
+.look-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-top:1px solid var(--line); }
+.look-label{ font-size:.86rem; color:var(--ink-soft); font-weight:600; }
+.look-val{ font-size:.8rem; color:var(--ink-faint); min-width:52px; text-align:right; }
+.look-seg{ display:inline-flex; padding:3px; border-radius:999px; background:var(--panel-2); border:1px solid var(--line); }
+.look-seg button{ border:0; background:none; padding:6px 14px; border-radius:999px; font-weight:600; font-size:.82rem; color:var(--ink-soft); cursor:pointer; }
+.look-seg button.on{ background:var(--panel); color:var(--ink); box-shadow:0 2px 8px var(--g-shadow); }
+.look-panel input[type=range]{ width:150px; accent-color:var(--accent); }
+.look-swatches{ display:flex; gap:8px; }
+.look-swatches button{ width:24px; height:24px; border-radius:50%; border:2px solid transparent; cursor:pointer; box-shadow:inset 0 0 0 1px rgba(255,255,255,.4); }
+.look-swatches button.on{ border-color:var(--ink); }
+.look-panel input[type=checkbox]{ width:18px; height:18px; accent-color:var(--accent); }
+.look-note{ font-size:.76rem; color:var(--ink-faint); margin-top:8px; line-height:1.4; }
+
+@media (max-width:900px){ .look-fab{ bottom:12px; } .look-panel{ bottom:64px; } }

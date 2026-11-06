@@ -3155,20 +3155,13 @@ async function refreshAdminData(){
 
 // ================= theme toggle =================
 (function initTheme(){
-  const root = document.documentElement;
-  const saved = localStorage.getItem('relay_theme');
-  const theme = saved || 'light';
-  if(theme === 'dark') root.setAttribute('data-theme', 'dark');
-
+  // The moon/sun button flips light and dark through the Appearance controller (look.js).
   const btn = document.getElementById('themeToggle');
+  if(!btn || !window.relayLook) return;
   const knob = btn.querySelector('.knob');
-  knob.innerHTML = theme === 'dark' ? icon('moon', 14) : icon('sun', 14);
-
-  btn.onclick = ()=>{
-    const isDark = root.getAttribute('data-theme') === 'dark';
-    if(isDark){ root.removeAttribute('data-theme'); knob.innerHTML = icon('sun', 14); localStorage.setItem('relay_theme','light'); }
-    else{ root.setAttribute('data-theme','dark'); knob.innerHTML = icon('moon', 14); localStorage.setItem('relay_theme','dark'); }
-  };
+  const sync = ()=>{ knob.innerHTML = window.relayLook.get().mode === 'dark' ? icon('moon', 14) : icon('sun', 14); };
+  sync();
+  btn.onclick = ()=>{ window.relayLook.setMode(window.relayLook.get().mode === 'dark' ? 'light' : 'dark'); sync(); };
 })();
 
 
