@@ -155,3 +155,7 @@ input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--acce
 .look-swatches button.on{ border-color:var(--ink); }
 .look-panel input[type=checkbox]{ width:18px; height:18px; accent-color:var(--accent); }
 .look-note{ font-size:.76rem; color:var(--ink-faint); margin-top:8px; line-height:1.4; }
+
+/* Dialogs such as "Contact us" and the password reset sit above the top bar. The top bar is
+   translucent glass now, so a dialog underneath it would show through the bar. */
+.modal-overlay:not(.ro-overlay){ z-index:1300; }
