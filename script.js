@@ -2970,7 +2970,7 @@ async function refreshAdminData(){
   // accounts — only members of approved companies (pending/rejected show under Requests instead).
   // The screen itself lives in admin-accounts.js: name, sign-in email, company, search, delete.
   const approvedOrgIds = new Set(orgs.filter(o=>o.status==='approved').map(o=>o.id));
-  const visibleProfiles = profiles.filter(p => p.role === 'admin' || approvedOrgIds.has(p.org_id));
+  const visibleProfiles = profiles.filter(p => p.role === 'admin' || p.role === 'fleet' || approvedOrgIds.has(p.org_id));
   if(wantAccounts && typeof renderAdminAccounts === 'function'){
     renderAdminAccounts({ profiles: visibleProfiles, orgName, fleetShopsById });
   }

@@ -138,7 +138,7 @@ function renderQboWarnings(invs, nFiles){
   const disc = invs.filter(i => Number(i.discount_amount) > 0), tax = invs.filter(i => Number(i.tax_amount) > 0);
   const notes = [];
   if(nFiles > 1) notes.push(`The invoices were split into <b>${nFiles} files</b> (QuickBooks takes at most 100 invoices or 1,000 rows per file). Import each one.`);
-  if(disc.length) notes.push(`<b>${disc.length} invoice${disc.length === 1 ? ' has' : 's have'} a discount</b> (${disc.map(i => docNo(i)).join(', ')}). QuickBooks can't import negative lines, so add those discounts in QuickBooks after importing.`);
+  if(disc.length) notes.push(`<b>${disc.length} invoice${disc.length === 1 ? ' has' : 's have'} a discount</b> (${disc.map(i => esc(docNo(i))).join(', ')}). QuickBooks can't import negative lines, so add those discounts in QuickBooks after importing.`);
   if(tax.length) notes.push(`<b>${tax.length} invoice${tax.length === 1 ? ' includes' : 's include'} sales tax</b> as a "Sales Tax" line. QuickBooks won't import invoices at all if its own sales tax feature is turned on; in that case enter these invoices there instead.`);
   box.innerHTML = notes.length ? `<div class="auth-banner wait">${notes.map(n => `<p>${n}</p>`).join('')}</div>` : '<p class="meta">Ready to import.</p>';
 }
