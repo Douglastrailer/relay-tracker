@@ -267,12 +267,15 @@ async function fetchMyProfile(userId){
   return data;
 }
 async function fetchOrgMechanics(){
-  const { data, error } = await sb.from('profiles').select('id, name, active, availability, skills').eq('role','mechanic').eq('org_id', session.orgId);
+  let { data, error } = await sb.from('profiles').select('id, name, active, availability, skills, no_login').eq('role','mechanic').eq('org_id', session.orgId);
+  // Until migration 0063 has been run the no_login column does not exist: the list must still load.
+  if(error && /no_login/.test(error.message || '')) ({ data, error } = await sb.from('profiles').select('id, name, active, availability, skills').eq('role','mechanic').eq('org_id', session.orgId));
   if(error){ console.error('fetchOrgMechanics', error); return []; }
   return data || [];
 }
 async function fetchOrgMembers(){
-  const { data: mechanics, error: mechErr } = await sb.from('profiles').select('id, name, active, role, availability, skills').eq('role','mechanic').eq('org_id', session.orgId);
+  let { data: mechanics, error: mechErr } = await sb.from('profiles').select('id, name, phone, active, role, availability, skills, no_login').eq('role','mechanic').eq('org_id', session.orgId);
+  if(mechErr && /no_login/.test(mechErr.message || '')) ({ data: mechanics, error: mechErr } = await sb.from('profiles').select('id, name, active, role, availability, skills').eq('role','mechanic').eq('org_id', session.orgId));
   if(mechErr) console.error('fetchOrgMembers (mechanics)', mechErr);
 
   // Fleet managers are linked via fleet_shop_links now, not just profiles.org_id,
@@ -2584,7 +2587,7 @@ async function populateMechanicSelect(){
   const load = {}; openJobs.forEach(j => { load[j.mechanic_id] = (load[j.mechanic_id] || 0) + 1; });
   mechanics.sort((a, b) => (AVAIL_ORDER[a.availability] ?? 2) - (AVAIL_ORDER[b.availability] ?? 2) || (load[a.id] || 0) - (load[b.id] || 0) || a.name.localeCompare(b.name));
   const label = m => {
-    const bits = [{ available:'Available', busy:'Busy', off_duty:'Off duty', offline:'Offline' }[m.availability] || 'Offline'];
+    const bits = [m.no_login ? 'Shop mechanic' : ({ available:'Available', busy:'Busy', off_duty:'Off duty', offline:'Offline' }[m.availability] || 'Offline')];
     if(m.skills && m.skills.length) bits.push(m.skills.slice(0, 3).join(', ') + (m.skills.length > 3 ? '…' : ''));
     bits.push((load[m.id] || 0) + ' open job' + ((load[m.id] || 0) === 1 ? '' : 's'));
     return esc(m.name) + ' — ' + esc(bits.join(' · '));
@@ -2657,7 +2660,7 @@ async function renderTeamList(){
     const sub = m.role === 'fleet'
       ? `Fleet manager · ${esc(m.company || 'no company set')}`
       : 'Mechanic';
-    const mechExtra = m.role === 'mechanic' ? `<div class="team-skills">${typeof availChip === 'function' ? availChip(m.availability) : ''}${(m.skills || []).map(s => `<span class="rec-tag">${esc(s)}</span>`).join('')}<button type="button" class="text-btn team-skills-btn" data-id="${m.id}">${(m.skills || []).length ? 'Edit skills' : 'Add skills'}</button></div>` : '';
+    const mechExtra = m.role === 'mechanic' ? `<div class="team-skills">${m.no_login ? '<span class="rec-tag mech-nologin" title="Added by the shop. Does not sign in to Relay.">No login</span>' : (typeof availChip === 'function' ? availChip(m.availability) : '')}${m.no_login && m.phone ? `<span class="meta">${esc(m.phone)}</span>` : ''}${(m.skills || []).map(s => `<span class="rec-tag">${esc(s)}</span>`).join('')}<button type="button" class="text-btn team-skills-btn" data-id="${m.id}">${(m.skills || []).length ? 'Edit skills' : 'Add skills'}</button>${m.no_login ? `<button type="button" class="text-btn" data-mech-edit="${m.id}">Edit</button>` : ''}</div>` : '';
     return `
     <div class="team-row">
       <div><div class="tname">${esc(m.name)}</div><div class="tstatus">${sub} — ${m.active ? 'Active' : 'Deactivated'}</div>${mechExtra}</div>
@@ -2666,13 +2669,13 @@ async function renderTeamList(){
   }
 
   box.innerHTML = `
-    <div class="team-subhead">Mechanics</div>
-    ${mechanics.length ? mechanics.map(rowHtml).join('') : '<div class="empty-note">No mechanics have signed up yet.</div>'}
-    <div id="teamRoster"></div>
+    <div class="roster-head"><div class="team-subhead">Mechanics <span class="roster-count">${mechanics.length}</span></div><button type="button" class="roster-save hidden" id="mechAddBtn">+ Add mechanic</button></div>
+    <div id="mechAddForm"></div>
+    ${mechanics.length ? mechanics.map(rowHtml).join('') : '<div class="empty-note">No mechanics yet. Add your shop mechanics here, or share the invite code so mobile technicians can sign up.</div>'}
     <div id="fleetCustomersBox"></div>
   `;
   renderFleetCustomers();
-  if(typeof renderRosterCard === 'function') renderRosterCard();
+  if(typeof initMechAdd === 'function') initMechAdd(mechanics);
 
   box.querySelectorAll('.team-skills-btn').forEach(btn=>{
     btn.onclick = ()=>{ const m = mechanics.find(x=>x.id===btn.dataset.id); if(m && typeof openSkillsEditor === 'function') openSkillsEditor(m); };

@@ -86,71 +86,66 @@ async function renderRolesPanel(){
   });
 }
 
-// ---------------- Shop mechanics (records only) ----------------
-// A shop keeps its own list of mechanics. They have no RelayFleet login, are not assigned to jobs
-// and do not clock time here. Only the shop's own staff can read or add them (migration 0062).
-let rosterEditing = null;   // null = form closed, 'new' = adding, a number = editing that record
-async function renderRosterCard(){
-  if(!can('team') || !session || !session.orgId) return;
-  let host = document.getElementById('teamRoster');
-  if(!host){ const slot = document.getElementById('teamList'); if(!slot) return; host = document.createElement('div'); host.id = 'teamRoster'; slot.appendChild(host); }
-  const { data, error } = await sb.from('shop_roster').select('id, name, phone, note, active').eq('org_id', session.orgId).order('name');
-  if(error){ host.innerHTML = `<div class="team-subhead">Shop mechanics</div><p class="form-error">${esc(error.message)}</p>`; return; }
-  const rows = data || [];
-  const editing = typeof rosterEditing === 'number' ? rows.find(r => r.id === rosterEditing) : null;
-  const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-  const formHtml = rosterEditing === null ? '' : `
-    <form id="rosterForm" class="roster-form" novalidate>
-      <div class="roster-form-head"><b>${editing ? 'Edit shop mechanic' : 'New shop mechanic'}</b><span class="meta">No RelayFleet account needed</span></div>
-      <div class="roster-grid">
-        <div class="field"><label for="rosterName">Full name</label><input id="rosterName" maxlength="120" placeholder="e.g. Mike Johnson" value="${esc(editing ? editing.name : '')}"></div>
-        <div class="field"><label for="rosterPhone">Phone (optional)</label><input id="rosterPhone" type="tel" maxlength="40" inputmode="tel" placeholder="e.g. (555) 123-4567" value="${esc(editing && editing.phone || '')}"></div>
-        <div class="field roster-wide"><label for="rosterNote">Note (optional)</label><input id="rosterNote" maxlength="500" placeholder="e.g. Trailer specialist, day shift" value="${esc(editing && editing.note || '')}"></div>
-      </div>
-      <p class="form-error" id="rosterErr"></p>
-      <div class="roster-actions"><button type="button" class="ghost-btn" id="rosterCancel">Cancel</button><button type="submit" class="roster-save">${editing ? 'Save changes' : 'Add mechanic'}</button></div>
-    </form>`;
-  host.innerHTML = `
-    <div class="roster-head">
-      <div><div class="team-subhead">Shop mechanics <span class="roster-count">${rows.length}</span></div>
-        <p class="meta roster-sub">Mechanics who work in your shop but do not use Relay. For your records only — they have no login. Mobile technicians join with the invite code above.</p></div>
-      ${rosterEditing === null ? '<button type="button" class="roster-save" id="rosterAddBtn">+ Add mechanic</button>' : ''}
-    </div>
-    ${formHtml}
-    ${rows.length ? rows.map(r => `<div class="team-row roster-row${r.active ? '' : ' is-inactive'}">
-        <div class="roster-who"><span class="roster-avatar" aria-hidden="true">${esc(initials(r.name))}</span>
-          <div><div class="tname">${esc(r.name)}</div><div class="tstatus">Shop mechanic — ${r.active ? 'Active' : 'Inactive'}${r.phone ? ' · ' + esc(r.phone) : ''}</div>${r.note ? `<div class="roster-note">${esc(r.note)}</div>` : ''}</div></div>
-        <div class="roster-ctl"><button type="button" class="text-btn" data-roster-edit="${r.id}">Edit</button>
-          <button type="button" class="toggle-btn ${r.active ? 'on' : 'off'}" data-roster-toggle="${r.id}" data-on="${r.active}">${r.active ? 'Active' : 'Inactive'}</button></div>
-      </div>`).join('') : (rosterEditing === null ? '<div class="empty-note">No shop mechanics yet. Add the people who work in your shop to keep your team list complete.</div>' : '')}
-    <p class="form-error" id="rosterListErr"></p>`;
-  const addBtn = document.getElementById('rosterAddBtn');
-  if(addBtn) addBtn.onclick = () => { rosterEditing = 'new'; renderRosterCard().then(() => { const n = document.getElementById('rosterName'); if(n) n.focus(); }); };
-  const form = document.getElementById('rosterForm');
-  if(form){
-    document.getElementById('rosterCancel').onclick = () => { rosterEditing = null; renderRosterCard(); };
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-      const err = document.getElementById('rosterErr'); err.textContent = '';
-      const name = document.getElementById('rosterName').value.trim();
-      if(!name){ err.textContent = "Enter the mechanic's name."; return; }
-      const phone = document.getElementById('rosterPhone').value.trim() || null;
-      const note = document.getElementById('rosterNote').value.trim() || null;
-      const res = editing
-        ? await sb.from('shop_roster').update({ name, phone, note }).eq('id', editing.id)
-        : await sb.from('shop_roster').insert({ org_id: session.orgId, name, phone, note, created_by: session.id });
-      if(res.error){ err.textContent = res.error.message; return; }
-      recordsToast(editing ? 'Mechanic updated' : 'Mechanic added');
-      rosterEditing = null; renderRosterCard();
-    };
+// ---------------- Mechanics the shop adds itself (no login) ----------------
+// The owner can add a mechanic who does not use Relay. They are a normal mechanic in the list and on
+// work orders, with no way to sign in. The record is made on the server (team-mechanic function, migration 0063).
+let mechFormFor = null;   // null = closed, 'new' = adding, a profile id = editing that mechanic
+let mechImportTried = false;
+async function saveShopMechanic(payload){
+  const { data, error } = await sb.functions.invoke('team-mechanic', { body: payload });
+  let serverMsg = '';
+  if(error && error.context && typeof error.context.json === 'function'){
+    try { const b = await error.context.json(); serverMsg = (b && b.error) || ''; } catch(e){}
   }
-  host.querySelectorAll('[data-roster-edit]').forEach(b => b.onclick = () => { rosterEditing = Number(b.dataset.rosterEdit); renderRosterCard().then(() => { const n = document.getElementById('rosterName'); if(n) n.focus(); }); });
-  host.querySelectorAll('[data-roster-toggle]').forEach(b => b.onclick = async () => {
-    const on = b.dataset.on === 'true';
-    const { error: upErr } = await sb.from('shop_roster').update({ active: !on }).eq('id', b.dataset.rosterToggle);
-    if(upErr){ document.getElementById('rosterListErr').textContent = upErr.message; return; }
-    renderRosterCard();
-  });
+  const msg = error ? (serverMsg || error.message || 'Something went wrong') : (data && data.error);
+  return msg ? { error: msg } : { data };
+}
+function initMechAdd(mechanics){
+  if(!session || session.role !== 'shop' || !can('team')) return;
+  const btn = document.getElementById('mechAddBtn'), slot = document.getElementById('mechAddForm');
+  if(!btn || !slot) return;
+  const refresh = () => { renderTeamList(); if(typeof populateMechanicSelect === 'function') populateMechanicSelect(); };
+  const draw = () => {
+    const editing = mechFormFor && mechFormFor !== 'new' ? (mechanics || []).find(m => m.id === mechFormFor) : null;
+    if(mechFormFor && mechFormFor !== 'new' && !editing) mechFormFor = null;
+    btn.classList.toggle('hidden', mechFormFor !== null);
+    if(mechFormFor === null){ slot.innerHTML = ''; return; }
+    slot.innerHTML = `<form id="mechForm" class="roster-form" novalidate>
+      <div class="roster-form-head"><b>${editing ? 'Edit mechanic' : 'Add a mechanic'}</b><span class="meta">No Relay account needed. You assign their work orders; they do not sign in.</span></div>
+      <div class="roster-grid">
+        <div class="field"><label for="mechName">Full name</label><input id="mechName" maxlength="120" placeholder="e.g. Mike Johnson" value="${esc(editing ? editing.name : '')}"></div>
+        <div class="field"><label for="mechPhone">Phone (optional)</label><input id="mechPhone" type="tel" maxlength="40" inputmode="tel" placeholder="e.g. (555) 123-4567" value="${esc(editing && editing.phone || '')}"></div>
+      </div>
+      <p class="form-error" id="mechErr"></p>
+      <div class="roster-actions"><button type="button" class="ghost-btn" id="mechCancel">Cancel</button><button type="submit" class="roster-save" id="mechSave">${editing ? 'Save changes' : 'Add mechanic'}</button></div>
+    </form>`;
+    document.getElementById('mechCancel').onclick = () => { mechFormFor = null; draw(); };
+    document.getElementById('mechForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('mechErr'); err.textContent = '';
+      const name = document.getElementById('mechName').value.trim();
+      if(!name){ err.textContent = "Enter the mechanic's name."; return; }
+      const save = document.getElementById('mechSave'); save.disabled = true;
+      const payload = { name, phone: document.getElementById('mechPhone').value.trim() };
+      const res = await saveShopMechanic(editing ? Object.assign(payload, { action: 'update', profile_id: editing.id }) : Object.assign(payload, { action: 'add' }));
+      if(res.error){ save.disabled = false; err.textContent = res.error; return; }
+      recordsToast(editing ? 'Mechanic updated' : name + ' added. You can assign work orders to them now.');
+      mechFormFor = null; refresh();
+    };
+    const n = document.getElementById('mechName'); if(n) n.focus();
+  };
+  btn.onclick = () => { mechFormFor = 'new'; draw(); };
+  document.querySelectorAll('#teamList [data-mech-edit]').forEach(b => b.onclick = () => { mechFormFor = b.dataset.mechEdit; draw(); });
+  draw();
+  // Mechanics typed into the earlier "records" list become normal mechanics, once.
+  if(!mechImportTried){
+    mechImportTried = true;
+    sb.from('shop_roster').select('id, name, phone').eq('org_id', session.orgId).eq('active', true).is('profile_id', null).then(async ({ data }) => {
+      let moved = 0;
+      for(const r of (data || [])){ const res = await saveShopMechanic({ action: 'add', name: r.name, phone: r.phone || '', roster_id: r.id }); if(!res.error) moved++; }
+      if(moved) refresh();
+    });
+  }
 }
 
 function initRolesUI(){
