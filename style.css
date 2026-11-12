@@ -3122,3 +3122,25 @@ main:has(> #homeView.nx:not(.hidden)){ max-width:none; padding:0; margin:0; }
 .va-on{ display:inline-flex; gap:6px; align-items:center; }
 .va-on input{ width:90px; }
 .voice-admin-row .va-shop{ display:flex; flex-direction:column; gap:2px; }
+
+/* ---- Team: shop mechanics kept for the shop's records (no login) ---- */
+#teamRoster{ margin-top:18px; padding-top:18px; border-top:1px dashed var(--line); }
+.roster-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:6px; }
+.roster-head .team-subhead{ margin-top:0; display:flex; align-items:center; gap:8px; }
+.roster-count{ font-family:var(--font-mono); font-size:.7rem; font-weight:700; padding:1px 8px; border-radius:999px; background:var(--panel-2); border:1px solid var(--line); color:var(--ink-soft); letter-spacing:0; }
+.roster-sub{ margin:4px 0 0; max-width:62ch; }
+.roster-save{ background:var(--accent); color:#fff; border:none; border-radius:9px; padding:10px 16px; min-height:44px; font-weight:700; font-size:.85rem; cursor:pointer; white-space:nowrap; }
+.roster-save:hover{ filter:brightness(1.08); }
+.roster-form{ margin:12px 0 6px; padding:16px; border:1px solid var(--line); border-radius:12px; background:var(--panel-2); }
+.roster-form-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:12px; font-size:.92rem; }
+.roster-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.roster-grid .field{ margin:0; }
+.roster-grid .field input{ width:100%; }
+.roster-wide{ grid-column:1 / -1; }
+.roster-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+.roster-who{ display:flex; align-items:center; gap:12px; min-width:0; }
+.roster-avatar{ flex:none; width:36px; height:36px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:.78rem; color:var(--accent); background:color-mix(in srgb, var(--accent) 14%, transparent); border:1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+.roster-note{ font-size:.8rem; color:var(--ink-soft); margin-top:2px; }
+.roster-ctl{ display:flex; align-items:center; gap:10px; flex:none; }
+.roster-row.is-inactive .roster-who{ opacity:.6; }
+@media (max-width:640px){ .roster-head{ flex-direction:column; } .roster-head .roster-save{ width:100%; } .roster-grid{ grid-template-columns:1fr; } }

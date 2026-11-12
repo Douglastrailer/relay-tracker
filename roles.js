@@ -89,43 +89,66 @@ async function renderRolesPanel(){
 // ---------------- Shop mechanics (records only) ----------------
 // A shop keeps its own list of mechanics. They have no RelayFleet login, are not assigned to jobs
 // and do not clock time here. Only the shop's own staff can read or add them (migration 0062).
+let rosterEditing = null;   // null = form closed, 'new' = adding, a number = editing that record
 async function renderRosterCard(){
   if(!can('team') || !session || !session.orgId) return;
   let host = document.getElementById('teamRoster');
   if(!host){ const slot = document.getElementById('teamList'); if(!slot) return; host = document.createElement('div'); host.id = 'teamRoster'; slot.appendChild(host); }
   const { data, error } = await sb.from('shop_roster').select('id, name, phone, note, active').eq('org_id', session.orgId).order('name');
-  if(error){ host.innerHTML = `<div class="section-head" style="margin-top:22px;"><h2>Shop mechanics (records)</h2></div><p class="form-error">${esc(error.message)}</p>`; return; }
+  if(error){ host.innerHTML = `<div class="team-subhead">Shop mechanics</div><p class="form-error">${esc(error.message)}</p>`; return; }
   const rows = data || [];
-  host.innerHTML = `<div class="section-head" style="margin-top:22px;"><h2>Shop mechanics (records)</h2></div>
-    <div class="card">
-      <p class="meta" style="margin-top:0;">Keep a list of the mechanics who work in your shop. They do not need a RelayFleet account and cannot sign in.
-        They are not assigned to jobs or clock time here. Mobile technicians still sign up on their own phone.</p>
-      <form id="rosterForm" class="roster-form">
-        <label>Name <input id="rosterName" maxlength="120" required></label>
-        <label>Phone <input id="rosterPhone" maxlength="40" inputmode="tel"></label>
-        <label>Note <input id="rosterNote" maxlength="500"></label>
-        <button type="submit" class="j-edit">Add mechanic</button>
-      </form>
+  const editing = typeof rosterEditing === 'number' ? rows.find(r => r.id === rosterEditing) : null;
+  const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const formHtml = rosterEditing === null ? '' : `
+    <form id="rosterForm" class="roster-form" novalidate>
+      <div class="roster-form-head"><b>${editing ? 'Edit shop mechanic' : 'New shop mechanic'}</b><span class="meta">No RelayFleet account needed</span></div>
+      <div class="roster-grid">
+        <div class="field"><label for="rosterName">Full name</label><input id="rosterName" maxlength="120" placeholder="e.g. Mike Johnson" value="${esc(editing ? editing.name : '')}"></div>
+        <div class="field"><label for="rosterPhone">Phone (optional)</label><input id="rosterPhone" type="tel" maxlength="40" inputmode="tel" placeholder="e.g. (555) 123-4567" value="${esc(editing && editing.phone || '')}"></div>
+        <div class="field roster-wide"><label for="rosterNote">Note (optional)</label><input id="rosterNote" maxlength="500" placeholder="e.g. Trailer specialist, day shift" value="${esc(editing && editing.note || '')}"></div>
+      </div>
       <p class="form-error" id="rosterErr"></p>
-      <div class="role-list">${rows.length ? rows.map(r => `<div class="role-row${r.active ? '' : ' is-inactive'}"><div><b>${esc(r.name)}</b>${r.phone ? ` <span class="meta">${esc(r.phone)}</span>` : ''}${r.note ? ` <span class="meta">${esc(r.note)}</span>` : ''}${r.active ? '' : ' <span class="meta">(inactive)</span>'}</div>
-        <div class="role-ctl"><button type="button" class="text-btn" data-roster-toggle="${r.id}" data-on="${r.active}">${r.active ? 'Mark inactive' : 'Mark active'}</button></div></div>`).join('') : '<div class="empty-note">No shop mechanics added yet.</div>'}</div>
-    </div>`;
-  host.querySelector('#rosterForm').onsubmit = async (e) => {
-    e.preventDefault();
-    const err = document.getElementById('rosterErr'); err.textContent = '';
-    const name = document.getElementById('rosterName').value.trim();
-    if(!name){ err.textContent = "Enter the mechanic's name."; return; }
-    const phone = document.getElementById('rosterPhone').value.trim() || null;
-    const note = document.getElementById('rosterNote').value.trim() || null;
-    const { error: insErr } = await sb.from('shop_roster').insert({ org_id: session.orgId, name, phone, note, created_by: session.id });
-    if(insErr){ err.textContent = insErr.message; return; }
-    recordsToast('Mechanic added to your records');
-    renderRosterCard();
-  };
+      <div class="roster-actions"><button type="button" class="ghost-btn" id="rosterCancel">Cancel</button><button type="submit" class="roster-save">${editing ? 'Save changes' : 'Add mechanic'}</button></div>
+    </form>`;
+  host.innerHTML = `
+    <div class="roster-head">
+      <div><div class="team-subhead">Shop mechanics <span class="roster-count">${rows.length}</span></div>
+        <p class="meta roster-sub">Mechanics who work in your shop but do not use Relay. For your records only — they have no login. Mobile technicians join with the invite code above.</p></div>
+      ${rosterEditing === null ? '<button type="button" class="roster-save" id="rosterAddBtn">+ Add mechanic</button>' : ''}
+    </div>
+    ${formHtml}
+    ${rows.length ? rows.map(r => `<div class="team-row roster-row${r.active ? '' : ' is-inactive'}">
+        <div class="roster-who"><span class="roster-avatar" aria-hidden="true">${esc(initials(r.name))}</span>
+          <div><div class="tname">${esc(r.name)}</div><div class="tstatus">Shop mechanic — ${r.active ? 'Active' : 'Inactive'}${r.phone ? ' · ' + esc(r.phone) : ''}</div>${r.note ? `<div class="roster-note">${esc(r.note)}</div>` : ''}</div></div>
+        <div class="roster-ctl"><button type="button" class="text-btn" data-roster-edit="${r.id}">Edit</button>
+          <button type="button" class="toggle-btn ${r.active ? 'on' : 'off'}" data-roster-toggle="${r.id}" data-on="${r.active}">${r.active ? 'Active' : 'Inactive'}</button></div>
+      </div>`).join('') : (rosterEditing === null ? '<div class="empty-note">No shop mechanics yet. Add the people who work in your shop to keep your team list complete.</div>' : '')}
+    <p class="form-error" id="rosterListErr"></p>`;
+  const addBtn = document.getElementById('rosterAddBtn');
+  if(addBtn) addBtn.onclick = () => { rosterEditing = 'new'; renderRosterCard().then(() => { const n = document.getElementById('rosterName'); if(n) n.focus(); }); };
+  const form = document.getElementById('rosterForm');
+  if(form){
+    document.getElementById('rosterCancel').onclick = () => { rosterEditing = null; renderRosterCard(); };
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('rosterErr'); err.textContent = '';
+      const name = document.getElementById('rosterName').value.trim();
+      if(!name){ err.textContent = "Enter the mechanic's name."; return; }
+      const phone = document.getElementById('rosterPhone').value.trim() || null;
+      const note = document.getElementById('rosterNote').value.trim() || null;
+      const res = editing
+        ? await sb.from('shop_roster').update({ name, phone, note }).eq('id', editing.id)
+        : await sb.from('shop_roster').insert({ org_id: session.orgId, name, phone, note, created_by: session.id });
+      if(res.error){ err.textContent = res.error.message; return; }
+      recordsToast(editing ? 'Mechanic updated' : 'Mechanic added');
+      rosterEditing = null; renderRosterCard();
+    };
+  }
+  host.querySelectorAll('[data-roster-edit]').forEach(b => b.onclick = () => { rosterEditing = Number(b.dataset.rosterEdit); renderRosterCard().then(() => { const n = document.getElementById('rosterName'); if(n) n.focus(); }); });
   host.querySelectorAll('[data-roster-toggle]').forEach(b => b.onclick = async () => {
     const on = b.dataset.on === 'true';
     const { error: upErr } = await sb.from('shop_roster').update({ active: !on }).eq('id', b.dataset.rosterToggle);
-    if(upErr){ document.getElementById('rosterErr').textContent = upErr.message; return; }
+    if(upErr){ document.getElementById('rosterListErr').textContent = upErr.message; return; }
     renderRosterCard();
   });
 }
