@@ -84,17 +84,15 @@ async function renderRolesPanel(){
     if(error){ document.getElementById('rolesErr').textContent = error.message; return; }
     renderRolesPanel();
   });
-  renderRosterCard();
 }
 
 // ---------------- Shop mechanics (records only) ----------------
 // A shop keeps its own list of mechanics. They have no RelayFleet login, are not assigned to jobs
 // and do not clock time here. Only the shop's own staff can read or add them (migration 0062).
 async function renderRosterCard(){
-  const box = document.getElementById('teamRoles');
-  if(!box || !can('team') || !session || !session.orgId) return;
+  if(!can('team') || !session || !session.orgId) return;
   let host = document.getElementById('teamRoster');
-  if(!host){ host = document.createElement('div'); host.id = 'teamRoster'; box.appendChild(host); }
+  if(!host){ const slot = document.getElementById('teamList'); if(!slot) return; host = document.createElement('div'); host.id = 'teamRoster'; slot.appendChild(host); }
   const { data, error } = await sb.from('shop_roster').select('id, name, phone, note, active').eq('org_id', session.orgId).order('name');
   if(error){ host.innerHTML = `<div class="section-head" style="margin-top:22px;"><h2>Shop mechanics (records)</h2></div><p class="form-error">${esc(error.message)}</p>`; return; }
   const rows = data || [];

@@ -2668,9 +2668,11 @@ async function renderTeamList(){
   box.innerHTML = `
     <div class="team-subhead">Mechanics</div>
     ${mechanics.length ? mechanics.map(rowHtml).join('') : '<div class="empty-note">No mechanics have signed up yet.</div>'}
+    <div id="teamRoster"></div>
     <div id="fleetCustomersBox"></div>
   `;
   renderFleetCustomers();
+  if(typeof renderRosterCard === 'function') renderRosterCard();
 
   box.querySelectorAll('.team-skills-btn').forEach(btn=>{
     btn.onclick = ()=>{ const m = mechanics.find(x=>x.id===btn.dataset.id); if(m && typeof openSkillsEditor === 'function') openSkillsEditor(m); };
