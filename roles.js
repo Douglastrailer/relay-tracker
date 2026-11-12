@@ -84,6 +84,52 @@ async function renderRolesPanel(){
     if(error){ document.getElementById('rolesErr').textContent = error.message; return; }
     renderRolesPanel();
   });
+  renderRosterCard();
+}
+
+// ---------------- Shop mechanics (records only) ----------------
+// A shop keeps its own list of mechanics. They have no RelayFleet login, are not assigned to jobs
+// and do not clock time here. Only the shop's own staff can read or add them (migration 0062).
+async function renderRosterCard(){
+  const box = document.getElementById('teamRoles');
+  if(!box || !can('team') || !session || !session.orgId) return;
+  let host = document.getElementById('teamRoster');
+  if(!host){ host = document.createElement('div'); host.id = 'teamRoster'; box.appendChild(host); }
+  const { data, error } = await sb.from('shop_roster').select('id, name, phone, note, active').eq('org_id', session.orgId).order('name');
+  if(error){ host.innerHTML = `<div class="section-head" style="margin-top:22px;"><h2>Shop mechanics (records)</h2></div><p class="form-error">${esc(error.message)}</p>`; return; }
+  const rows = data || [];
+  host.innerHTML = `<div class="section-head" style="margin-top:22px;"><h2>Shop mechanics (records)</h2></div>
+    <div class="card">
+      <p class="meta" style="margin-top:0;">Keep a list of the mechanics who work in your shop. They do not need a RelayFleet account and cannot sign in.
+        They are not assigned to jobs or clock time here. Mobile technicians still sign up on their own phone.</p>
+      <form id="rosterForm" class="roster-form">
+        <label>Name <input id="rosterName" maxlength="120" required></label>
+        <label>Phone <input id="rosterPhone" maxlength="40" inputmode="tel"></label>
+        <label>Note <input id="rosterNote" maxlength="500"></label>
+        <button type="submit" class="j-edit">Add mechanic</button>
+      </form>
+      <p class="form-error" id="rosterErr"></p>
+      <div class="role-list">${rows.length ? rows.map(r => `<div class="role-row${r.active ? '' : ' is-inactive'}"><div><b>${esc(r.name)}</b>${r.phone ? ` <span class="meta">${esc(r.phone)}</span>` : ''}${r.note ? ` <span class="meta">${esc(r.note)}</span>` : ''}${r.active ? '' : ' <span class="meta">(inactive)</span>'}</div>
+        <div class="role-ctl"><button type="button" class="text-btn" data-roster-toggle="${r.id}" data-on="${r.active}">${r.active ? 'Mark inactive' : 'Mark active'}</button></div></div>`).join('') : '<div class="empty-note">No shop mechanics added yet.</div>'}</div>
+    </div>`;
+  host.querySelector('#rosterForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const err = document.getElementById('rosterErr'); err.textContent = '';
+    const name = document.getElementById('rosterName').value.trim();
+    if(!name){ err.textContent = "Enter the mechanic's name."; return; }
+    const phone = document.getElementById('rosterPhone').value.trim() || null;
+    const note = document.getElementById('rosterNote').value.trim() || null;
+    const { error: insErr } = await sb.from('shop_roster').insert({ org_id: session.orgId, name, phone, note, created_by: session.id });
+    if(insErr){ err.textContent = insErr.message; return; }
+    recordsToast('Mechanic added to your records');
+    renderRosterCard();
+  };
+  host.querySelectorAll('[data-roster-toggle]').forEach(b => b.onclick = async () => {
+    const on = b.dataset.on === 'true';
+    const { error: upErr } = await sb.from('shop_roster').update({ active: !on }).eq('id', b.dataset.rosterToggle);
+    if(upErr){ document.getElementById('rosterErr').textContent = upErr.message; return; }
+    renderRosterCard();
+  });
 }
 
 function initRolesUI(){
