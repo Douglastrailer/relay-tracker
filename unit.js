@@ -176,6 +176,7 @@ function closeUnitHistory(){
 
 // ---------------- Repair Order: warranty ----------------
 async function loadRoWarranty(job, opts){
+  opts = opts || {};   // some callers open the panel without options
   const box = document.getElementById('roWarranty');
   if(!box) return;
   const isShop = opts.isShop;

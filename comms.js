@@ -26,6 +26,7 @@ function notifyKick(){
 
 // ---------------- Repair Order: customer updates ----------------
 async function loadRoComms(job, opts){
+  opts = opts || {};   // some callers open the panel without options
   const box = document.getElementById('roComms2');
   if(!box) return;
   const isShop = opts.isShop;

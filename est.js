@@ -28,6 +28,7 @@ function docEditable(doc){
 
 // ---------------- Repair Order: estimates, invoices, approval ----------------
 async function loadRoEstimates(job, opts){
+  opts = opts || {};   // some callers open the panel without options
   const box = document.getElementById('roEstimates');
   if(!box) return;
   const isShop = opts.isShop;

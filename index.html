@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#0D5C6E"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link rel="stylesheet" href="vendor-leaflet-1.9.4.css?v=1eb6360632"/>
 <script src="look.js?v=79e1eaa269"></script>
 <link rel="stylesheet" href="style.css?v=517fd4bb12"/>
 <link rel="stylesheet" href="admin-v3.css?v=e3afbf0c46">
@@ -23,6 +23,31 @@
 </head>
 <body class="booting">
 <div id="bootSplash" role="status" aria-label="Loading Relay"><span class="bs-mark">Relay</span></div>
+<!-- If Relay's own files cannot be downloaded (no connection, a VPN or blocker, a stale saved copy), say so and offer a
+     clean retry. Styled inline and scripted inline on purpose: it must work when nothing else on the page has loaded. -->
+<div id="bootHelp" role="alert" style="display:none; position:fixed; inset:0; z-index:10000; background:#F3F5F7; color:#16202A; font-family:system-ui,-apple-system,'Segoe UI',sans-serif; align-items:center; justify-content:center; padding:24px;">
+  <div style="max-width:440px; background:#fff; border:1px solid #D9E0E6; border-radius:14px; padding:26px; box-shadow:0 10px 30px rgba(0,0,0,.08);">
+    <div style="font-weight:800; font-size:1.25rem; color:#0D5C6E; margin-bottom:8px;">Relay could not finish loading</div>
+    <p style="margin:0 0 10px; line-height:1.5;">This is almost always a connection problem. Check that you are online. If you use a VPN or an ad blocker, turn it off for relayfleet.us.</p>
+    <p style="margin:0 0 18px; line-height:1.5; color:#51606E;">Your data is safe. Nothing was lost.</p>
+    <button type="button" id="bootRetry" style="background:#0D5C6E; color:#fff; border:0; border-radius:9px; padding:12px 18px; font-weight:700; font-size:1rem; cursor:pointer; min-height:46px;">Try again</button>
+  </div>
+</div>
+<script>
+(function(){
+  function loaded(){ return typeof bootDone === 'function'; }   // true once Relay's main script has run
+  function show(){ if(loaded()) return; var b = document.getElementById('bootHelp'); if(b) b.style.display = 'flex'; }
+  window.addEventListener('load', function(){ setTimeout(show, 1500); });
+  setTimeout(show, 15000);
+  document.getElementById('bootRetry').onclick = function(){
+    var done = function(){ location.reload(); };
+    var jobs = [];
+    try { if(navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })); } catch(e){}
+    try { if(window.caches) jobs.push(caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })); } catch(e){}
+    Promise.all(jobs).then(done, done); setTimeout(done, 4000);
+  };
+})();
+</script>
 
 <div class="topbar">
   <div class="topbar-inner">
@@ -943,8 +968,8 @@
 
 <footer>© 2026 Relay — Shop management and dispatch for truck and trailer repair · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="vendor-leaflet-1.9.4.js?v=1db10cdc26" defer></script>
+<script src="vendor-supabase-2.119.0.js?v=4bc1644cb4" defer></script>
 <div id="fatalError" style="display:none; position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:999; background:#FFEAE4; color:#C23A1E; border:1px solid #F3B7A8; padding:12px 18px; border-radius:10px; font-family:var(--font-mono); font-size:0.8rem; max-width:90vw; box-shadow:0 8px 24px rgba(0,0,0,0.12);"></div>
 <div id="roModal" class="modal-overlay ro-overlay hidden" role="dialog" aria-modal="true" aria-label="Work order">
   <div class="modal-card ro-card">
@@ -997,14 +1022,14 @@
 <script src="route.js?v=0442405b9b" defer></script>
 <script src="script.js?v=e2407a94b9" defer></script>
 <script src="ro.js?v=1554ccd1f5" defer></script>
-<script src="insp.js?v=c894a8b9a0" defer></script>
-<script src="est.js?v=a4b9006a58" defer></script>
+<script src="insp.js?v=6ec88dab28" defer></script>
+<script src="est.js?v=d6cc4288f4" defer></script>
 <script src="tech.js?v=984f0cff6b" defer></script>
 <script src="fleet.js?v=a086c7040d" defer></script>
-<script src="unit.js?v=728dd6b6ae" defer></script>
+<script src="unit.js?v=f0114349b9" defer></script>
 <script src="inv.js?v=53ff745e71" defer></script>
 <script src="analytics.js?v=aa3c8a321c" defer></script>
-<script src="comms.js?v=4bcdf307f4" defer></script>
+<script src="comms.js?v=4e847f1787" defer></script>
 <script src="roles.js?v=1c13e03443" defer></script>
 <div id="custModal" class="modal-overlay ro-overlay unit-overlay hidden" role="dialog" aria-modal="true" aria-label="Customer">
   <div class="modal-card ro-card unit-card">

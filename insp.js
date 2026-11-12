@@ -25,6 +25,7 @@ function countsChipsHtml(c){
 
 // ---------------- Repair Order: inspections + recommended repairs ----------------
 async function loadRoInspections(job, opts){
+  opts = opts || {};   // some callers open the panel without options
   const box = document.getElementById('roInspections');
   const recBox = document.getElementById('roRecommended');
   if(!box) return;
