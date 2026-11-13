@@ -3145,3 +3145,53 @@ main:has(> #homeView.nx:not(.hidden)){ max-width:none; padding:0; margin:0; }
 @media (max-width:640px){ .roster-head{ flex-direction:column; } .roster-head .roster-save{ width:100%; } .roster-grid{ grid-template-columns:1fr; } }
 .mech-nologin{ background:var(--panel-2); color:var(--ink-soft); }
 .team-skills .meta{ font-size:.78rem; }
+
+/* ---- Public request link: a page of its own, in four short steps ---- */
+body.request-mode #publicNav, body.request-mode #assistFab, body.request-mode #assistPanel, body.request-mode > footer,
+body.request-mode #navToggle, body.request-mode .look-btn, body.request-mode #lookBtn{ display:none !important; }
+body.request-mode #brandHome{ cursor:default !important; }
+.rq-wrap{ max-width:600px; margin:0 auto; padding:28px 16px 40px; }
+.rq-head{ text-align:center; margin-bottom:20px; }
+.rq-head h1{ font-family:var(--font-display); font-size:1.55rem; line-height:1.2; margin:8px 0 6px; }
+.rq-head p{ color:var(--ink-soft); margin:0; }
+.rq-card{ padding:22px; display:block; }
+.rq-steps{ list-style:none; display:flex; gap:6px; padding:0; margin:0 0 20px; }
+.rq-dot{ flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; font-size:.74rem; font-weight:700; color:var(--ink-faint); position:relative; }
+.rq-dot::before{ content:""; position:absolute; top:13px; right:50%; width:100%; height:2px; background:var(--line); z-index:0; }
+.rq-dot:first-child::before{ display:none; }
+.rq-dot i{ position:relative; z-index:1; font-style:normal; width:28px; height:28px; border-radius:50%; display:grid; place-items:center; background:var(--panel-2); border:2px solid var(--line); color:var(--ink-soft); font-size:.8rem; }
+.rq-dot.is-on{ color:var(--accent); } .rq-dot.is-on i{ border-color:var(--accent); background:var(--accent); color:#fff; }
+.rq-dot.is-done i{ border-color:var(--accent); color:var(--accent); } .rq-dot.is-done::before, .rq-dot.is-on::before{ background:var(--accent); }
+.rq-h{ font-family:var(--font-display); font-size:1.12rem; margin:0 0 14px; }
+.rq-step .field{ margin-bottom:14px; } .rq-step .field input, .rq-step .field textarea{ width:100%; font-size:16px; }
+.rq-two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.rq-hint{ margin:-6px 0 0; font-size:.82rem; }
+.rq-choice{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+.rq-choice .rq-opt{ display:flex; flex-direction:column; gap:3px; align-items:flex-start; text-align:left; padding:14px; border-radius:12px; border:2px solid var(--line); background:var(--panel-2); color:var(--ink); min-height:72px; cursor:pointer; }
+.rq-choice .rq-opt b{ font-size:.95rem; } .rq-choice .rq-opt span{ font-size:.8rem; font-weight:500; color:var(--ink-soft); }
+.rq-choice .rq-opt.active{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, var(--panel-2)); color:var(--ink); }
+.rq-review{ margin:0; } .rq-row{ display:grid; grid-template-columns:92px 1fr auto; gap:10px; align-items:start; padding:10px 0; border-bottom:1px dashed var(--line); }
+.rq-row:last-child{ border-bottom:none; } .rq-row dt{ font-size:.8rem; font-weight:700; color:var(--ink-soft); } .rq-row dd{ margin:0; overflow-wrap:anywhere; white-space:pre-wrap; }
+.rq-nav{ display:flex; gap:10px; margin-top:16px; } .rq-nav .rq-back{ flex:0 0 auto; min-height:50px; }
+.rq-next{ flex:1; background:var(--accent); color:#fff; border:none; border-radius:10px; min-height:50px; padding:12px 18px; font-weight:700; font-size:1rem; cursor:pointer; }
+.rq-next:disabled{ opacity:.6; cursor:default; }
+.rq-done, #requestInvalidCard{ max-width:560px; margin:0 auto; text-align:center; padding:40px 24px; }
+.rq-done h2{ font-family:var(--font-display); font-size:1.25rem; margin-bottom:8px; }
+.rq-powered{ text-align:center; margin:18px 0 0; font-size:.8rem; color:var(--ink-faint); } .rq-powered a{ color:inherit; }
+#requestError:empty{ display:none; } #requestError{ margin:12px 0 0; }
+@media (max-width:520px){ .rq-two, .rq-choice{ grid-template-columns:1fr; } .rq-card{ padding:16px; } .rq-wrap{ padding-top:16px; } .rq-head h1{ font-size:1.3rem; } .rq-row{ grid-template-columns:76px 1fr auto; } }
+.field .rq-hint{ margin:6px 0 0; }
+
+/* ---- Phones: the top bar must keep the bell and the account button on screen ---- */
+@media (max-width:520px){
+  body.in-app .topbar-inner{ gap:4px; padding-left:8px; padding-right:8px; }
+  body.in-app .brand-text{ display:none; }
+  body.in-app .topbar .theme-toggle{ display:none; }   /* light/dark stays under Appearance in the account menu */
+  body.in-app .topbar-right-group{ gap:2px; min-width:0; }
+  body.in-app .hdr-tools{ gap:0; }
+  body.in-app .gsearch{ margin:0 2px; }
+}
+.ro-num{ white-space:nowrap; }   /* a work-order number never breaks across lines */
+.mech-lang{ display:flex; align-items:center; gap:10px; margin:10px 0; }
+.mech-lang label{ font-weight:600; font-size:.85rem; color:var(--ink-soft); }
+.mech-lang select{ min-height:40px; padding:6px 10px; border-radius:9px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); font-size:.95rem; }

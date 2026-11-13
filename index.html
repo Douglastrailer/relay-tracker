@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="vendor-leaflet-1.9.4.css?v=1eb6360632"/>
 <script src="look.js?v=79e1eaa269"></script>
-<link rel="stylesheet" href="style.css?v=517fd4bb12"/>
+<link rel="stylesheet" href="style.css?v=561fd729f6"/>
 <link rel="stylesheet" href="admin-v3.css?v=e3afbf0c46">
 <link rel="stylesheet" href="fmcsa.css?v=4ce216b70d">
 <link rel="stylesheet" href="glass.css?v=9a1209bb09">
@@ -224,63 +224,89 @@
 
   <!-- ================= PUBLIC WORK REQUEST (no login) ================= -->
   <div id="requestView" class="hidden">
-    <div class="landing-hero" style="max-width:560px;">
+    <div class="rq-wrap">
+    <div class="rq-head">
       <span class="auth-eyebrow" id="requestShopLabel">REQUEST SERVICE</span>
-      <h1 id="requestTitle" style="font-size:1.6rem;">Request service</h1>
-      <p id="requestSubtitle">Tell us what's going on and we'll get back to you.</p>
+      <h1 id="requestTitle">Request service</h1>
+      <p id="requestSubtitle">Four quick steps. No account needed.</p>
     </div>
 
-    <div class="card new-job-form" style="max-width:560px; margin:0 auto;" id="requestFormCard">
-      <div class="field"><label for="reqCustomerName">Your name</label><input type="text" id="reqCustomerName" placeholder="e.g. Jane Smith"></div>
-      <div class="field"><label for="reqCompanyName">Company name (optional)</label><input type="text" id="reqCompanyName" placeholder="e.g. Acme Logistics"></div>
-      <div class="field"><label for="reqCustomerPhone">Phone</label><input type="tel" id="reqCustomerPhone" placeholder="e.g. (555) 123-4567"></div>
-      <div class="field"><label for="reqCustomerEmail">Email</label><input type="email" id="reqCustomerEmail" placeholder="you@example.com"></div>
-      <p class="meta" style="margin:-6px 0 4px;">At least a phone or an email, so we can reach you back.</p>
-      <div class="field"><label for="reqVehicle">Vehicle / unit</label><input type="text" id="reqVehicle" placeholder="e.g. Ford F-150, Trailer #7790"></div>
-      <div class="field"><label for="reqIssue">What's going on?</label><textarea id="reqIssue" rows="4" placeholder="e.g. Grinding noise when braking, started yesterday"></textarea></div>
+    <div class="card rq-card" id="requestFormCard">
+      <ol class="rq-steps" id="rqSteps" aria-label="Steps">
+        <li class="rq-dot is-on" data-step="1"><i>1</i><span>Contact</span></li>
+        <li class="rq-dot" data-step="2"><i>2</i><span>Vehicle</span></li>
+        <li class="rq-dot" data-step="3"><i>3</i><span>Service</span></li>
+        <li class="rq-dot" data-step="4"><i>4</i><span>Review</span></li>
+      </ol>
 
-      <div class="field">
-        <label>What do you need?</label>
-        <div class="kind-toggle">
-          <button type="button" class="kind-toggle-btn active" data-reqtype="mobile" id="reqTypeMobileBtn">Someone comes to me</button>
-          <button type="button" class="kind-toggle-btn" data-reqtype="inshop" id="reqTypeInshopBtn">I'll bring it in</button>
+      <section class="rq-step" data-step="1" aria-labelledby="rqH1">
+        <h2 class="rq-h" id="rqH1">How can the shop reach you?</h2>
+        <div class="field"><label for="reqCustomerName">Your name</label><input type="text" id="reqCustomerName" autocomplete="name" placeholder="e.g. Jane Smith"></div>
+        <div class="field"><label for="reqCompanyName">Company name (optional)</label><input type="text" id="reqCompanyName" autocomplete="organization" placeholder="e.g. Acme Logistics"></div>
+        <div class="rq-two">
+          <div class="field"><label for="reqCustomerPhone">Phone</label><input type="tel" id="reqCustomerPhone" autocomplete="tel" inputmode="tel" placeholder="e.g. (555) 123-4567"></div>
+          <div class="field"><label for="reqCustomerEmail">Email</label><input type="email" id="reqCustomerEmail" autocomplete="email" placeholder="you@example.com"></div>
         </div>
-      </div>
+        <p class="meta rq-hint">A phone number or an email is enough.</p>
+      </section>
 
-      <div class="field" id="reqLocationField">
-        <label>Where are you?</label>
-        <div class="address-search" style="position:relative;">
-          <input type="text" id="reqAddressInput" placeholder="Start typing your location..." autocomplete="off">
-          <div class="address-suggestions hidden" id="reqAddressSuggestions"></div>
+      <section class="rq-step hidden" data-step="2" aria-labelledby="rqH2">
+        <h2 class="rq-h" id="rqH2">What needs work?</h2>
+        <div class="field"><label for="reqVehicle">Vehicle / unit</label><input type="text" id="reqVehicle" placeholder="e.g. 2019 Freightliner Cascadia, Trailer #7790"></div>
+        <div class="field"><label for="reqIssue">What's going on?</label><textarea id="reqIssue" rows="5" placeholder="e.g. Grinding noise when braking, started yesterday"></textarea></div>
+      </section>
+
+      <section class="rq-step hidden" data-step="3" aria-labelledby="rqH3">
+        <h2 class="rq-h" id="rqH3">How should we help?</h2>
+        <div class="rq-choice" role="group" aria-label="What do you need?">
+          <button type="button" class="rq-opt kind-toggle-btn active" data-reqtype="mobile" id="reqTypeMobileBtn"><b>Someone comes to me</b><span>Roadside or on-site service</span></button>
+          <button type="button" class="rq-opt kind-toggle-btn" data-reqtype="inshop" id="reqTypeInshopBtn"><b>I'll bring it in</b><span>Drop off at the shop</span></button>
         </div>
-        <p class="meta" id="reqAddressHint" style="margin-top:6px;">Pick the exact match from the list.</p>
-      </div>
+        <div class="field" id="reqLocationField">
+          <label for="reqAddressInput">Where are you?</label>
+          <div class="address-search" style="position:relative;">
+            <input type="text" id="reqAddressInput" placeholder="Start typing your location..." autocomplete="off">
+            <div class="address-suggestions hidden" id="reqAddressSuggestions"></div>
+          </div>
+          <p class="meta rq-hint" id="reqAddressHint">Pick the exact match from the list.</p>
+        </div>
+        <div class="field hidden" id="reqEtaField">
+          <label for="reqEta">When can you bring it in?</label>
+          <input type="text" id="reqEta" placeholder="e.g. Tomorrow around 9am">
+        </div>
+        <div class="field" id="reqPhotosField">
+          <label for="reqPhotos">Photos (optional, up to 5)</label>
+          <input type="file" id="reqPhotos" accept="image/*" multiple>
+          <p class="meta rq-hint">Photos help the shop see what is wrong before anyone drives out.</p>
+        </div>
+      </section>
 
-      <div class="field hidden" id="reqEtaField">
-        <label for="reqEta">When can you bring it in?</label>
-        <input type="text" id="reqEta" placeholder="e.g. Tomorrow around 9am">
-      </div>
+      <section class="rq-step hidden" data-step="4" aria-labelledby="rqH4">
+        <h2 class="rq-h" id="rqH4">Check and send</h2>
+        <dl class="rq-review" id="rqReview"></dl>
+      </section>
 
-      <div class="field" id="reqPhotosField">
-        <label for="reqPhotos">Photos (optional, up to 5)</label>
-        <input type="file" id="reqPhotos" accept="image/*" multiple>
-        <p class="meta">Photos help the shop see what is wrong before anyone drives out.</p>
+      <p class="auth-error" id="requestError" role="alert"></p>
+      <div class="rq-nav">
+        <button type="button" class="ghost-btn rq-back hidden" id="rqBack">Back</button>
+        <button type="button" class="rq-next" id="rqNext">Next</button>
+        <button type="button" class="rq-next hidden" id="requestSubmitBtn">Submit request</button>
       </div>
-
-      <p class="auth-error" id="requestError"></p>
-      <button class="auth-submit" id="requestSubmitBtn">Submit request</button>
     </div>
 
-    <div class="card hidden" style="max-width:560px; margin:0 auto; text-align:center; padding:40px;" id="requestSuccessCard">
-      <div style="color:var(--done); margin-bottom:10px;"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8.5 12.5l2.5 2.5 5-5"/></svg></div>
-      <h2 style="font-family:var(--font-display); font-size:1.2rem; margin-bottom:8px;">Request sent</h2>
-      <p class="auth-note">Thanks — someone from the shop will reach out to you shortly.</p>
+    <div class="card hidden rq-done" id="requestSuccessCard">
+      <div style="color:var(--done); margin-bottom:10px;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></div>
+      <h2>Request sent</h2>
+      <p class="auth-note">Thanks. <span id="rqDoneShop">The shop</span> has your request and will reach out to you shortly.</p>
+      <p class="meta">You can close this page.</p>
     </div>
 
     <div class="card hidden" style="max-width:560px; margin:0 auto; text-align:center; padding:40px;" id="requestInvalidCard">
       <div style="color:var(--live); margin-bottom:10px;"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3.1l-8-14a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
       <h2 style="font-family:var(--font-display); font-size:1.2rem; margin-bottom:8px;">Link not found</h2>
       <p class="auth-note">This request link doesn't look valid — check with the shop for the right one.</p>
+    </div>
+    <p class="rq-powered">Powered by <b>Relay</b> · <a href="/privacy.html">Privacy</a></p>
     </div>
   </div>
 
@@ -1017,10 +1043,10 @@
 <script src="wo-side.js?v=f349490875" defer></script>
 <script src="board-plus.js?v=ad9cef39e9" defer></script>
 <script src="tour.js?v=c10097940a" defer></script>
-<script src="header.js?v=93f54bf858" defer></script>
+<script src="header.js?v=920e334a72" defer></script>
 <script src="nav-subs.js?v=312012477f" defer></script>
 <script src="route.js?v=0442405b9b" defer></script>
-<script src="script.js?v=e2407a94b9" defer></script>
+<script src="script.js?v=1de41902b4" defer></script>
 <script src="ro.js?v=1554ccd1f5" defer></script>
 <script src="insp.js?v=6ec88dab28" defer></script>
 <script src="est.js?v=d6cc4288f4" defer></script>

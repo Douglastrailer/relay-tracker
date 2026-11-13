@@ -116,7 +116,8 @@ function initAvatar(){
   const roleLabel = session.role === 'shop' ? ({ owner: 'Shop owner', office: 'Office', service_writer: 'Service writer' }[session.staffRole] || 'Shop staff') : session.role === 'mechanic' ? 'Mechanic' : session.role === 'fleet' ? 'Fleet manager' : session.role === 'admin' ? 'Relay admin' : '';
   const org = (document.getElementById('whoOrg') || {}).textContent || session.company || '';
   const loc = typeof chosenLocation === 'function' && chosenLocation() && (window.relayAllLocations || []).length > 1 ? (chosenLocation().display_name || chosenLocation().name) : '';
-  btn.setAttribute('aria-label', loc ? relayFmt('Account and location: {name}, {loc}', { name: session.name || '', loc }) : relayFmt('Account: {name}', { name: session.name || '' }));
+  const fmt = typeof relayFmt === 'function' ? relayFmt : (p, v) => p.replace(/\{(\w+)\}/g, (_, k) => v[k] == null ? '' : v[k]);   // the language file loads after this one
+  btn.setAttribute('aria-label', loc ? fmt('Account and location: {name}, {loc}', { name: session.name || '', loc }) : fmt('Account: {name}', { name: session.name || '' }));
   head.innerHTML = `<span class="acct-avatar" aria-hidden="true">${esc(initials(session.name))}</span><div><b>${esc(session.name || '')}</b><span>${esc([roleLabel, org].filter(Boolean).join(' · '))}</span>${loc ? `<span>${esc(loc)}</span>` : ''}</div>`;
 }
 

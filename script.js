@@ -665,6 +665,8 @@ const requestOrgId = new URLSearchParams(window.location.search).get('request');
 // which location the link belongs to (each location has its own request link); the database checks it is this shop's
 const requestLocId = (() => { const v = new URLSearchParams(window.location.search).get('loc'); return /^[0-9]{1,18}$/.test(v || '') ? Number(v) : null; })();
 if(requestOrgId){
+  // The request link is a page of its own: no marketing menu, no sign-in, no assistant. Nothing else may show over it.
+  document.body.classList.add('request-mode');
   homeView.classList.add('hidden');
   requestView.classList.remove('hidden');
   initPublicRequestPage(requestOrgId);
@@ -724,6 +726,71 @@ function initReqAddressAutocomplete(){
   document.addEventListener('click', (e)=>{ if(!suggestBox.contains(e.target) && e.target !== input) hideSuggestions(); });
 }
 
+// ---- The request form is four short steps: contact, vehicle, service, review. ----
+let reqStep = 1;
+function reqStepProblem(n){
+  const v = id => document.getElementById(id).value.trim();
+  if(n === 1){
+    if(!v('reqCustomerName')) return 'Enter your name.';
+    if(!v('reqCustomerPhone') && !v('reqCustomerEmail')) return 'Enter a phone number or an email so the shop can reach you.';
+    if(v('reqCustomerEmail') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v('reqCustomerEmail'))) return 'That email address does not look right.';
+  }
+  if(n === 2){
+    if(!v('reqVehicle')) return 'Enter your vehicle or unit.';
+    if(!v('reqIssue')) return "Describe what's going on.";
+  }
+  if(n === 3){
+    if(reqServiceType === 'mobile' && !reqChosenPin) return 'Enter your location and pick the exact match from the list.';
+    if(reqServiceType === 'inshop' && !v('reqEta')) return 'Let the shop know when you can bring it in.';
+    const f = document.getElementById('reqPhotos'); if(f && f.files && f.files.length > 5) return 'Please choose up to 5 photos.';
+  }
+  return '';
+}
+function reqReviewHtml(){
+  const v = id => document.getElementById(id).value.trim();
+  const f = document.getElementById('reqPhotos'); const n = f && f.files ? f.files.length : 0;
+  const rows = [
+    ['Name', [v('reqCustomerName'), v('reqCompanyName')].filter(Boolean).join(' · '), 1],
+    ['Contact', [v('reqCustomerPhone'), v('reqCustomerEmail')].filter(Boolean).join(' · '), 1],
+    ['Vehicle', v('reqVehicle'), 2],
+    ['Problem', v('reqIssue'), 2],
+    ['Service', reqServiceType === 'mobile' ? 'Someone comes to me' : "I'll bring it in", 3],
+    reqServiceType === 'mobile' ? ['Location', reqChosenPin ? reqChosenPin.display_name : '', 3] : ['When', v('reqEta'), 3],
+    ['Photos', n ? n + (n === 1 ? ' photo' : ' photos') : 'None', 3]
+  ];
+  return rows.map(([k, val, st]) => `<div class="rq-row"><dt>${esc(k)}</dt><dd>${esc(val || '—')}</dd><button type="button" class="text-btn" data-rq-edit="${st}" aria-label="Change ${esc(k.toLowerCase())}">Change</button></div>`).join('');
+}
+function reqGoStep(n){
+  reqStep = Math.max(1, Math.min(4, n));
+  document.querySelectorAll('#requestFormCard .rq-step').forEach(s => s.classList.toggle('hidden', Number(s.dataset.step) !== reqStep));
+  document.querySelectorAll('#rqSteps .rq-dot').forEach(d => { const k = Number(d.dataset.step); d.classList.toggle('is-on', k === reqStep); d.classList.toggle('is-done', k < reqStep); if(k === reqStep) d.setAttribute('aria-current', 'step'); else d.removeAttribute('aria-current'); });
+  document.getElementById('rqBack').classList.toggle('hidden', reqStep === 1);
+  document.getElementById('rqNext').classList.toggle('hidden', reqStep === 4);
+  document.getElementById('requestSubmitBtn').classList.toggle('hidden', reqStep !== 4);
+  if(reqStep === 4){
+    const box = document.getElementById('rqReview'); box.innerHTML = reqReviewHtml();
+    box.querySelectorAll('[data-rq-edit]').forEach(b => b.onclick = () => reqGoStep(Number(b.dataset.rqEdit)));
+  }
+  const h = document.querySelector('#requestFormCard .rq-step:not(.hidden) .rq-h'); if(h && h.scrollIntoView && reqGoStep.moved) document.getElementById('requestFormCard').scrollIntoView({ block: 'start', behavior: 'smooth' });
+  reqGoStep.moved = true;
+}
+function initReqWizard(){
+  if(initReqWizard.done) return; initReqWizard.done = true;
+  const err = document.getElementById('requestError');
+  document.getElementById('rqNext').onclick = () => {
+    const problem = reqStepProblem(reqStep);
+    err.textContent = problem; if(problem) return;
+    reqGoStep(reqStep + 1);
+  };
+  document.getElementById('rqBack').onclick = () => { err.textContent = ''; reqGoStep(reqStep - 1); };
+  // Enter moves on (except in the description box, where it is a new line).
+  document.getElementById('requestFormCard').addEventListener('keydown', (e) => {
+    if(e.key !== 'Enter' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON' || e.target.id === 'reqAddressInput') return;
+    e.preventDefault(); (reqStep === 4 ? document.getElementById('requestSubmitBtn') : document.getElementById('rqNext')).click();
+  });
+  reqGoStep(1);
+}
+
 async function initPublicRequestPage(orgId){
   const formCard = document.getElementById('requestFormCard');
   const successCard = document.getElementById('requestSuccessCard');
@@ -745,6 +812,9 @@ async function initPublicRequestPage(orgId){
   document.getElementById('reqTypeMobileBtn').onclick = ()=> setReqTypeUI('mobile');
   document.getElementById('reqTypeInshopBtn').onclick = ()=> setReqTypeUI('inshop');
   initReqAddressAutocomplete();
+  { const ds = document.getElementById('rqDoneShop'); if(ds) ds.textContent = shopName; }
+  document.title = 'Request service · ' + shopName;
+  initReqWizard();
 
   document.getElementById('requestSubmitBtn').onclick = async ()=>{
     const customer_name = document.getElementById('reqCustomerName').value.trim();
@@ -757,6 +827,7 @@ async function initPublicRequestPage(orgId){
     const errEl = document.getElementById('requestError');
     errEl.textContent = '';
 
+    { const bad = [1, 2, 3].find(n => reqStepProblem(n)); if(bad) reqGoStep(bad); }   // show the step that needs fixing
     if(!customer_name){ errEl.textContent = 'Enter your name.'; return; }
     if(!customer_phone && !customer_email){ errEl.textContent = 'Enter a phone number or an email so the shop can reach you.'; return; }
     if(!vehicle){ errEl.textContent = 'Enter your vehicle or unit.'; return; }
@@ -813,6 +884,7 @@ async function initPublicRequestPage(orgId){
 }
 
 function showPublicView(which){
+  if(requestOrgId) return;   // the request page never turns into the landing or sign-in page
   if(!session && typeof initAssist === 'function') initAssist();   // Natasha is available to visitors too
   [homeView, contactView, publicAuthView].forEach(v=>v.classList.add('hidden'));
   [navHome, navSignin, navContact].forEach(b=>b.classList.remove('active'));
@@ -825,7 +897,7 @@ navContact.onclick = ()=> showPublicView('contact');
 navSignin.onclick = ()=> { showPublicView('signin'); showAuthForm('login'); };
 { const ns = document.getElementById('navStart'); if(ns) ns.onclick = () => { showPublicView('signin'); showAuthForm('signup'); }; }
 { const fc = document.getElementById('faqContact'); if(fc) fc.onclick = () => { showPublicView('contact'); window.scrollTo(0, 0); }; }
-document.getElementById('brandHome').onclick = ()=>{ if(!appEntered) showPublicView('home'); };
+document.getElementById('brandHome').onclick = ()=>{ if(!appEntered && !requestOrgId) showPublicView('home'); };
 document.getElementById('landingLogin').onclick = ()=> { showPublicView('signin'); showAuthForm('login'); };
 document.getElementById('landingSignup').onclick = ()=> { showPublicView('signin'); showAuthForm('signup'); };
 document.getElementById('landingSignup2').onclick = ()=> { showPublicView('signin'); showAuthForm('signup'); };
@@ -1073,7 +1145,15 @@ document.getElementById('logoutBtn').onclick = async ()=>{
 };
 
 // ================= auth state =================
+// This file runs before about forty other app files. A saved sign-in can be restored before they have all run
+// (on a slow connection the browser keeps working while later files download), and entering the app then would
+// call code that does not exist yet. So entering the app always waits until every file has run.
+const relayScriptsReady = new Promise(res => {
+  if(document.readyState === 'complete') return res();
+  document.addEventListener('DOMContentLoaded', res, { once: true }); window.addEventListener('load', res, { once: true });
+});
 async function onAuthed(userId){
+  await relayScriptsReady;
   const profile = await fetchMyProfile(userId);
   if(!profile){
     showPublicView('signin');
@@ -1175,7 +1255,7 @@ if(sb){
       document.getElementById('recoveryModalOverlay').classList.remove('hidden');
       return;
     }
-    if(event === 'SIGNED_IN' && authSession && !appEntered && !inRecoveryFlow){
+    if(event === 'SIGNED_IN' && authSession && !appEntered && !inRecoveryFlow && !requestOrgId){
       onAuthed(authSession.user.id);
     }
     if(event === 'SIGNED_OUT'){
@@ -1185,7 +1265,7 @@ if(sb){
   // Wait for the saved session before showing anything, so a refresh goes straight to the
   // person's own screen (no landing or sign-in flash). A timeout guarantees the page never sticks.
   sb.auth.getSession().then(async ({ data }) => {
-    if(data.session && !appEntered && !inRecoveryFlow){ try { await onAuthed(data.session.user.id); } catch(_){} }
+    if(data.session && !appEntered && !inRecoveryFlow && !requestOrgId){ try { await onAuthed(data.session.user.id); } catch(_){} }   // someone signed in who opens a request link still gets just the form
     bootDone();
   }).catch(bootDone);
   setTimeout(bootDone, 6000);
@@ -1534,7 +1614,7 @@ async function renderMechJobs(){
       if(!isInshop && loc){
         const mi = milesBetween(loc.lat, loc.lng, job.dest_lat, job.dest_lng);
         distText = mi < 0.1 ? 'Arrived' : mi.toFixed(1) + ' mi away';
-        if(!mechDestMarkers[job.id]) mechDestMarkers[job.id] = L.marker([job.dest_lat, job.dest_lng], { icon: pinIcon('dest') }).addTo(mechMapObj);
+        if(!mechDestMarkers[job.id] && job.dest_lat != null && job.dest_lng != null) mechDestMarkers[job.id] = L.marker([job.dest_lat, job.dest_lng], { icon: pinIcon('dest') }).addTo(mechMapObj);
       }
       const distRow = isInshop ? '' : `<div class="row"><span>Distance</span><b id="mech-dist-${job.id}">${distText}</b></div>`;
       const directionsBtn = isInshop ? '' : `<a class="directions-btn" href="https://www.google.com/maps/dir/?api=1&destination=${job.dest_lat},${job.dest_lng}" target="_blank" rel="noopener">${icon('compass')} Get directions</a>`;
@@ -2887,7 +2967,7 @@ async function refreshFleetData(){
     restoreOpenChatNodes(box, _s1);
 
     for(const j of active){
-      if(j.job_type === 'inshop') continue; // no destination — no map to build
+      if(j.job_type === 'inshop' || j.dest_lat == null || j.dest_lng == null) continue; // no destination — no map to build
       const loc = locByMechanic[j.mechanic_id];
       if(!fleetMaps[j.id]){
         const m = L.map('fleetMap'+j.id, { attributionControl:false }).setView([j.dest_lat, j.dest_lng], 12);
