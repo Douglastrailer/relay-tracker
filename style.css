@@ -3195,3 +3195,24 @@ body.request-mode #brandHome{ cursor:default !important; }
 .mech-lang{ display:flex; align-items:center; gap:10px; margin:10px 0; }
 .mech-lang label{ font-weight:600; font-size:.85rem; color:var(--ink-soft); }
 .mech-lang select{ min-height:40px; padding:6px 10px; border-radius:9px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); font-size:.95rem; }
+
+/* ---- Settings: AI phone line ---- */
+.voice-hero{ padding:20px; margin-bottom:14px; border:1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); }
+.voice-hero-main{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.voice-number{ display:flex; flex-direction:column; gap:4px; } .voice-number b{ font-family:var(--font-display); font-size:1.7rem; letter-spacing:.01em; line-height:1.15; }
+.voice-live-pill{ display:inline-flex; align-items:center; gap:7px; padding:6px 12px; border-radius:999px; font-size:.78rem; font-weight:800; color:#177A50; background:#E7F5EF; border:1px solid #BEE3D2; white-space:nowrap; }
+.voice-live-pill i{ width:8px; height:8px; border-radius:50%; background:#1FA971; box-shadow:0 0 0 3px rgba(31,169,113,.2); }
+.voice-hero-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; } .voice-hero-actions .ghost-btn{ text-decoration:none; display:inline-flex; align-items:center; }
+.voice-help{ margin-top:12px; } .voice-help summary{ cursor:pointer; font-weight:700; color:var(--accent); min-height:32px; } .voice-help p{ margin:6px 0 0; max-width:70ch; }
+.voice-calls-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:22px 0 8px; } .voice-calls-head .voice-calls-h{ margin:0; }
+.voice-filters{ margin-bottom:10px; }
+.voice-call-wrap{ border:1px solid var(--line); border-radius:var(--r-md, 10px); background:var(--panel); } .voice-call-wrap.is-open{ border-color:var(--accent); }
+.voice-call-wrap .voice-call{ border:none; grid-template-columns:1fr auto auto; padding:10px 12px; }
+.voice-call-who{ display:flex; flex-direction:column; gap:2px; min-width:0; } .voice-call-who a{ color:inherit; text-decoration:none; }
+.voice-listen{ min-height:38px; padding:6px 14px; }
+.voice-media{ padding:4px 12px 14px; border-top:1px dashed var(--line); } .voice-media audio{ width:100%; margin:10px 0 6px; }
+.voice-media h4{ margin:12px 0 4px; font-size:.82rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); }
+.voice-transcript{ white-space:pre-wrap; overflow-wrap:anywhere; max-height:280px; overflow:auto; margin:0; padding:10px 12px; border-radius:8px; background:var(--panel-2); border:1px solid var(--line); font:inherit; font-size:.9rem; line-height:1.5; }
+@media (max-width:520px){ .voice-number b{ font-size:1.35rem; } .voice-call-wrap .voice-call{ grid-template-columns:1fr auto; } .voice-call-wrap .voice-call .rec-tag{ grid-column:1; justify-self:start; } .voice-listen{ grid-row:1 / span 2; grid-column:2; } }
+/* Phones: inventory actions sit two to a row instead of four stacked full-width buttons */
+@media (max-width:640px){ #invPanel .rec-toolbar button{ width:auto; flex:1 1 calc(50% - 6px); min-width:0; padding-left:8px; padding-right:8px; } }

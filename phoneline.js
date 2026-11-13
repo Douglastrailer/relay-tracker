@@ -15,19 +15,22 @@ async function renderVoiceSettings(){
   const [plan, lines, calls, usage] = await Promise.all([
     sb.from('voice_plans').select('allowed, monthly_fee, per_minute').maybeSingle(),
     sb.from('voice_lines').select('id, location_id, phone_number, timezone, open_hour, close_hour, open_days, slot_minutes, capacity, transfer_number, recording_on, active, managed, provision_status').order('created_at'),
-    sb.from('voice_calls').select('id, caller_phone, outcome, duration_seconds, started_at').order('started_at', { ascending: false }).limit(10),
+    sb.from('voice_calls').select('id, line_id, caller_phone, language, outcome, duration_seconds, started_at, request_id, provider_call_id').order('started_at', { ascending: false }).limit(50),
     sb.rpc('my_voice_usage', {})]);
   if(lines.error || plan.error){ box.innerHTML = head + `<p class="meta">${esc(relayFmt('Run migrations 0053 and 0054 to use the AI phone line.'))}</p>`; return; }
   const p = plan.data, all = lines.data || [];
-  const line = all.find(l => l.managed && ['live', 'provisioning', 'failed'].includes(l.provision_status));
+  // Every line that is answering calls is shown, including one Relay set up by hand for the shop
+  // (before, only lines the shop turned on itself were shown, so some owners never saw their own number).
+  const liveLines = all.filter(l => l.phone_number && l.active !== false && (!l.managed || l.provision_status === 'live'));
+  const line = liveLines[0] || all.find(l => l.managed && ['provisioning', 'failed'].includes(l.provision_status));
   const intro = `<p class="meta voice-intro">${esc(relayFmt('An AI assistant answers your shop phone in English or Russian, takes the caller\'s details and the problem, and holds a time. A person confirms every booking in Requests. Relay sets everything up for you.'))}</p>`;
-  if(!p || !p.allowed){
+  if((!p || !p.allowed) && !liveLines.length){
     box.innerHTML = head + intro + `<div class="card rec-form"><p>${esc(relayFmt('The AI phone line is not turned on for your shop yet.'))}</p><p class="meta">${esc(relayFmt('Ask Relay to turn it on: support@relayfleet.us'))}</p></div>`;
     return;
   }
-  const price = `<p class="voice-price">${esc(relayFmt('{fee} a month + {rate} per minute', { fee: voiceMoney(p.monthly_fee), rate: '$' + Number(p.per_minute).toFixed(2) }))}</p>`;
+  const price = p ? `<p class="voice-price">${esc(relayFmt('{fee} a month + {rate} per minute', { fee: voiceMoney(p.monthly_fee), rate: '$' + Number(p.per_minute).toFixed(2) }))}</p>` : '';
   const locs = (typeof relayLocations !== 'undefined' ? relayLocations : []) || [];
-  if(!line || line.provision_status === 'failed'){
+  if(!liveLines.length && (!line || line.provision_status === 'failed')){
     box.innerHTML = head + intro + `<div class="card rec-form voice-start">${price}
       ${line ? `<p class="form-error">${esc(relayFmt('The last setup did not finish. Relay has been told; nothing was charged. You can try again.'))}</p>` : ''}
       <div class="appt-row"><div class="field"><label for="vlLoc">${esc(relayFmt('Location'))}</label><select id="vlLoc">${locs.map(l => `<option value="${l.id}">${esc(l.display_name || l.name)}</option>`).join('') || '<option value="">—</option>'}</select></div>
@@ -37,26 +40,79 @@ async function renderVoiceSettings(){
     box.querySelector('#vlStart').onclick = () => voiceStart(box);
     return;
   }
-  if(line.provision_status === 'provisioning'){
+  if(!liveLines.length && line.provision_status === 'provisioning'){
     box.innerHTML = head + `<div class="card rec-form"><p><b>${esc(relayFmt('Setting up your AI phone line…'))}</b></p><p class="meta">${esc(relayFmt('This takes about a minute.'))}</p></div>`;
     setTimeout(renderVoiceSettings, 8000); return;
   }
   const u = usage.data || {};
-  box.innerHTML = head + `<div class="card rec-form voice-live">
-      <div class="voice-number"><span class="meta">${esc(relayFmt('Your AI phone line'))}</span><b data-no-i18n>${esc(line.phone_number)}</b></div>
-      <p>${esc(relayFmt('Last step: forward your shop\'s phone to this number (all calls, or only the ones nobody answers). Your phone company or phone system can do this in a few minutes.'))}</p>
-      <div class="voice-usage"><div><span>${esc(relayFmt('Calls this month'))}</span><b>${Number(u.calls || 0)}</b></div><div><span>${esc(relayFmt('Minutes'))}</span><b>${Number(u.minutes || 0)}</b></div><div><span>${esc(relayFmt('This month so far'))}</span><b>${voiceMoney(u.total)}</b></div></div>
-      ${price}</div>
-    ${voiceLineHtml(line)}
-    ${(calls.data || []).length ? `<h3 class="voice-calls-h">${esc(relayFmt('Recent calls'))}</h3><div class="voice-calls">${calls.data.map(c => `<div class="voice-call"><span>${esc(c.caller_phone || '—')}</span><span class="meta">${esc(new Date(c.started_at).toLocaleString(relayLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}${c.duration_seconds != null ? ' · ' + esc(relayDur(c.duration_seconds / 60)) : ''}</span><b class="voice-out voice-out-${esc(c.outcome)}">${esc(relayFmt(VOICE_OUTCOME[c.outcome] || c.outcome))}</b></div>`).join('')}</div>` : ''}
-    <div class="job-actions voice-off-row"><button type="button" class="text-btn danger" id="vlOff">${esc(relayFmt('Turn off AI phone line'))}</button></div>`;
-  box.querySelector('[data-vlsave]').onclick = () => voiceSaveLine(line);
-  box.querySelector('#vlOff').onclick = async () => {
+  const locName = id => { const l = locs.find(x => x.id === id); return l ? (l.display_name || l.name) : ''; };
+  voiceCallsState.rows = calls.data || [];
+  box.innerHTML = head + liveLines.map(l => `<div class="card voice-hero" data-vhero="${esc(l.id)}">
+      <div class="voice-hero-main">
+        <div class="voice-number"><span class="meta">${esc(relayFmt('Your AI phone line'))}${liveLines.length > 1 && locName(l.location_id) ? ' · ' + esc(locName(l.location_id)) : ''}</span>
+          <b data-no-i18n>${esc(voicePretty(l.phone_number))}</b></div>
+        <span class="voice-live-pill"><i></i>${esc(relayFmt('Answering calls'))}</span>
+      </div>
+      <div class="voice-hero-actions">
+        <button type="button" class="ghost-btn" data-vcopy="${esc(l.phone_number)}">${esc(relayFmt('Copy number'))}</button>
+        <a class="ghost-btn" href="tel:${esc(l.phone_number)}" data-no-i18n>${esc(relayFmt('Call it to test'))}</a>
+      </div>
+      <details class="voice-help"><summary>${esc(relayFmt('How to send your shop\'s calls to it'))}</summary>
+        <p>${esc(relayFmt('Last step: forward your shop\'s phone to this number (all calls, or only the ones nobody answers). Your phone company or phone system can do this in a few minutes.'))}</p></details>
+    </div>`).join('') + `
+    <div class="voice-usage"><div><span>${esc(relayFmt('Calls this month'))}</span><b>${Number(u.calls || 0)}</b></div><div><span>${esc(relayFmt('Minutes'))}</span><b>${Number(u.minutes || 0)}</b></div><div><span>${esc(relayFmt('This month so far'))}</span><b>${voiceMoney(u.total)}</b></div></div>
+    ${price}
+    <div id="voiceCallsBox"></div>
+    ${liveLines.map(l => voiceLineHtml(l) + (l.managed ? `<div class="job-actions voice-off-row"><button type="button" class="text-btn danger" data-vloff="${esc(l.id)}">${esc(relayFmt('Turn off AI phone line'))}</button></div>` : '')).join('')}`;
+  box.querySelectorAll('[data-vcopy]').forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.vcopy); recordsToast(relayFmt('Number copied')); } catch(_){ relayNotice(b.dataset.vcopy); } });
+  box.querySelectorAll('[data-vlsave]').forEach(b => b.onclick = () => voiceSaveLine(liveLines.find(l => String(l.id) === b.dataset.vlsave)));
+  box.querySelectorAll('[data-vloff]').forEach(b => b.onclick = async () => {
     if(!(await relayConfirm({ message: relayFmt('Turn off the AI phone line? The number is released and calls to it stop. Remember to stop forwarding your shop phone to it.'), confirmText: relayFmt('Turn off'), danger: true }))) return;
-    const { data, error } = await sb.functions.invoke('voice-provision', { body: { action: 'deprovision', line_id: line.id } });
+    const { data, error } = await sb.functions.invoke('voice-provision', { body: { action: 'deprovision', line_id: b.dataset.vloff } });
     if(error || (data && data.ok === false)){ relayFail(error || { message: data.error }, 'Could not turn off the line'); return; }
     recordsToast(relayFmt('AI phone line turned off')); renderVoiceSettings();
-  };
+  });
+  renderVoiceCalls();
+}
+
+// +14075550199 → +1 (407) 555-0199 (other numbers are shown as they are)
+function voicePretty(n){ const m = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(String(n || '')); return m ? `+1 (${m[1]}) ${m[2]}-${m[3]}` : String(n || ''); }
+
+// ---- Calls: who called, what happened, and the recording ----
+const voiceCallsState = { rows: [], filter: 'all', open: null, media: {} };
+const VOICE_FILTERS = [['all', 'All'], ['request_created', 'Request taken'], ['transferred', 'Passed to a person'], ['abandoned', 'Hung up'], ['emergency', 'Emergency']];
+function renderVoiceCalls(){
+  const box = document.getElementById('voiceCallsBox'); if(!box) return;
+  const st = voiceCallsState, all = st.rows;
+  const rows = st.filter === 'all' ? all : all.filter(c => c.outcome === st.filter);
+  const when = c => new Date(c.started_at).toLocaleString(relayLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const dur = c => c.duration_seconds != null ? Math.floor(c.duration_seconds / 60) + ':' + String(c.duration_seconds % 60).padStart(2, '0') : '';
+  const lang = c => ({ en: 'English', ru: 'Russian', es: 'Spanish' })[c.language] || '';
+  const mediaHtml = c => { const m = st.media[c.id];
+    if(!m) return `<div class="voice-media"><p class="meta">${esc(relayFmt('Loading the recording…'))}</p></div>`;
+    if(m.error) return `<div class="voice-media"><p class="form-error">${esc(m.error)}</p></div>`;
+    return `<div class="voice-media">
+      ${m.recording_url ? `<audio controls preload="none" src="${esc(m.recording_url)}"></audio><a class="text-btn" href="${esc(m.recording_url)}" target="_blank" rel="noopener noreferrer">${esc(relayFmt('Open recording in a new tab'))}</a>` : `<p class="meta">${esc(relayFmt(m.note || 'No recording was kept for this call.'))}</p>`}
+      ${m.summary ? `<h4>${esc(relayFmt('Summary'))}</h4><p data-no-i18n>${esc(m.summary)}</p>` : ''}
+      ${m.transcript ? `<h4>${esc(relayFmt('What was said'))}</h4><pre class="voice-transcript" data-no-i18n>${esc(m.transcript)}</pre>` : ''}</div>`; };
+  box.innerHTML = `<div class="voice-calls-head"><h3 class="voice-calls-h">${esc(relayFmt('Calls'))}</h3><span class="meta">${esc(relayFmt(all.length >= 50 ? 'Latest 50' : '{n} in total', { n: all.length }))}</span></div>
+    ${all.length ? `<div class="fd-dates voice-filters" role="group" aria-label="${esc(relayFmt('Show'))}">${VOICE_FILTERS.map(([k, l]) => `<button type="button" class="fd-chip${st.filter === k ? ' active' : ''}" data-vfilter="${k}" aria-pressed="${st.filter === k}">${esc(relayFmt(l))}</button>`).join('')}</div>` : ''}
+    <div class="voice-calls">${rows.map(c => `<div class="voice-call-wrap${st.open === c.id ? ' is-open' : ''}"><div class="voice-call">
+        <div class="voice-call-who"><b data-no-i18n>${c.caller_phone ? `<a href="tel:${esc(c.caller_phone)}">${esc(voicePretty(c.caller_phone))}</a>` : '—'}</b>
+          <span class="meta">${esc(when(c))}${dur(c) ? ' · ' + esc(dur(c)) : ''}${lang(c) ? ' · ' + esc(relayFmt(lang(c))) : ''}</span></div>
+        <span class="rec-tag voice-out-${esc(c.outcome)}">${esc(relayFmt(VOICE_OUTCOME[c.outcome] || c.outcome))}</span>
+        <button type="button" class="ghost-btn voice-listen" data-vlisten="${c.id}" aria-expanded="${st.open === c.id}">${esc(relayFmt(st.open === c.id ? 'Close' : 'Listen'))}</button>
+      </div>${st.open === c.id ? mediaHtml(c) : ''}</div>`).join('') || `<div class="empty-note">${esc(relayFmt(all.length ? 'No calls like that.' : 'No calls yet. Calls to your AI phone line appear here, with the recording.'))}</div>`}</div>`;
+  box.querySelectorAll('[data-vfilter]').forEach(b => b.onclick = () => { st.filter = b.dataset.vfilter; st.open = null; renderVoiceCalls(); });
+  box.querySelectorAll('[data-vlisten]').forEach(b => b.onclick = async () => {
+    const id = Number(b.dataset.vlisten);
+    if(st.open === id){ st.open = null; renderVoiceCalls(); return; }
+    st.open = id; renderVoiceCalls();
+    if(st.media[id] && !st.media[id].error) return;
+    const { data, error } = await sb.functions.invoke('voice-provision', { body: { action: 'call', call_id: id } });
+    st.media[id] = (error || !data || data.ok === false) ? { error: (data && data.error) || relayFmt('The recording could not be loaded. Try again in a moment.') } : data;
+    if(st.open === id) renderVoiceCalls();
+  });
 }
 
 async function voiceStart(box){

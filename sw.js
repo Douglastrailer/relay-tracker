@@ -4,7 +4,7 @@
 // App code and styles carry a fingerprint of their contents (?v=…): a saved copy
 // with the same fingerprint is served straight from the device. Never stores
 // Supabase data or other sites.
-const CACHE = 'relay-shell-d85a45e35f';
+const CACHE = 'relay-shell-f59e6c0a8d';
 const SHELL = ['/', '/index.html', '/admin-v3.css', '/glass.css', '/look.js', '/voice-admin.js', '/admin-console.js', '/admin-overview.js', '/admin-accounts.js', '/fmcsa-form.js', '/fmcsa.css', '/phoneline.js', '/demo-admin.js', '/live.js', '/schedule.js', '/dom-patch.js', '/route.js', '/nav-subs.js', '/header.js', '/tour.js', '/board-plus.js', '/wo-side.js', '/track-share.js', '/setup-gate.js', '/ui-dialogs.js', '/vin.js', '/subs.js', '/nav.js', '/safety.js', '/offline.js', '/account.js', '/terms.html', '/privacy.html', '/lang.js', '/completed.js', '/docs.js', '/lang-es.js', '/lang-ru.js', '/lang-pt.js', '/lang-fr.js', '/pwa.js', '/style.css', '/script.js', '/ro.js', '/insp.js', '/est.js', '/tech.js', '/fleet.js', '/unit.js',
                '/inv.js', '/analytics.js', '/comms.js', '/roles.js', '/shop.js', '/ops.js', '/dispatch.js', '/r4.js', '/assist.js', '/landing.js', '/scan.js', '/r6.js', '/profit.js', '/loc.js', '/voice.js', '/pdfview.js', '/map.js', '/sheet.js', '/parts.js', '/migrate.js', '/training.js', '/ux.js', '/natasha.js', '/plans.js', '/manifest.webmanifest', '/vendor-supabase-2.119.0.js', '/vendor-leaflet-1.9.4.js', '/vendor-leaflet-1.9.4.css', '/icon-192.png', '/icon-512.png'];
 

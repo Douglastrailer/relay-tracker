@@ -43,7 +43,7 @@ async function renderRolesPanel(){
   if(!box) return;
   if(!can('team')){ box.innerHTML = ''; return; }
   const [staffRes, linkRes] = await Promise.all([
-    sb.from('profiles').select('id, name, role, staff_role, active').eq('org_id', session.orgId).in('role', ['shop','mechanic']).order('name'),
+    sb.from('profiles').select('id, name, role, staff_role, active').eq('org_id', session.orgId).in('role', ['shop','mechanic']).is('deleted_at', null).order('name'),
     sb.from('fleet_shop_links').select('profiles:fleet_id(id, name, company, staff_role, active)').eq('org_id', session.orgId)
   ]);
   const people = staffRes.data || [];
@@ -135,6 +135,16 @@ function initMechAdd(mechanics){
     const n = document.getElementById('mechName'); if(n) n.focus();
   };
   btn.onclick = () => { mechFormFor = 'new'; draw(); };
+  // Delete for good. The server refuses while the mechanic still has open work orders.
+  document.querySelectorAll('#teamList [data-mech-del]').forEach(b => b.onclick = async () => {
+    const m = (mechanics || []).find(x => x.id === b.dataset.mechDel); if(!m) return;
+    if(!(await relayConfirm({ message: `Delete ${m.name} permanently? Their login is removed and they disappear from your team and from every list. Work orders and time they already recorded stay in your records under their name. This cannot be undone.`, confirmText: 'Delete permanently', danger: true }))) return;
+    b.disabled = true;
+    const res = await saveShopMechanic({ action: 'delete', profile_id: m.id });
+    if(res.error){ b.disabled = false; relayFail({ message: res.error }, 'Could not delete the mechanic'); return; }
+    recordsToast(`${m.name} is deleted.`);
+    refresh();
+  });
   document.querySelectorAll('#teamList [data-mech-edit]').forEach(b => b.onclick = () => { mechFormFor = b.dataset.mechEdit; draw(); });
   draw();
   // Mechanics typed into the earlier "records" list become normal mechanics, once.

@@ -267,15 +267,15 @@ async function fetchMyProfile(userId){
   return data;
 }
 async function fetchOrgMechanics(){
-  let { data, error } = await sb.from('profiles').select('id, name, active, availability, skills, no_login').eq('role','mechanic').eq('org_id', session.orgId);
+  let { data, error } = await sb.from('profiles').select('id, name, active, availability, skills, no_login').eq('role','mechanic').eq('org_id', session.orgId).is('deleted_at', null);
   // Until migration 0063 has been run the no_login column does not exist: the list must still load.
-  if(error && /no_login/.test(error.message || '')) ({ data, error } = await sb.from('profiles').select('id, name, active, availability, skills').eq('role','mechanic').eq('org_id', session.orgId));
+  if(error && /no_login/.test(error.message || '')) ({ data, error } = await sb.from('profiles').select('id, name, active, availability, skills').eq('role','mechanic').eq('org_id', session.orgId).is('deleted_at', null));
   if(error){ console.error('fetchOrgMechanics', error); return []; }
   return data || [];
 }
 async function fetchOrgMembers(){
-  let { data: mechanics, error: mechErr } = await sb.from('profiles').select('id, name, phone, active, role, availability, skills, no_login').eq('role','mechanic').eq('org_id', session.orgId);
-  if(mechErr && /no_login/.test(mechErr.message || '')) ({ data: mechanics, error: mechErr } = await sb.from('profiles').select('id, name, active, role, availability, skills').eq('role','mechanic').eq('org_id', session.orgId));
+  let { data: mechanics, error: mechErr } = await sb.from('profiles').select('id, name, phone, active, role, availability, skills, no_login').eq('role','mechanic').eq('org_id', session.orgId).is('deleted_at', null);
+  if(mechErr && /no_login/.test(mechErr.message || '')) ({ data: mechanics, error: mechErr } = await sb.from('profiles').select('id, name, active, role, availability, skills').eq('role','mechanic').eq('org_id', session.orgId).is('deleted_at', null));
   if(mechErr) console.error('fetchOrgMembers (mechanics)', mechErr);
 
   // Fleet managers are linked via fleet_shop_links now, not just profiles.org_id,
@@ -2744,7 +2744,8 @@ async function renderTeamList(){
     return `
     <div class="team-row">
       <div><div class="tname">${esc(m.name)}</div><div class="tstatus">${sub} — ${m.active ? 'Active' : 'Deactivated'}</div>${mechExtra}</div>
-      <button class="toggle-btn ${m.active ? 'on' : 'off'}" data-id="${m.id}" data-active="${m.active}">${m.active ? 'Active' : 'Inactive'}</button>
+      <div class="roster-ctl">${m.role === 'mechanic' && typeof can === 'function' && can('team') ? `<button type="button" class="text-btn danger" data-mech-del="${m.id}" aria-label="Delete ${esc(m.name)}">Delete</button>` : ''}
+        <button class="toggle-btn ${m.active ? 'on' : 'off'}" data-id="${m.id}" data-active="${m.active}">${m.active ? 'Active' : 'Inactive'}</button></div>
     </div>`;
   }
 
