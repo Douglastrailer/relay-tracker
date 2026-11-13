@@ -19,10 +19,12 @@ async function renderVoiceSettings(){
     sb.rpc('my_voice_usage', {})]);
   if(lines.error || plan.error){ box.innerHTML = head + `<p class="meta">${esc(relayFmt('Run migrations 0053 and 0054 to use the AI phone line.'))}</p>`; return; }
   const p = plan.data, all = lines.data || [];
-  // Every line that is answering calls is shown, including one Relay set up by hand for the shop
-  // (before, only lines the shop turned on itself were shown, so some owners never saw their own number).
-  const liveLines = all.filter(l => l.phone_number && l.active !== false && (!l.managed || l.provision_status === 'live'));
-  const line = liveLines[0] || all.find(l => l.managed && ['provisioning', 'failed'].includes(l.provision_status));
+  // A line counts only when Relay has really set it up and it is answering: managed, live and active.
+  // Old hand-made entries (status "manual") were never connected to the AI and are ignored.
+  // The live line wins over earlier failed attempts: before, a failed first try hid the working number.
+  const liveLines = all.filter(l => l.managed && l.provision_status === 'live' && l.active !== false && l.phone_number);
+  const pending = all.filter(l => l.managed && ['provisioning', 'failed'].includes(l.provision_status));
+  const line = liveLines[0] || pending.find(l => l.provision_status === 'provisioning') || pending[pending.length - 1];
   const intro = `<p class="meta voice-intro">${esc(relayFmt('An AI assistant answers your shop phone in English or Russian, takes the caller\'s details and the problem, and holds a time. A person confirms every booking in Requests. Relay sets everything up for you.'))}</p>`;
   if((!p || !p.allowed) && !liveLines.length){
     box.innerHTML = head + intro + `<div class="card rec-form"><p>${esc(relayFmt('The AI phone line is not turned on for your shop yet.'))}</p><p class="meta">${esc(relayFmt('Ask Relay to turn it on: support@relayfleet.us'))}</p></div>`;
