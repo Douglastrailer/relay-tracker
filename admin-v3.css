@@ -147,3 +147,53 @@ body.has-sidebar.nav-collapsed #adminView .nav-group{ font-size:0; height:1px; p
 #adminView .acct-off{ display:inline-block; margin-left:6px; font-size:.7rem; font-weight:600; color:var(--red); }
 #adminView .acct-ctl{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-end; flex:1 1 360px; }
 #adminView .acct-ctl select, #adminView .acct-ctl input{ max-width:170px; }
+
+/* ---------- Shops & subscriptions table (admin-shops.js) ---------- */
+#adminView .ast-kpis{ display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin:6px 0 16px; }
+#adminView .ast-kpi{ display:flex; flex-direction:column; gap:2px; padding:14px 16px; border-radius:16px; background:var(--glass); border:1px solid var(--glass-line); box-shadow:var(--shadow); }
+#adminView .ast-kpi em{ font-style:normal; font-size:.74rem; color:var(--ink-faint); font-weight:600; }
+#adminView .ast-kpi b{ font-size:1.45rem; font-weight:700; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
+#adminView .ast-kpi span{ font-size:.78rem; color:var(--ink-soft); }
+#adminView .ast-kpi.bad b{ color:var(--red); } #adminView .ast-kpi.warn b{ color:var(--amber); }
+#adminView .ast-tools{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; margin-bottom:12px; }
+#adminView .ast-search{ flex:0 1 320px; min-width:220px; min-height:40px; padding:8px 14px; border-radius:12px; border:1px solid var(--line-strong); background:var(--glass-strong); font:inherit; }
+#adminView .ast-filters{ display:flex; flex-wrap:wrap; gap:6px; margin:0; }
+#adminView .ast-filters .fd-chip{ min-height:32px; padding:3px 11px; font-size:.82rem; }
+#adminView .ast-count{ display:inline-block; min-width:1.4em; margin-left:2px; padding:0 6px; border-radius:999px; background:rgba(0,0,0,.06); font-size:.75rem; text-align:center; }
+#adminView .fd-chip.active .ast-count{ background:rgba(255,255,255,.25); }
+#adminView .ast-table{ min-width:1000px; table-layout:auto; }
+#adminView .ast-table th, #adminView .ast-table td{ padding:10px 10px; vertical-align:middle; }
+#adminView .ast-table .badge{ text-transform:none; }
+#adminView .ast-table td.num, #adminView .ast-table th.num{ text-align:right; }
+#adminView .ast-sort{ all:unset; cursor:pointer; font:inherit; color:inherit; letter-spacing:inherit; text-transform:inherit; }
+#adminView .ast-sort.on{ color:var(--ink); }
+#adminView .ast-sort:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
+#adminView .ast-shop{ width:270px; max-width:270px; }
+#adminView .ast-contact, #adminView .ast-facts{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:270px; }
+#adminView .ast-name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:270px; }
+#adminView .ast-shop b{ font-size:.95rem; }
+#adminView .ast-facts{ font-size:.75rem; }
+#adminView .ast-tag{ display:inline-block; margin-left:4px; padding:1px 7px; border-radius:999px; background:var(--blue-soft); color:var(--blue); font-size:.7rem; font-weight:600; vertical-align:middle; }
+#adminView .ast-state .badge{ white-space:nowrap; }
+#adminView .ast-in{ min-height:34px; padding:5px 8px; border-radius:10px; border:1px solid var(--line-strong); background:var(--glass-strong); font:inherit; font-size:.86rem; color:var(--ink); }
+#adminView .ast-in:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+#adminView .ast-in:disabled{ opacity:.55; }
+#adminView select.ast-in{ max-width:128px; } #adminView select.ast-plan{ max-width:148px; }
+#adminView .ast-price{ display:inline-flex; align-items:center; gap:4px; color:var(--ink-faint); }
+#adminView .ast-price-in{ width:72px; text-align:right; font-variant-numeric:tabular-nums; }
+#adminView .ast-paid{ display:flex; align-items:center; gap:6px; white-space:nowrap; }
+#adminView .ast-paid-in{ width:136px; }
+#adminView .ast-plus{ min-height:30px; padding:2px 9px; border-radius:9px; border:1px solid var(--line-strong); background:var(--glass); color:var(--blue); font:inherit; font-size:.78rem; font-weight:700; cursor:pointer; }
+#adminView .ast-plus:hover{ border-color:var(--accent); } #adminView .ast-plus:disabled{ opacity:.5; cursor:default; }
+#adminView .ast-inv.owes{ color:var(--red); border-color:rgba(224,70,60,.45); font-weight:700; }
+#adminView .ast-acts{ white-space:nowrap; text-align:right; }
+#adminView .ast-acts .ghost-btn{ min-height:32px; padding:4px 12px; font-size:.82rem; }
+#adminView .ast-row[data-state="archived"] td{ opacity:.7; }
+#adminView .ast-row[data-state="past_due"] td:first-child{ box-shadow:inset 3px 0 0 var(--red); }
+#adminView .ast-row[data-state="due_soon"] td:first-child{ box-shadow:inset 3px 0 0 var(--amber); }
+#adminView .ast-row[data-state="pending"] td:first-child{ box-shadow:inset 3px 0 0 var(--amber); }
+#adminView .ast-help{ margin-top:10px; max-width:860px; }
+/* the actions stay in view when the table scrolls sideways on a smaller screen */
+#adminView .ast-table td.ast-acts, #adminView .ast-table th:last-child{ position:sticky; right:0; z-index:2; background:rgba(var(--g-rgb), .92); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); box-shadow:-8px 0 12px -10px rgba(0,0,0,.25); }
+#adminView .ast-table td.ast-acts .row-more[open]{ z-index:5; }
+#adminView .ast-acts .row-menu[style*="fixed"]{ z-index:200; }

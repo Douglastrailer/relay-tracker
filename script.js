@@ -1868,11 +1868,13 @@ async function sendReviewRequest(invoiceId, email){
   relayNotice('Review request sent.', { kind: 'info' });
 }
 
+// Any estimate or invoice, not only drafts (shop-tools.js: deleteDocument, migration 0065).
 async function deleteInvoiceDraft(invoiceId){
-  if(!(await relayConfirm({ message: 'Delete this draft? This cannot be undone.' }))) return;
+  if(typeof deleteDocument === 'function'){ const ok = await deleteDocument(invoiceId); if(ok) refreshInvoices(); return ok; }
+  if(!(await relayConfirm({ message: 'Delete this draft? This cannot be undone.' }))) return false;
   const { error } = await sb.from('invoices').delete().eq('id', invoiceId);
-  if(error){ relayFail(error, 'Could not delete'); return; }
-  refreshInvoices();
+  if(error){ relayFail(error, 'Could not delete'); return false; }
+  refreshInvoices(); return true;
 }
 
 function invoiceStatusBadge(status){
@@ -1893,8 +1895,10 @@ function invoiceCardHtml(inv){
   const kindTag = `<span class="doc-kind-tag">${isEstimate ? 'ESTIMATE' : 'INVOICE'}</span>`;
 
   let actions = `<button class="text-btn inv-open-editor" data-doc="${inv.id}">Open</button><button class="text-btn inv-view-btn" data-id="${inv.id}">View PDF</button>`;
+  actions += `<button class="text-btn inv-print-btn" data-id="${inv.id}">Print</button>`;
   if(inv.status === 'draft') actions += `<button class="text-btn inv-delete-btn" data-id="${inv.id}">Delete draft</button>`;
-  else if(!isEstimate && inv.status === 'unpaid') actions += `<button class="text-btn inv-paid-btn" data-id="${inv.id}">Mark paid</button>`;
+  else actions += `<button class="text-btn danger inv-delete-btn" data-id="${inv.id}">Delete…</button>`;
+  if(!isEstimate && inv.status === 'unpaid') actions += `<button class="text-btn inv-paid-btn" data-id="${inv.id}">Mark paid</button>`;
   else if(isEstimate && inv.status === 'sent'){
     actions += `<button class="text-btn inv-approve-btn" data-id="${inv.id}">Mark approved</button>`;
     actions += `<button class="text-btn inv-decline-btn" data-id="${inv.id}">Mark declined</button>`;
@@ -1952,6 +1956,7 @@ async function refreshInvoices(){
 
   list.querySelectorAll('.inv-view-btn').forEach(btn=>{ btn.onclick = ()=> viewInvoicePdf(Number(btn.dataset.id)); });
   list.querySelectorAll('.inv-delete-btn').forEach(btn=>{ btn.onclick = ()=> deleteInvoiceDraft(Number(btn.dataset.id)); });
+  list.querySelectorAll('.inv-print-btn').forEach(btn=>{ btn.onclick = ()=> { if(typeof printDocument === 'function') printDocument(Number(btn.dataset.id)); }; });
   list.querySelectorAll('.inv-paid-btn').forEach(btn=>{ btn.onclick = ()=> markInvoicePaid(Number(btn.dataset.id)); });
   list.querySelectorAll('.inv-approve-btn').forEach(btn=>{ btn.onclick = ()=> updateEstimateStatus(Number(btn.dataset.id), 'approved'); });
   list.querySelectorAll('.inv-decline-btn').forEach(btn=>{ btn.onclick = ()=> updateEstimateStatus(Number(btn.dataset.id), 'declined'); });
@@ -2073,7 +2078,7 @@ async function saveBillingProfile(){
 // ================= inventory (price list) =================
 async function fetchInventoryItems(){
   const { data, error } = await sb.from('inventory_items')
-    .select('id, name, description, unit_price, active')
+    .select('id, name, description, unit_price, active, part_number, brand')
     .eq('org_id', session.orgId).eq('active', true)
     .order('name', { ascending:true });
   if(error){ console.error('fetchInventoryItems', error); return []; }
@@ -2136,7 +2141,10 @@ async function populateInventoryPicker(){
   if(!picker) return;
   const items = await fetchInventoryItems();
   picker.innerHTML = '<option value="">+ Add from price list...</option>' +
-    items.map(i => `<option value="${i.id}" data-name="${esc(i.name)}" data-price="${i.unit_price}">${esc(i.name)} — $${Number(i.unit_price).toFixed(2)}</option>`).join('');
+    items.map(i => `<option value="${i.id}" data-name="${esc(i.name)}" data-price="${i.unit_price}" data-search="${esc([i.part_number, i.brand, i.description].filter(Boolean).join(' '))}" data-sub="${esc([i.part_number, i.brand].filter(Boolean).join(' · '))}">${esc(i.name)} — $${Number(i.unit_price).toFixed(2)}</option>`).join('');
+  picker.dataset.searchable = '';   // rebuilt list: build the search box again
+  const oldBox = picker.previousElementSibling; if(oldBox && oldBox.classList.contains('rss')) oldBox.remove();
+  if(typeof relaySearchableSelect === 'function') relaySearchableSelect(picker, { label: 'Add from price list' });
 }
 
 function initInventoryUI(){
@@ -3133,9 +3141,10 @@ async function refreshAdminData(){
   list.querySelectorAll('.j-delete').forEach(btn=>{
     btn.onclick = async ()=>{
       const jobId = Number(btn.closest('.job-card').dataset.job);
-      if(!(await relayConfirm({ message: 'Delete this job?' }))) return;
+      if(!(await relayConfirm({ message: 'Delete this job? Its estimates and invoices are kept. This cannot be undone.', confirmText: 'Delete', danger: true }))) return;
       const { error } = await sb.from('jobs').delete().eq('id', jobId);
-      if(!error) refreshAdminData();
+      if(error){ relayFail(error, 'Could not delete the job'); return; }
+      refreshAdminData();
     };
   });
 

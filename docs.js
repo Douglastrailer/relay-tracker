@@ -3,7 +3,7 @@
 // instead of one long list. "+ New invoice" opens the old form in the blurred sheet.
 // ============================================================
 const DOC_TABS = [['all', 'All'], ['estimates', 'Estimates'], ['invoices', 'Invoices'], ['unpaid', 'Unpaid'], ['paid', 'Paid']];
-const docState = { tab: 'all', from: null, to: null, q: '', offset: 0, seq: 0, fromSearch: false };
+const docState = { tab: 'all', from: null, to: null, q: '', offset: 0, seq: 0, fromSearch: false, byId: {} };
 let docWired = false, docMark = () => {};
 function docStatus(d){
   if(d.kind === 'estimate') return ({ draft: ['pending', 'Draft'], sent: ['waiting', 'Sent'], approved: ['arrived', 'Approved'], declined: ['cancelled', 'Declined'], changes_requested: ['waiting', 'Changes requested'], converted: ['arrived', 'Invoiced'] })[d.status] || ['pending', d.status];
@@ -13,7 +13,11 @@ function docStatus(d){
 }
 function docRowHtml(d){
   const [cls, label] = docStatus(d);
-  const menu = (d.kind === 'invoice' && d.status === 'unpaid' ? `<button type="button" class="text-btn doc-paid" data-id="${d.id}">Mark paid</button>` : '') + (d.status === 'draft' ? `<button type="button" class="text-btn danger doc-del" data-id="${d.id}">Delete draft</button>` : '');
+  docState.byId[d.id] = d;
+  const billing = typeof can !== 'function' || can('billing');
+  const menu = (d.kind === 'invoice' && d.status === 'unpaid' ? `<button type="button" class="text-btn doc-paid" data-id="${d.id}">Mark paid</button>` : '')
+    + `<button type="button" class="text-btn doc-print" data-id="${d.id}">Print</button>`
+    + (billing ? `<button type="button" class="text-btn danger doc-del" data-id="${d.id}">${d.status === 'draft' ? 'Delete draft' : 'Delete…'}</button>` : '');
   return `<tr class="cw-row doc-row" data-id="${d.id}" tabindex="0" title="Open">
     <td><span class="doc-kind-tag">${d.kind === 'estimate' ? 'EST' : 'INV'}</span> <b class="mono">${cwEsc(d.doc_number || '#' + d.id)}</b></td>
     <td><b>${cwEsc(d.customer_name)}</b>${d.unit_number ? `<div class="meta">Unit ${cwEsc(d.unit_number)}</div>` : ''}</td>
@@ -33,7 +37,7 @@ async function refreshDocsTable(mode){
   const startAt = reset ? 0 : docState.offset, size = quiet ? Math.max(FIND_PAGE, docState.offset) : FIND_PAGE;
   const mySeq = ++docState.seq;
   if(mode === true){ docState.offset = 0; body.innerHTML = skelTableRows(6, 6); }
-  let q = sb.from('invoices').select('id, doc_number, job_id, kind, status, customer_name, unit_number, created_at, paid_at, due_date, total', { count: 'exact' }).eq('org_id', session.orgId);
+  let q = sb.from('invoices').select('id, doc_number, job_id, kind, status, customer_name, unit_number, created_at, paid_at, due_date, total, amount_paid', { count: 'exact' }).eq('org_id', session.orgId);
   if(docState.tab === 'estimates') q = q.eq('kind', 'estimate');
   else if(docState.tab === 'invoices') q = q.eq('kind', 'invoice');
   else if(docState.tab === 'unpaid') q = q.eq('kind', 'invoice').eq('status', 'unpaid');
@@ -77,7 +81,10 @@ function initDocsTable(){
       if(e.target.closest('[data-docdate]')){ docState.from = null; docState.to = null; docState.fromSearch = false; if(fdParseRange(search.value.trim())) search.value = ''; docMark(); refreshDocsTable(true); return; }
       const pdf = e.target.closest('.doc-pdf'); if(pdf){ e.stopPropagation(); if(typeof viewInvoicePdf === 'function') viewInvoicePdf(Number(pdf.dataset.id)); return; }
       const paid = e.target.closest('.doc-paid'); if(paid){ e.stopPropagation(); if(typeof markInvoicePaid === 'function') await markInvoicePaid(Number(paid.dataset.id)); refreshDocsTable(true); return; }
-      const del = e.target.closest('.doc-del'); if(del){ e.stopPropagation(); if(typeof deleteInvoiceDraft === 'function') await deleteInvoiceDraft(Number(del.dataset.id)); refreshDocsTable(true); return; }
+      const prn = e.target.closest('.doc-print'); if(prn){ e.stopPropagation(); const m = prn.closest('details'); if(m) m.open = false; if(typeof printDocument === 'function') printDocument(Number(prn.dataset.id)); return; }
+      const del = e.target.closest('.doc-del'); if(del){ e.stopPropagation(); const m = del.closest('details'); if(m) m.open = false; const id = Number(del.dataset.id);
+        const ok = typeof deleteDocument === 'function' ? await deleteDocument(id, docState.byId[id]) : (typeof deleteInvoiceDraft === 'function' ? await deleteInvoiceDraft(id) : false);
+        if(ok !== false) refreshDocsTable(true); return; }
       if(e.target.closest('summary, .row-menu, button, a, input, label')) return;
       const row = e.target.closest('.doc-row'); if(row && typeof openEstimateEditor === 'function') openEstimateEditor(Number(row.dataset.id));
     });

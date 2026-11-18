@@ -145,7 +145,7 @@ function renderEstimateEditor(){
     ${editable ? `<div class="est-add">
       <button type="button" class="ghost-btn" data-add="labor">+ Labor</button><button type="button" class="ghost-btn" data-add="part">+ Part</button>
       <button type="button" class="ghost-btn" data-add="fee">+ Fee</button><button type="button" class="ghost-btn" data-add="mileage">+ Mileage</button>
-      ${estCurrent.priceList.length ? `<select id="estPriceList" aria-label="Add from price list"><option value="">+ From price list…</option>${estCurrent.priceList.map(p => `<option value="${p.id}">${esc(p.name)}${p.part_number ? ' (' + esc(p.part_number) + ')' : ''} — ${money2(p.unit_price)}</option>`).join('')}</select>` : ''}
+      ${estCurrent.priceList.length ? `<div class="est-pl"><select id="estPriceList" aria-label="Add from price list"><option value="">+ From price list…</option>${estCurrent.priceList.map(p => `<option value="${p.id}" data-search="${esc([p.part_number, p.brand, p.description].filter(Boolean).join(' '))}" data-sub="${esc([p.part_number ? '#' + p.part_number : '', p.brand].filter(Boolean).join(' · '))}">${esc(p.name)}${p.part_number ? ' (' + esc(p.part_number) + ')' : ''} — ${money2(p.unit_price)}</option>`).join('')}</select></div>` : ''}
       ${unusedRecs.length ? `<button type="button" class="ghost-btn" id="estAddRecs">+ Recommended repairs (${unusedRecs.length})</button>` : ''}
       ${estCurrent.jobParts && estCurrent.jobParts.length ? `<button type="button" class="ghost-btn" id="estAddParts">+ Parts used on this job (${estCurrent.jobParts.length})</button>` : ''}
       ${estCurrent.laborMinutes ? `<button type="button" class="ghost-btn" id="estAddTime">+ Labor from tracked time (${(Math.round(estCurrent.laborMinutes / 15) / 4).toFixed(2)} h)</button>` : ''}
@@ -204,6 +204,8 @@ function actionsHtml(doc, editable){
     if(doc.status === 'paid') b.push('<button type="button" id="estEmailPaid">Email paid invoice</button>');
   }
   b.push('<button type="button" class="ghost-btn" id="estPdf">PDF</button>');
+  b.push('<button type="button" class="ghost-btn" id="estPrint">Print</button>');
+  if(typeof can !== 'function' || can('billing')) b.push(`<button type="button" class="ghost-btn est-del" id="estDelete">${doc.status === 'draft' ? 'Delete draft' : 'Delete…'}</button>`);
   return b.join('');
 }
 
@@ -249,6 +251,7 @@ function wireEditor(editable){
       const descs = body.querySelectorAll('.el-desc'); if(descs.length) descs[descs.length - 1].focus();
     });
     const pl = document.getElementById('estPriceList');
+    if(pl && typeof relaySearchableSelect === 'function') relaySearchableSelect(pl, { label: 'Add a part or service from the price list' });
     if(pl) pl.onchange = () => {
       const p = estCurrent.priceList.find(x => x.id === Number(pl.value));
       if(!p) return;
@@ -278,6 +281,12 @@ function wireEditor(editable){
   }
   const on = (id, fn) => { const el = document.getElementById(id); if(el) el.onclick = (e) => { if(!estCurrent) return; return fn(e); }; };   // a late click on a closed editor does nothing
   on('estSend', sendEstimate);
+  on('estPrint', () => { if(typeof printDocument === 'function') printDocument(estCurrent.doc.id); });
+  on('estDelete', async () => {
+    const d = estCurrent.doc;
+    if(typeof deleteDocument !== 'function') return;
+    if(await deleteDocument(d.id, d)){ closeEstimateEditor(); if(typeof refreshInvoices === 'function') refreshInvoices(); if(d.job_id && typeof openRepairOrder === 'function' && document.getElementById('roModal') && !document.getElementById('roModal').classList.contains('hidden')) openRepairOrder(d.job_id); }
+  });
   on('estCopy', async () => { const tok = estCurrent.doc.approval_token; await copyText(approvalLink(tok)); recordsToast('Approval link copied — paste it in a text or WhatsApp'); });
   on('estPhone', recordPhoneApproval);
   on('estRevise', async () => {

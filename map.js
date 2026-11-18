@@ -35,16 +35,27 @@ function shopCardHtml(e, opts){
       ${opts && opts.request ? `<button type="button" class="ghost-btn primary" data-reqorg="${esc(e.org_id)}" data-reqname="${esc(e.company || '')}">Request service</button>` : ''}
     </div>${e.phone || e.email ? `<div class="meta shop-pop-contact">${esc([e.phone, e.email].filter(Boolean).join(' · '))}</div>` : ''}</div>`;
 }
+// The map is made once per box and then reused: on a refresh only its pins change.
+// (Removing a Leaflet map while it is still zooming throws "_leaflet_pos" from its zoom
+// animation — the admin Overview refreshes on its own, so it used to hit exactly that.)
 function drawShopMap(elId, entries, opts){
   const el = document.getElementById(elId);
   if(!el || !window.L) return null;
-  if(el._relayMap){ el._relayMap.remove(); el._relayMap = null; }
-  const map = L.map(el, { scrollWheelZoom: !('ontouchstart' in window) }).setView([39.5, -98.35], 4);   // the whole US
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(map);
+  let map = el._relayMap;
+  if(map && map.getContainer && map.getContainer() !== el){ try { map.remove(); } catch(_){} map = null; }
+  if(!map){
+    map = L.map(el, { scrollWheelZoom: !('ontouchstart' in window), zoomAnimation: true }).setView([39.5, -98.35], 4);   // the whole US
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(map);
+    el._relayMap = map; el._relayPins = typeof L.layerGroup === 'function' ? L.layerGroup().addTo(map) : null;
+  }
+  const pins = el._relayPins; if(pins && pins.clearLayers) pins.clearLayers();
   const pts = [];
-  entries.forEach(e => { if(e.lat == null) return; const m = L.marker([e.lat, e.lng], { icon: shopMarkerIcon(e), title: (e.company || '') + ' — ' + (e.location || '') }).addTo(map); m.bindPopup(shopCardHtml(e, opts), { maxWidth: 300 }); pts.push([e.lat, e.lng]); e._marker = m; });
-  if(pts.length === 1) map.setView(pts[0], 12); else if(pts.length > 1) map.fitBounds(pts, { padding:[40, 40], maxZoom: 12 });
-  el._relayMap = map; setTimeout(() => map.invalidateSize(), 80);
+  entries.forEach(e => { if(e.lat == null) return; const m = L.marker([e.lat, e.lng], { icon: shopMarkerIcon(e), title: (e.company || '') + ' — ' + (e.location || '') }).addTo(pins || map); m.bindPopup(shopCardHtml(e, opts), { maxWidth: 300 }); pts.push([e.lat, e.lng]); e._marker = m; });
+  try {
+    if(pts.length === 1) map.setView(pts[0], 12, { animate: false });
+    else if(pts.length > 1) map.fitBounds(pts, { padding:[40, 40], maxZoom: 12, animate: false });
+  } catch(_){}
+  setTimeout(() => { try { if(map._container && map._container.isConnected) map.invalidateSize(); } catch(_){} }, 80);
   return map;
 }
 const kmBetween = (a, b, c, d) => { const R = 6371, r = x => x * Math.PI / 180; const h = Math.sin(r(c - a) / 2) ** 2 + Math.cos(r(a)) * Math.cos(r(c)) * Math.sin(r(d - b) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };

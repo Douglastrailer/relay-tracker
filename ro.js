@@ -336,6 +336,7 @@ async function openRepairOrder(jobId){
         ${billing && !closed && !['complete'].includes(job.status) ? `<button type="button" class="ghost-btn" id="woActEstimate">Create estimate</button>` : ''}
         ${billing && !closed && !['complete'].includes(job.status) ? `<button type="button" class="ghost-btn nat-draft" id="woActDraft" title="Natasha drafts it from the complaint and diagnosis, using your parts and labor rate">Draft with Natasha</button>` : ''}
         ${billing && ['complete','invoiced','paid'].includes(job.status) ? `<button type="button" class="wo-act-primary" id="woActInvoice">${job.status === 'complete' ? 'Create invoice' : 'Open invoice'}</button>` : ''}
+        <button type="button" class="ghost-btn" id="woActPrint">Print</button>
         ${isShop ? `<details class="row-more wo-more"><summary aria-label="More work order actions">More</summary><div class="row-menu"><button type="button" class="text-btn danger" id="woActDelete">Delete work order</button></div></details>` : ''}
       </div>
     </div>
@@ -558,8 +559,10 @@ function wireWoActions(job, opts){
   on('woActEstimate', () => { showWoTab('billing'); if(typeof newEstimateForJob === 'function') newEstimateForJob(job); });
   window.__woJob = job;   // for "Draft with Natasha"
   on('woActInvoice', () => { if(typeof generateInvoiceFromWork === 'function') generateInvoiceFromWork(job); });
+  on('woActPrint', () => { if(typeof printWorkOrder === 'function') printWorkOrder(job.id); });
   on('woActDelete', async () => {
-    if(!(await relayConfirm({ message: `Delete ${job.ro_number || 'this work order'}? This cannot be undone.` }))) return;
+    const m = document.querySelector('.wo-more'); if(m) m.open = false;
+    if(!(await relayConfirm({ title: 'Delete work order', message: `Delete ${job.ro_number || 'this work order'}? Its notes, photos, time and parts records are deleted with it. Its estimates and invoices are kept. This cannot be undone.`, confirmText: 'Delete', danger: true }))) return;
     const { error } = await sb.from('jobs').delete().eq('id', job.id);
     if(error){ relayFail(error, 'Could not delete'); return; }
     closeRepairOrder(); if(typeof refreshCurrentView === 'function') refreshCurrentView();

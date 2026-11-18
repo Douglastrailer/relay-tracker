@@ -1,77 +1,35 @@
 // ============================================================
-// RelayFleet — Admin → Shops (migration 0058).
-// Every shop in one list: archive (reversible) or restore it, and delete it permanently.
+// RelayFleet — Admin → Shops: archive, restore and permanent delete (migration 0058).
+// The table itself is drawn by admin-shops.js; these are the actions its rows call.
 // Permanent delete needs the shop archived first, a preview of what will be removed,
 // and the shop's exact name typed in. Nothing here changes a shop's data until confirmed.
 // ============================================================
 
-let adminShopsState = { rows: [], filter: '' };
-
-function shopMetaLine(r){
-  const bits = [r.contact_email || 'no email on file', r.people + ' user' + (r.people === 1 ? '' : 's')];
-  if(r.voice_line === 'live') bits.push('AI line on');
-  else if(r.voice_line === 'provisioning') bits.push('AI line setting up');
-  return bits.join(' · ');
-}
-
+// A shop's state in a word (the Overview's shop list uses it).
 function shopStateBadge(r){
   if(r.archived) return '<span class="voice-off">Archived</span>';
   if(r.status === 'approved') return '<span class="voice-on">Approved</span>';
   return `<span class="meta">${esc(r.status || 'unknown')}</span>`;
 }
 
-function shopRowHtml(r){
-  const aiBlocks = r.voice_line === 'live' || r.voice_line === 'provisioning';
-  const archiveBtn = r.archived
-    ? `<button type="button" class="ghost-btn" data-shop-restore="${esc(r.org_id)}">Restore</button>`
-    : `<button type="button" class="ghost-btn" data-shop-archive="${esc(r.org_id)}" ${aiBlocks ? 'disabled title="Turn off the AI phone line first"' : ''}>Archive</button>`;
-  const deleteBtn = `<button type="button" class="text-btn danger" data-shop-delete="${esc(r.org_id)}" title="${r.archived ? 'Delete this shop for good' : 'Archives the shop first, then deletes it'}">Delete permanently</button>`;
-  return `<div class="voice-admin-row admin-shop-row" data-org="${esc(r.org_id)}" data-name="${esc(r.name)}">
-    <div class="va-shop"><b>${esc(r.name)}</b> ${shopStateBadge(r)}<div class="meta">${esc(shopMetaLine(r))}</div>
-      ${r.archived_at ? `<div class="meta">Archived ${esc(new Date(r.archived_at).toLocaleDateString('en-US'))}</div>` : ''}</div>
-    <div class="va-actions">${archiveBtn}${deleteBtn}</div>
-  </div>`;
-}
-
+// The Shops screen is the shared shop table (admin-shops.js): every control on one row.
 async function renderAdminShops(){
-  const box = document.getElementById('adminShopsBox');
-  if(!box || !session || session.role !== 'admin') return;
-  const { data, error } = await sb.rpc('admin_shops');
-  if(error){ box.innerHTML = `<div class="section-head"><h2>Shops</h2></div><p class="form-error">${esc(error.message)}</p>`; return; }
-  adminShopsState.rows = data || [];
-  const q = adminShopsState.filter.trim().toLowerCase();
-  const shown = adminShopsState.rows.filter(r => !q || (r.name || '').toLowerCase().includes(q) || (r.contact_email || '').toLowerCase().includes(q));
-  const archived = adminShopsState.rows.filter(r => r.archived).length;
-  box.innerHTML = `<div class="section-head"><h2>Shops</h2><span class="meta">${adminShopsState.rows.length} shop${adminShopsState.rows.length === 1 ? '' : 's'} · ${archived} archived</span></div>
-    <p class="meta">Archive a shop to switch it off and hide it. Its people can't sign in until you restore it. To delete a shop for good, archive it first, then delete it and type its name.</p>
-    <div class="field" style="max-width:320px; margin:12px 0;">
-      <label for="adminShopsFilter">Find a shop</label>
-      <input type="search" id="adminShopsFilter" value="${esc(adminShopsState.filter)}" placeholder="Name or email">
-    </div>
-    <div class="voice-admin-list">${shown.map(shopRowHtml).join('') || '<p class="meta">No shops match.</p>'}</div>`;
-
-  const filterEl = document.getElementById('adminShopsFilter');
-  filterEl.oninput = () => { adminShopsState.filter = filterEl.value; renderAdminShops(); };
-  box.querySelectorAll('[data-shop-archive]').forEach(b => b.onclick = () => archiveShop(b.dataset.shopArchive, b.closest('.admin-shop-row').dataset.name));
-  box.querySelectorAll('[data-shop-restore]').forEach(b => b.onclick = () => restoreShop(b.dataset.shopRestore, b.closest('.admin-shop-row').dataset.name));
-  box.querySelectorAll('[data-shop-delete]').forEach(b => b.onclick = () => {
-    const row = adminShopsState.rows.find(r => r.org_id === b.dataset.shopDelete);
-    openDeleteShop(b.dataset.shopDelete, b.closest('.admin-shop-row').dataset.name, !!(row && row.archived));
-  });
+  if(typeof renderShopTable === 'function') return renderShopTable('adminShopsBox');
 }
+const shopsChanged = () => (typeof refreshShopTables === 'function' ? refreshShopTables() : renderAdminShops());
 
 async function archiveShop(orgId, name){
   if(!(await relayConfirm({ message: `Archive ${name}? Its people will be switched off and can't sign in until you restore the shop. Nothing is deleted.`, confirmText: 'Archive shop', danger: true }))) return;
   const { data, error } = await sb.rpc('admin_archive_shop', { p_org: orgId, p_archived: true });
   if(error){ relayFail(error, 'Could not archive the shop'); return; }
-  recordsToast(`Archived. ${data.people_switched_off} people switched off.`); renderAdminShops();
+  recordsToast(`Archived. ${data.people_switched_off} people switched off.`); shopsChanged();
 }
 
 async function restoreShop(orgId, name){
   if(!(await relayConfirm({ message: `Restore ${name}? Its people will be switched back on.`, confirmText: 'Restore shop' }))) return;
   const { data, error } = await sb.rpc('admin_archive_shop', { p_org: orgId, p_archived: false });
   if(error){ relayFail(error, 'Could not restore the shop'); return; }
-  recordsToast(`Restored. ${data.people_switched_on} people switched back on.`); renderAdminShops();
+  recordsToast(`Restored. ${data.people_switched_on} people switched back on.`); shopsChanged();
 }
 
 // ---------- Permanent delete: preview, then type the exact name ----------
@@ -81,7 +39,7 @@ async function openDeleteShop(orgId, name, archived){
     if(!(await relayConfirm({ message: `${name} is active. Archive it now and then delete it? Its people will be switched off first.`, confirmText: 'Archive and continue', danger: true }))) return;
     const { error } = await sb.rpc('admin_archive_shop', { p_org: orgId, p_archived: true });
     if(error){ relayFail(error, 'Could not archive the shop'); return; }
-    renderAdminShops();
+    shopsChanged();
   }
   openDeleteShopDialog(orgId, name);
 }
@@ -119,7 +77,7 @@ function openDeleteShopDialog(orgId, name){
     if(error){ err.textContent = error.message; go.disabled = false; return; }
     close();
     recordsToast(`${data.deleted} deleted (${data.rows_removed} rows removed).`);
-    renderAdminShops();
+    shopsChanged();
   };
   nameEl.focus();
 }

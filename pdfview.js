@@ -1,7 +1,7 @@
 // ============================================================
 // RelayFleet — in-app PDF viewer. A sheet over the app (the app behind it
 // blurred), pages drawn with PDF.js so it works inside the iPhone Home
-// Screen app too (no new tabs there). Share (incl. Print / Save to Files),
+// Screen app too (no new tabs there). Print, Share (incl. Print / Save to Files),
 // Download, Close.
 // ============================================================
 const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
@@ -23,7 +23,7 @@ function pdfSheet(){
   document.body.insertAdjacentHTML('beforeend', `<div id="pdfSheet" class="pdf-overlay hidden" role="dialog" aria-modal="true" aria-label="PDF">
     <div class="pdf-card">
       <div class="pdf-head"><b id="pdfTitle">Document</b><span class="meta" id="pdfPages"></span>
-        <div class="pdf-actions"><button type="button" class="ghost-btn hidden" id="pdfShare">Share</button><a class="ghost-btn hidden" id="pdfDownload" download>Download</a><button type="button" class="pdf-close" id="pdfClose" aria-label="Close">×</button></div></div>
+        <div class="pdf-actions"><button type="button" class="ghost-btn hidden" id="pdfPrint">Print</button><button type="button" class="ghost-btn hidden" id="pdfShare">Share</button><a class="ghost-btn hidden" id="pdfDownload" download>Download</a><button type="button" class="pdf-close" id="pdfClose" aria-label="Close">×</button></div></div>
       <div class="pdf-body" id="pdfBody"></div>
     </div></div>`);
   o = document.getElementById('pdfSheet');
@@ -56,6 +56,8 @@ async function showPdfInApp(blob, title, fileName){
   sh.classList.toggle('hidden', !canShare); dl.classList.toggle('hidden', canShare);
   dl.href = url; dl.download = fileName;
   sh.onclick = async () => { try { await navigator.share({ files:[file], title: title || fileName }); } catch(_){} };
+  const pr = document.getElementById('pdfPrint');
+  if(pr){ pr.classList.toggle('hidden', typeof printPdfBlob !== 'function'); pr.onclick = () => printPdfBlob(blob, fileName); }
   body.innerHTML = '<div class="pdf-wait"><div class="scan-spin"></div>Opening…</div>';
   try {
     const lib = await loadPdfJs();
@@ -85,7 +87,7 @@ async function viewInvoicePdfInApp(invoiceId){
   const o = pdfSheet(); const body = document.getElementById('pdfBody');
   o.classList.remove('hidden'); requestAnimationFrame(() => o.classList.add('open')); document.body.classList.add('pdf-open');
   document.getElementById('pdfTitle').textContent = 'Loading…'; document.getElementById('pdfPages').textContent = '';
-  ['pdfShare','pdfDownload'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  ['pdfShare','pdfDownload','pdfPrint'].forEach(id => document.getElementById(id).classList.add('hidden'));
   body.innerHTML = '<div class="pdf-wait"><div class="scan-spin"></div>Getting the PDF…</div>';
   const fail = (msg) => { body.innerHTML = `<div class="pdf-wait"><b>Couldn't open the PDF</b><span class="form-error">${esc(msg)}</span></div>`; document.getElementById('pdfTitle').textContent = 'PDF'; };
   try {

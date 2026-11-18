@@ -1,104 +1,22 @@
 // ============================================================
 // RelayFleet — Subscriptions and invoices (Relay's own control panel).
-// Subscriptions: each shop's price, paid-through date and active / stopped, in separate columns.
+// Subscriptions: the shared shop table (admin-shops.js) with price, plan, paid-through date and access.
 // A shop's billing sheet: months paid, total paid, every invoice (view, PDF, edit, pay, void, email).
 // Settings: the invoice register across all shops, and Relay's own details printed on invoices.
 // Nothing here is ever shown to a shop except its own invoices.
 // ============================================================
-const SUB_FILTERS = [
-  ['all', 'All'], ['active', 'Active'], ['expiring', 'Expiring in 7 days'], ['expired', 'Expired'],
-  ['stopped', 'Stopped'], ['no_price', 'No price set'], ['free', 'Complimentary'], ['pending', 'Not approved']
-];
 const subState = { rows: [], history: {}, filter: 'all', settings: null };
 const subMoney = n => n == null ? '—' : '$' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const subDate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
 const subErr = (id, m) => { const e = document.getElementById(id); if(e) e.textContent = m || ''; };
 const INV_STATUS_LABEL = { unpaid: 'Unpaid', paid: 'Paid', void: 'Void', draft: 'Draft' };
 
-// ---------- Subscriptions: one row per shop, every fact in its own column ----------
+// ---------- Subscriptions: the shared shop table (admin-shops.js) ----------
+// Price, plan, paid-through date, access, invoices, archive and delete, all on one row per shop.
 async function renderSubscriptions(){
-  const box = document.getElementById('adminSubsBox');
-  if(!box || !session || session.role !== 'admin') return;
-  if(!subState.rows.length) box.innerHTML = '<div class="section-head"><h2>Subscriptions</h2></div>' + skelRows(4, { wide: true });
-  const { data, error } = await sb.rpc('admin_subscriptions');
-  if(error || !data){ box.innerHTML = `<div class="section-head"><h2>Subscriptions</h2></div><p class="form-error">${esc(error ? error.message : 'Could not load this.')}</p>`; return; }
-  subState.rows = data;
-  // months paid and total paid come from each shop's billing history
-  const histories = await Promise.all(data.map(r => sb.rpc('shop_billing_history', { p_org: r.org_id }).then(res => [r.org_id, res.data])));
-  subState.history = Object.fromEntries(histories.filter(([, h]) => h));
-  const count = k => data.filter(r => bucketOf(r) === k).length;
-  const paying = data.filter(r => ['active', 'expiring', 'expired'].includes(bucketOf(r)));
-  const monthly = paying.reduce((s, r) => s + Number(r.monthly_price || 0), 0);
-  const owed = data.reduce((s, r) => s + Number(r.owed || 0), 0);
-  const shown = data.filter(r => subState.filter === 'all' || bucketOf(r) === subState.filter);
-  box.innerHTML = `<div class="section-head"><h2>Subscriptions</h2><span class="meta">${paying.length} paying · ${subMoney(monthly)} a month${owed ? ' · ' + subMoney(owed) + ' owed' : ''}</span></div>
-    ${count('expired') ? `<div class="inv-warn">⚠ ${count('expired')} shop${count('expired') === 1 ? '' : 's'} past their paid-through date: ${esc(data.filter(r => bucketOf(r) === 'expired').map(r => r.name).join(', '))}</div>` : ''}
-    <div class="fd-dates" id="subFilters" role="group" aria-label="Filter shops">
-      ${SUB_FILTERS.map(([k, label]) => `<button type="button" class="fd-chip${subState.filter === k ? ' active' : ''}" data-subfilter="${k}" aria-pressed="${subState.filter === k}">${esc(label)} (${k === 'all' ? data.length : count(k)})</button>`).join('')}
-    </div>
-    <p class="form-error" id="subErr"></p>
-    <div class="cw-wrap"><table class="cw-table subs-table"><thead><tr>
-      <th>Shop</th><th class="num">Price per month</th><th>Paid through</th><th>Active</th><th class="num">Months paid</th><th class="num">Total paid</th><th class="num">Owed</th><th></th>
-    </tr></thead><tbody>
-    ${shown.length ? shown.map(subRowHtml).join('') : '<tr><td colspan="8"><div class="empty-note">No shops in this group.</div></td></tr>'}
-    </tbody></table></div>
-    <p class="meta">Set a shop's price and paid-through date here, then press <b>Save</b> on its row. <b>Stop</b> keeps the shop's history and can be undone with <b>Start</b>.</p>`;
-  wireSubscriptions(box);
+  if(typeof renderShopTable === 'function') return renderShopTable('adminSubsBox');
 }
-function bucketOf(r){ return r.bucket; }
-
-function activeBadge(r){
-  const b = r.bucket;
-  if(b === 'free') return '<span class="badge arrived"><span class="bd"></span>Complimentary</span>';
-  if(b === 'stopped') return '<span class="badge offline"><span class="bd"></span>Stopped</span>';
-  if(b === 'pending') return '<span class="badge pending"><span class="bd"></span>Not approved</span>';
-  if(b === 'no_price') return '<span class="badge pending"><span class="bd"></span>No price set</span>';
-  if(b === 'onboarding') return '<span class="badge pending"><span class="bd"></span>Onboarding</span>';
-  if(b === 'expired') return `<span class="badge cancelled"><span class="bd"></span>Expired · ${Math.abs(r.days_left)} days late</span>`;
-  if(b === 'expiring') return `<span class="badge waiting"><span class="bd"></span>Ends in ${r.days_left} day${r.days_left === 1 ? '' : 's'}</span>`;
-  return `<span class="badge arrived"><span class="bd"></span>Active · ${r.days_left} days left</span>`;
-}
-
-function subRowHtml(r){
-  const h = subState.history[r.org_id] || {};
-  const canToggle = r.bucket !== 'free' && r.bucket !== 'pending';
-  const stopped = r.bucket === 'stopped';
-  return `<tr data-org="${esc(r.org_id)}">
-    <td><b>${esc(r.name)}</b><div class="meta">${esc(r.contact_email || 'no email on file')} · ${r.people} user${r.people === 1 ? '' : 's'}</div></td>
-    <td class="num"><input type="number" class="sub-price" data-org="${esc(r.org_id)}" min="0" step="1" value="${r.monthly_price == null ? '' : Number(r.monthly_price)}" placeholder="not set" aria-label="Price per month for ${esc(r.name)}" style="width:7.5rem"></td>
-    <td><input type="date" class="sub-paid" data-org="${esc(r.org_id)}" value="${esc(r.paid_through || '')}" aria-label="Paid through for ${esc(r.name)}"></td>
-    <td>${activeBadge(r)}${canToggle ? `<div><button type="button" class="text-btn" data-toggle="${esc(r.org_id)}" data-active="${stopped ? '0' : '1'}">${stopped ? 'Start' : 'Stop'}</button></div>` : ''}</td>
-    <td class="num">${h.months_paid != null ? esc(String(h.months_paid)) : '—'}</td>
-    <td class="num">${h.total_paid != null ? subMoney(h.total_paid) : '—'}</td>
-    <td class="num">${Number(r.owed) ? `<b>${subMoney(r.owed)}</b>` : subMoney(0)}</td>
-    <td class="cw-acts"><button type="button" class="text-btn" data-save="${esc(r.org_id)}">Save</button>
-      <button type="button" class="text-btn" data-billing="${esc(r.org_id)}">Invoices (${(h.invoices || []).length})</button></td>
-  </tr>`;
-}
-
-function wireSubscriptions(box){
-  box.querySelectorAll('[data-subfilter]').forEach(b => b.onclick = () => { subState.filter = b.dataset.subfilter; renderSubscriptions(); });
-  box.querySelectorAll('[data-save]').forEach(b => b.onclick = async () => {
-    const org = b.dataset.save;
-    const priceEl = box.querySelector(`.sub-price[data-org="${org}"]`), paidEl = box.querySelector(`.sub-paid[data-org="${org}"]`);
-    const price = priceEl.value === '' ? null : Number(priceEl.value);
-    if(price != null && !(price >= 0)){ subErr('subErr', 'That price is not a number.'); return; }
-    if(price == null && priceEl.value === '' && subState.rows.find(r => r.org_id === org).monthly_price != null){ subErr('subErr', 'To remove a price, ask Relay support — a shop cannot be left with no price after it has one.'); return; }
-    b.disabled = true; subErr('subErr', '');
-    const { error } = await sb.rpc('set_shop_subscription', { p_org: org, p_price: price, p_paid_through: paidEl.value || null, p_active: null });
-    b.disabled = false;
-    if(error){ subErr('subErr', error.message); return; }
-    recordsToast('Saved'); renderSubscriptions();
-  });
-  box.querySelectorAll('[data-toggle]').forEach(b => b.onclick = async () => {
-    const turnOn = b.dataset.active === '0';
-    if(!turnOn && !(await relayConfirm({ message: 'Stop this shop? It keeps its history and can be started again, but it cannot create new work while stopped.', confirmText: 'Stop shop', danger: true }))) return;
-    const { error } = await sb.rpc('set_shop_subscription', { p_org: b.dataset.toggle, p_price: null, p_paid_through: null, p_active: turnOn });
-    if(error){ subErr('subErr', error.message); return; }
-    recordsToast(turnOn ? 'Started' : 'Stopped'); renderSubscriptions();
-  });
-  box.querySelectorAll('[data-billing]').forEach(b => b.onclick = () => openShopBilling(b.dataset.billing));
-}
+const subsChanged = () => (typeof refreshShopTables === 'function' ? refreshShopTables() : renderSubscriptions());
 
 // ---------- A shop's billing sheet: summary, every invoice, and the actions on each ----------
 async function openShopBilling(orgId){
@@ -135,7 +53,7 @@ async function openShopBilling(orgId){
       </tbody></table></div>` : '<div class="empty-note">No invoices yet for this shop.</div>'}
   </div>`;
   if(typeof openFormSheet === 'function') openFormSheet(`${shop.name} — billing`, [body]);
-  const reload = async () => { if(typeof closeFormSheet === 'function') closeFormSheet(); await renderSubscriptions(); openShopBilling(orgId); };
+  const reload = async () => { if(typeof closeFormSheet === 'function') closeFormSheet(); await subsChanged(); openShopBilling(orgId); };
   body.querySelector('#sbNew').onclick = () => openSubInvoiceForm(orgId, reload);
   body.querySelectorAll('[data-view]').forEach(b => b.onclick = () => openInvoiceView(Number(b.dataset.view), orgId));
   body.querySelectorAll('[data-pdf]').forEach(b => b.onclick = () => downloadSubscriptionPdf(Number(b.dataset.pdf)));
@@ -184,7 +102,7 @@ function openSubInvoiceForm(orgId, onDone){
     recordsToast('Invoice ' + data.number + ' created');
     if(alsoSend) await emailSubInvoice(data.id, orgId, body.querySelector('#siErr'));
     if(typeof closeFormSheet === 'function') closeFormSheet();
-    if(typeof onDone === 'function') onDone(); else renderSubscriptions();
+    if(typeof onDone === 'function') onDone(); else subsChanged();
   };
   body.querySelector('#siCreate').onclick = () => make(false);
   body.querySelector('#siCreateSend').onclick = () => make(true);
@@ -217,7 +135,7 @@ function openEditInvoice(invId, inv, onDone){
     if(error){ body.querySelector('#eiErr').textContent = error.message; return; }
     recordsToast('Invoice saved');
     if(typeof closeFormSheet === 'function') closeFormSheet();
-    if(typeof onDone === 'function') onDone(); else renderSubscriptions();
+    if(typeof onDone === 'function') onDone(); else subsChanged();
   };
 }
 
@@ -277,7 +195,7 @@ async function emailSubInvoice(invoiceId, orgId, errEl){
   const { error } = await sb.functions.invoke('send-subscription-invoice', { body: { invoiceId, recipientEmail: to } });
   if(error){ show('Could not send: ' + error.message); return; }
   recordsToast('Invoice emailed to ' + to);
-  renderSubscriptions();
+  subsChanged();
 }
 
 // ---------- Settings: the invoice register and Relay's own details ----------
