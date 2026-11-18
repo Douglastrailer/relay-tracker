@@ -79,7 +79,17 @@ function refreshShopTables(){
   ['adminShopsBox', 'adminSubsBox'].forEach(id => { const b = document.getElementById(id); if(b && b.childElementCount) renderShopTable(id); });
 }
 
-function astSearchMatch(r, q){ return !q || [r.name, r.owner_name, r.contact_email, r.contact_phone, r.voice_number].some(v => String(v || '').toLowerCase().includes(q)); }
+// The people who run the shop: active owners and office staff (0067), else the single owner from older data.
+function astLeads(r){
+  const team = Array.isArray(r.team) ? r.team.filter(t => t.role === 'shop' && t.active !== false) : [];
+  return team.length ? team : (r.owner_name || r.contact_email ? [{ name: r.owner_name, email: r.contact_email, phone: r.contact_phone, staff_role: 'owner' }] : []);
+}
+const AST_ROLE = t => t.role === 'shop' ? (t.staff_role === 'owner' ? 'Owner' : 'Office staff') : t.role === 'mechanic' ? (t.no_login ? 'Mechanic, no login' : 'Mechanic') : t.role;
+function astSearchMatch(r, q){
+  if(!q) return true;
+  const people = (Array.isArray(r.team) ? r.team : []).flatMap(t => [t.name, t.email, t.phone]);
+  return [r.name, r.owner_name, r.contact_email, r.contact_phone, r.billing_email, r.voice_number, ...people].some(v => String(v || '').toLowerCase().includes(q));
+}
 function astSorted(rows, ui, valueOf){
   return rows.slice().sort((a, b) => { const x = valueOf(a), y = valueOf(b); return (x > y ? 1 : x < y ? -1 : 0) * ui.dir || String(a.name).localeCompare(String(b.name)); });
 }
@@ -129,7 +139,7 @@ function astBillRow(r){
        <div class="as-sub">${c.aiMinutes} min so far${r.voice_line === 'live' ? '' : r.voice_line === 'provisioning' ? ' · setting up' : r.ai_allowed ? ' · line off' : ''}</div>`
     : '<span class="as-quiet">None</span>';
   return `<tr data-org="${astEsc(r.org_id)}" data-state="${astEsc(r.state)}" tabindex="0" aria-label="Open ${astEsc(r.name)} billing">
-    <td class="as-shop"><b>${astEsc(r.name)}</b><div class="as-sub">${astEsc(r.owner_name || r.contact_email || 'No owner on file')}</div></td>
+    <td class="as-shop"><b>${astEsc(r.name)}</b><div class="as-sub">${astEsc(astLeads(r).map(t => t.name).filter(Boolean).join(', ') || 'No owner on file')}</div></td>
     <td>${astStatus(r)}</td>
     <td class="num">${plan}</td>
     <td class="as-ai">${ai}</td>
@@ -170,7 +180,7 @@ function astShopRow(r){
     : r.access === 'rejected' ? '<span class="as-status as-muted"><i></i>Rejected</span>' : '<span class="as-status as-ok"><i></i>Approved</span>';
   return `<tr data-org="${astEsc(r.org_id)}" data-state="${astEsc(r.state)}" tabindex="0" aria-label="Open ${astEsc(r.name)}">
     <td class="as-shop"><b>${astEsc(r.name)}</b>${r.locations > 1 ? `<div class="as-sub">${r.locations} locations</div>` : ''}</td>
-    <td class="as-owner"><div>${astEsc(r.owner_name || '—')}</div><div class="as-sub">${astEsc(r.contact_email || r.contact_phone || 'No email on file')}</div></td>
+    <td class="as-owner">${astLeads(r).length ? astLeads(r).map(t => `<div class="as-person"><span>${astEsc(t.name || 'No name')}</span><span class="as-sub">${astEsc(t.email || t.phone || 'No email on file')}</span></div>`).join('') : '<span class="as-quiet">No owner on file</span>'}</td>
     <td class="num">${Number(r.people || 0)}</td>
     <td class="num">${Number(r.jobs_30d || 0)}</td>
     <td>${line}</td>
@@ -219,15 +229,20 @@ function openShopPanel(org){
     <section class="as-p-top">
       <div><h3>${astEsc(r.name)}</h3><p>${astStatus(r)}</p></div>
       <dl class="as-facts">
-        <div><dt>Owner</dt><dd>${astEsc(r.owner_name || '—')}</dd></div>
-        <div><dt>Email</dt><dd>${r.contact_email ? `<a href="mailto:${astEsc(r.contact_email)}">${astEsc(r.contact_email)}</a>` : '—'}</dd></div>
-        <div><dt>Phone</dt><dd>${r.contact_phone ? `<a href="tel:${astEsc(r.contact_phone)}">${astEsc(r.contact_phone)}</a>` : '—'}</dd></div>
+        <div><dt>Billing email</dt><dd>${r.billing_email ? `<a href="mailto:${astEsc(r.billing_email)}">${astEsc(r.billing_email)}</a>` : '<span class="as-quiet">Not set, invoices go to the owner</span>'}</dd></div>
         <div><dt>People</dt><dd>${Number(r.people || 0)}</dd></div>
         <div><dt>Locations</dt><dd>${Number(r.locations || 0) || 1}</dd></div>
         <div><dt>Work orders, last 30 days</dt><dd>${Number(r.jobs_30d || 0)}</dd></div>
         <div><dt>AI phone line</dt><dd>${r.voice_line === 'live' ? astEsc(typeof voicePretty === 'function' && r.voice_number ? voicePretty(r.voice_number) : r.voice_number || 'On') : r.voice_line === 'provisioning' ? 'Setting up' : r.ai_allowed ? 'Approved, not turned on' : 'Not approved'}</dd></div>
         <div><dt>Joined</dt><dd>${astDate(r.created_at)}</dd></div>
       </dl>
+    </section>
+    <section class="as-p-sec">
+      <h4>People</h4>
+      ${(Array.isArray(r.team) && r.team.length) ? `<ul class="as-people">${r.team.map(t => `<li class="${t.active === false ? 'is-off' : ''}">
+        <div><b>${astEsc(t.name || 'No name')}</b><span class="as-role">${astEsc(AST_ROLE(t))}${t.active === false ? ', switched off' : ''}</span></div>
+        <div class="as-contact">${t.email ? `<a href="mailto:${astEsc(t.email)}">${astEsc(t.email)}</a>` : ''}${t.phone ? `<a href="tel:${astEsc(t.phone)}">${astEsc(t.phone)}</a>` : ''}${!t.email && !t.phone ? '<span class="as-quiet">No email or phone</span>' : ''}</div></li>`).join('')}</ul>`
+        : `<p class="as-p-help">${astEsc([r.owner_name, r.contact_email, r.contact_phone].filter(Boolean).join(', ') || 'No people on file.')}</p>`}
     </section>
     <section class="as-p-sec">
       <h4>Billing</h4>
@@ -272,7 +287,8 @@ async function openBillingPanel(org){
   const body = document.createElement('div'); body.className = 'as-panel';
   body.innerHTML = `
     <section class="as-p-top">
-      <div><h3>${astEsc(r.name)}</h3><p>${astStatus(r)}${r.paid_through ? ` <span class="as-quiet">paid through ${astDate(r.paid_through)}</span>` : ''}</p></div>
+      <div><h3>${astEsc(r.name)}</h3><p>${astStatus(r)}${r.paid_through ? ` <span class="as-quiet">paid through ${astDate(r.paid_through)}</span>` : ''}</p>
+        <p class="as-p-help">${astLeads(r).length ? 'Run by ' + astLeads(r).map(t => astEsc(t.name || 'No name') + (t.email ? ` (${astEsc(t.email)})` : '')).join(', ') + '. ' : ''}Invoices are emailed to ${astEsc(r.billing_email || r.contact_email || 'nobody yet: add an email in Accounts')}.</p></div>
       <div class="as-bill-sum" aria-label="This month">
         <div class="as-bill-lines">
           <div><span>Plan${AST_PAYING.includes(r.state) ? '' : ` <em>(${r.state === 'comp' ? 'complimentary' : r.state === 'trial' ? 'trial' : 'cancelled'}, not charged)</em>`}</span><b>${astMoney(c.plan)}</b></div>

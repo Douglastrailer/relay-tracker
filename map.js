@@ -35,6 +35,17 @@ function shopCardHtml(e, opts){
       ${opts && opts.request ? `<button type="button" class="ghost-btn primary" data-reqorg="${esc(e.org_id)}" data-reqname="${esc(e.company || '')}">Request service</button>` : ''}
     </div>${e.phone || e.email ? `<div class="meta shop-pop-contact">${esc([e.phone, e.email].filter(Boolean).join(' · '))}</div>` : ''}</div>`;
 }
+// Leaflet 1.9 throws "_leaflet_pos" when a map is removed (or its box replaced) while it is still
+// zooming: its animation ends on a map that no longer has panes. Every map in Relay is covered here.
+(function guardLeaflet(){
+  if(!window.L || !L.Map || !L.Map.prototype || L.Map.prototype.__relayGuarded) return;
+  const pos = L.Map.prototype._getMapPanePos;
+  if(typeof pos === 'function') L.Map.prototype._getMapPanePos = function(){ return this._mapPane ? pos.call(this) : (L.point ? L.point(0, 0) : { x: 0, y: 0 }); };
+  const end = L.Map.prototype._onZoomTransitionEnd;
+  if(typeof end === 'function') L.Map.prototype._onZoomTransitionEnd = function(){ if(!this._mapPane) return; return end.apply(this, arguments); };
+  L.Map.prototype.__relayGuarded = true;
+})();
+
 // The map is made once per box and then reused: on a refresh only its pins change.
 // (Removing a Leaflet map while it is still zooming throws "_leaflet_pos" from its zoom
 // animation — the admin Overview refreshes on its own, so it used to hit exactly that.)

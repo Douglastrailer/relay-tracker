@@ -6,13 +6,16 @@
 // ============================================================
 (function(){
   var KEY = 'relay_look';
+  // Relay's own colour (the logo's teal) is the default; people can pick another for themselves.
   var ACCENTS = {
+    relay:    { a:'#0D5C6E', b:'#137A91', label:'Relay' },
     blue:     { a:'#0A6CD6', b:'#0A84FF', label:'Blue' },
     teal:     { a:'#0D7A86', b:'#14A3B3', label:'Teal' },
     violet:   { a:'#6A4BD8', b:'#8A6BF0', label:'Violet' },
     graphite: { a:'#3A4656', b:'#5B6B80', label:'Graphite' }
   };
-  var DEFAULTS = { mode:'light', glass:55, accent:'blue', motion:'on' };
+  var DEFAULTS = { mode:'light', glass:55, accent:'relay', motion:'on' };
+  var BRAND_VERSION = 2;   // v2: Relay teal became the default; an untouched old default (blue) moves to it once
 
   function hexToRgb(h){
     var n = parseInt(h.slice(1), 16);
@@ -25,6 +28,8 @@
       // people who chose dark mode before this panel existed keep dark mode
       if(!localStorage.getItem(KEY) && localStorage.getItem('relay_theme') === 'dark') v.mode = 'dark';
     } catch(e){}
+    var stored = null; try { stored = localStorage.getItem(KEY); } catch(e){}
+    if(stored && v && v.v !== BRAND_VERSION){ if(!v.accent || v.accent === 'blue') v.accent = 'relay'; v.v = BRAND_VERSION; try { localStorage.setItem(KEY, JSON.stringify(v)); } catch(e){} }
     var out = {};
     for(var k in DEFAULTS) out[k] = (v[k] !== undefined && v[k] !== null) ? v[k] : DEFAULTS[k];
     if(!ACCENTS[out.accent]) out.accent = DEFAULTS.accent;
@@ -44,6 +49,7 @@
     root.style.setProperty('--accent-soft', 'rgba(' + hexToRgb(acc.a) + ',' + (s.mode === 'dark' ? '.22' : '.13') + ')');
   }
   function save(s){
+    s.v = BRAND_VERSION;
     try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){}
     apply(s);
     if(typeof window.relayLookChanged === 'function') window.relayLookChanged(s);

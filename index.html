@@ -12,9 +12,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Relay"/>
 <link rel="stylesheet" href="vendor-leaflet-1.9.4.css?v=1eb6360632"/>
-<script src="look.js?v=79e1eaa269"></script>
-<link rel="stylesheet" href="style.css?v=1ac61a5e3f"/>
-<link rel="stylesheet" href="admin-v3.css?v=2e4ef32d49">
+<script src="look.js?v=0465e61215"></script>
+<link rel="stylesheet" href="style.css?v=4fb029a411"/>
+<link rel="stylesheet" href="admin-v3.css?v=088182b3db">
 <link rel="stylesheet" href="fmcsa.css?v=4ce216b70d">
 <link rel="stylesheet" href="glass.css?v=9a1209bb09">
 <style>
@@ -59,7 +59,8 @@
     <nav class="public-nav pro-nav" id="publicNav" aria-label="Site">
       <button class="nav-link nav-home-hidden active" id="navHome" tabindex="-1" aria-hidden="true">Home</button>
       <button class="nav-text nav-anchor" data-goto="lxFeatures">Features</button>
-      <button class="nav-text nav-anchor" data-goto="lxSwitch">Switching</button>
+      <button class="nav-text nav-anchor" data-goto="lxPhone">AI phone line</button>
+      <button class="nav-text nav-anchor" data-goto="lxFleets">Fleets</button>
       <button class="nav-text nav-anchor" data-goto="lxFaq">FAQ</button>
       <button class="nav-text nav-contact" id="navContact">Contact</button>
       <button class="nav-text" id="navSignin">Sign in</button>
@@ -168,6 +169,56 @@
       </div>
     </section>
 
+    <section class="nx-feature nx-voice" id="lxPhone" aria-labelledby="nxVoiceH">
+      <div class="nx-wrap nx-feature-in">
+        <div class="nx-feature-copy" data-reveal>
+          <h2 id="nxVoiceH">The phone gets answered, even at 2 a.m.</h2>
+          <p class="nx-feature-lede">Relay's AI phone line picks up when nobody in the office can. It asks what a dispatcher would ask, then puts the job on your board.</p>
+          <ul class="nx-ticks">
+            <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Takes the company, the unit, where it is and what is wrong</li>
+            <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Books an open slot, or sends a road call to the mechanic on duty</li>
+            <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Puts urgent calls straight through to your phone</li>
+            <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Every call kept with a summary, a transcript and the recording</li>
+          </ul>
+          <p class="nx-small">Your own local number. Added to your Relay plan when you want it.</p>
+        </div>
+        <figure class="nx-call" data-reveal style="--d:120ms" aria-label="Example of a call answered by Relay's AI phone line">
+          <div class="nx-call-head"><span class="nx-call-dot" aria-hidden="true"></span><b>Incoming call</b><span>(407) 555‑0142 · 1:47 AM</span></div>
+          <ol class="nx-call-lines">
+            <li class="ai">Relay Truck Repair, how can I help?</li>
+            <li class="them">Trailer's got a flat on I‑4 eastbound, around mile 72.</li>
+            <li class="ai">Got it. Which company and unit number?</li>
+            <li class="them">One Cargo, trailer 5521.</li>
+            <li class="ai">A mechanic is on the way. You'll get a text with the ETA.</li>
+          </ol>
+          <div class="nx-call-out"><span>Road call created</span><b>WO‑004871 · One Cargo · Trailer 5521</b><span>Flat tire, I‑4 EB mile 72 · sent to Marcus</span></div>
+          <figcaption class="nx-caption">Example call with example data.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="nx-feature nx-fleet" id="lxFleets" aria-labelledby="nxFleetH">
+      <div class="nx-wrap nx-feature-in">
+        <figure class="nx-portal" data-reveal aria-label="Example of the fleet portal">
+          <div class="nx-portal-head"><b>One Cargo</b><span>Fleet portal</span></div>
+          <div class="nx-portal-row"><div><b>Trailer 5521</b><span>Flat tire · I‑4 EB mile 72</span></div><span class="nx-pill on">Mechanic 14 min away</span></div>
+          <div class="nx-portal-row"><div><b>Truck 118</b><span>Estimate EST‑212 · brake chamber, 1.5 h labor</span></div><span class="nx-pill wait">$371.00 · approve</span></div>
+          <div class="nx-portal-row"><div><b>Truck 96</b><span>Invoice INV‑4029 · PM service A</span></div><span class="nx-pill ok">Paid</span></div>
+          <figcaption class="nx-caption">Example portal with example data.</figcaption>
+        </figure>
+        <div class="nx-feature-copy" data-reveal style="--d:120ms">
+          <h2 id="nxFleetH">Your fleet customers see what you see.</h2>
+          <p class="nx-feature-lede">Fewer "where is my truck" calls. Fleets get their own portal, free, and it fills in on its own.</p>
+          <ul class="nx-ticks">
+            <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>They request service and follow the mechanic's ETA</li>
+            <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>They approve estimates from a link, with a signature</li>
+            <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Invoices, photos and every unit's repair history in one place</li>
+            <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Type a fleet's email on a work order or invoice and it lands in their account</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
     <section class="nx-sides" id="lxFeatures" aria-labelledby="nxSidesH">
       <div class="nx-wrap">
         <h2 id="nxSidesH" data-reveal>Built for both sides of the job.</h2>
@@ -175,6 +226,23 @@
           <div class="nx-col" data-reveal style="--d:80ms"><h3>On the road</h3><ul><li data-reveal style="--d:0ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Road calls sent to the mechanic’s phone</li><li data-reveal style="--d:70ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Live position and arrival time for the office and the customer</li><li data-reveal style="--d:140ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>The mechanic app keeps working without signal</li><li data-reveal style="--d:210ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Timers, photos and parts used, on the job</li><li data-reveal style="--d:280ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Ask Natasha, the assistant, by voice</li></ul></div>
           <div class="nx-col" data-reveal style="--d:160ms"><h3>In the bay</h3><ul><li data-reveal style="--d:0ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>A live board: every job, its stage and how long it has waited</li><li data-reveal style="--d:70ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Schedule with reminders the day before</li><li data-reveal style="--d:140ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Estimates approved by link, then invoiced</li><li data-reveal style="--d:210ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Parts and stock for each location</li><li data-reveal style="--d:280ms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Reports by location, or all together</li></ul></div>
         </div>
+      </div>
+    </section>
+
+    <section class="nx-also" id="lxMore" aria-labelledby="nxMoreH">
+      <div class="nx-wrap">
+        <h2 id="nxMoreH" data-reveal>Also in every Relay shop.</h2>
+        <dl class="nx-also-grid" data-reveal style="--d:80ms">
+          <div><dt>Natasha, the assistant</dt><dd>Drafts the estimate from the complaint and diagnosis, with your parts and your labor rate. Answers "what's open today?" in plain words.</dd></div>
+          <div><dt>Inspections</dt><dd>DOT annual inspection (FMCSA 396.17) one section at a time on a phone, printed in the familiar paper layout.</dd></div>
+          <div><dt>Parts and stock</dt><dd>Search by name, number or brand, scan barcodes, track stock per location and on each truck.</dd></div>
+          <div><dt>VIN lookup</dt><dd>Year, make, model and engine from the VIN, saved to the unit.</dd></div>
+          <div><dt>Mechanics, your way</dt><dd>Mobile mechanics use the app. Shop mechanics can be on work orders without a login.</dd></div>
+          <div><dt>More than one location</dt><dd>Each location with its own name, logo, rates, customers and stock. Compare them side by side.</dd></div>
+          <div><dt>Your language</dt><dd>English, Español, Português, Français and Русский, chosen by each person.</dd></div>
+          <div><dt>Works with no signal</dt><dd>The mechanic app keeps working in a dead zone and catches up when it's back.</dd></div>
+          <div><dt>QuickBooks</dt><dd>Customers, invoices, payments and vendors exported in the format QuickBooks Online imports.</dd></div>
+        </dl>
       </div>
     </section>
 
@@ -198,11 +266,12 @@
       <div class="nx-wrap">
         <h2 id="nxCloseH" class="nx-fill">See your own work in Relay.</h2>
         <div class="nx-close-actions"><button type="button" class="nx-btn" data-nx-demo>Book a demo call</button><button type="button" class="nx-link" id="landingSignup2">Or create your account</button></div>
+        <p class="nx-price-note">One monthly price for your shop. Every user included: office, mechanics and fleet customers.</p>
       </div>
     </section>
     <footer class="lx-footer"><p class="meta footer-legal"><a href="/terms.html">Terms of Service</a> · <a href="/privacy.html">Privacy Policy</a></p>
       <div class="lx-foot-brand"><b>Relay</b><span>Shop &amp; road service — the shop system that also runs the road.</span></div>
-      <div><h4>Product</h4><button data-goto="lxFeatures">Features</button><button data-goto="lxSwitch">Switching</button><button data-goto="lxFaq">FAQ</button></div>
+      <div><h4>Product</h4><button data-goto="lxFeatures">Features</button><button data-goto="lxPhone">AI phone line</button><button data-goto="lxFleets">Fleet portal</button><button data-goto="lxSwitch">Switching</button><button data-goto="lxFaq">FAQ</button></div>
       <div><h4>Company</h4><button data-contact>Contact</button><button data-signin>Sign in</button><a href="mailto:support@relayfleet.us">support@relayfleet.us</a></div>
     </footer>
   </div>
@@ -1035,7 +1104,7 @@
 <script src="phoneline.js?v=40f605fc3a" defer></script>
 <script src="voice-admin.js?v=a8c4aef681" defer></script>
 <script src="admin-console.js?v=ea80233671" defer></script>
-<script src="admin-shops.js?v=48f25a9112" defer></script>
+<script src="admin-shops.js?v=0bdf3f0f49" defer></script>
 <script src="admin-overview.js?v=bcbb80c245" defer></script>
 <script src="admin-accounts.js?v=efd7624dfc" defer></script>
 <script src="fmcsa-form.js?v=d1326b3a3a" defer></script>
@@ -1091,14 +1160,14 @@
 <script src="loc.js?v=ce7e7e7ba6" defer></script>
 <script src="voice.js?v=9a61eb07c6" defer></script>
 <script src="pdfview.js?v=5b7d5bbe4e" defer></script>
-<script src="map.js?v=782c07212e" defer></script>
+<script src="map.js?v=0cd2bd894c" defer></script>
 <script src="sheet.js?v=2b7f4dfcd1" defer></script>
 <script src="parts.js?v=68edeeb87d" defer></script>
 <script src="vin.js?v=c2fe2bff8f" defer></script>
 <script src="migrate.js?v=acd66e88ae" defer></script>
 <script src="training.js?v=c536d26d9a" defer></script>
 <script src="ux.js?v=ef78b00dfb" defer></script>
-<script src="subs.js?v=e48e592398" defer></script>
+<script src="subs.js?v=6abde4f6ef" defer></script>
 <script src="nav.js?v=23acef8e27" defer></script>
 <script src="safety.js?v=939c988e6d" defer></script>
 <script src="offline.js?v=59b2632a55" defer></script>

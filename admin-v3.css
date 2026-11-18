@@ -257,3 +257,13 @@ body.has-sidebar.nav-collapsed #adminView .nav-group{ font-size:0; height:1px; p
   #adminView .as-ledger dl > div{ padding:0 14px 0 0; border-left:none; min-width:45%; }
   .as-inv-acts{ white-space:normal; }
 }
+#adminView .as-person{ display:flex; flex-direction:column; } #adminView .as-person + .as-person{ margin-top:8px; }
+/* everyone in the shop, in the shop panel */
+.as-people{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+.as-people li{ display:flex; justify-content:space-between; align-items:baseline; gap:6px 16px; flex-wrap:wrap; padding:9px 0; border-bottom:1px solid var(--line); }
+.as-people li:last-child{ border-bottom:none; }
+.as-people b{ font-weight:600; margin-right:8px; } .as-role{ font-size:.82rem; color:var(--ink-faint); }
+.as-people .as-contact{ display:flex; gap:14px; flex-wrap:wrap; font-size:.86rem; }
+.as-people .as-contact a{ color:var(--ink-soft); text-decoration:none; } .as-people .as-contact a:hover{ color:var(--accent); text-decoration:underline; }
+.as-people li.is-off{ opacity:.6; }
+.as-facts .as-quiet, .as-p-help .as-quiet{ margin-left:0; }

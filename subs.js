@@ -137,7 +137,7 @@ async function downloadSubscriptionPdf(invId){
 // ---------- Email the invoice (PDF attached) to the shop ----------
 async function emailSubInvoice(invoiceId, orgId, errEl){
   const shop = subState.rows.find(r => r.org_id === orgId);
-  const to = shop && shop.contact_email;
+  const to = shop && (shop.billing_email || shop.contact_email);   // the shop's billing email, else its owner's
   const show = m => { if(errEl) errEl.textContent = m; else subErr('subErr', m); };
   if(!to){ show('That shop has no email on file — add one in Accounts first.'); return; }
   const { error } = await sb.functions.invoke('send-subscription-invoice', { body: { invoiceId, recipientEmail: to } });
