@@ -4,7 +4,7 @@
 // App code and styles carry a fingerprint of their contents (?v=…): a saved copy
 // with the same fingerprint is served straight from the device. Never stores
 // Supabase data or other sites.
-const CACHE = 'relay-shell-ee5d9044d7';
+const CACHE = 'relay-shell-afecdaf99b';
 const SHELL = ['/', '/index.html', '/admin-v3.css', '/glass.css', '/look.js', '/voice-admin.js', '/admin-console.js', '/admin-shops.js', '/admin-overview.js', '/admin-accounts.js', '/fmcsa-form.js', '/fmcsa.css', '/phoneline.js', '/demo-admin.js', '/live.js', '/schedule.js', '/dom-patch.js', '/route.js', '/nav-subs.js', '/header.js', '/tour.js', '/board-plus.js', '/wo-side.js', '/track-share.js', '/setup-gate.js', '/ui-dialogs.js', '/vin.js', '/subs.js', '/nav.js', '/safety.js', '/offline.js', '/account.js', '/terms.html', '/privacy.html', '/lang.js', '/completed.js', '/docs.js', '/shop-tools.js', '/lang-es.js', '/lang-ru.js', '/lang-pt.js', '/lang-fr.js', '/pwa.js', '/style.css', '/site.css', '/script.js', '/ro.js', '/insp.js', '/est.js', '/tech.js', '/fleet.js', '/unit.js',
                '/inv.js', '/analytics.js', '/comms.js', '/roles.js', '/shop.js', '/ops.js', '/dispatch.js', '/r4.js', '/assist.js', '/landing.js', '/scan.js', '/r6.js', '/profit.js', '/loc.js', '/voice.js', '/pdfview.js', '/map.js', '/sheet.js', '/parts.js', '/migrate.js', '/training.js', '/ux.js', '/natasha.js', '/plans.js', '/manifest.webmanifest', '/vendor-supabase-2.119.0.js', '/vendor-leaflet-1.9.4.js', '/vendor-leaflet-1.9.4.css', '/icon-192.png', '/icon-512.png'];
 
@@ -18,6 +18,7 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;   // Supabase, maps, CDNs: untouched
+  if ((req.headers && req.headers.has('range')) || /\.(mp4|webm)$/.test(url.pathname)) return;   // video: streamed by the browser, never cached here
   if (url.pathname.startsWith('/approve') || url.pathname.startsWith('/review') || url.pathname.startsWith('/track')) return;   // customer links: always live
   // App code and styles carry their own fingerprint (?v=…), which changes whenever the file changes.
   // So a saved copy with the same fingerprint is exactly right: it opens instantly, with no network trip.

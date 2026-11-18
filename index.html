@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="admin-v3.css?v=088182b3db">
 <link rel="stylesheet" href="fmcsa.css?v=4ce216b70d">
 <link rel="stylesheet" href="glass.css?v=9a1209bb09">
-<link rel="stylesheet" href="site.css?v=1b49b1c830">
+<link rel="stylesheet" href="site.css?v=644d876525">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -132,16 +132,21 @@
 
   <!-- ================= PUBLIC HOME ================= -->
   <div id="homeView" class="rl lq">
-    <!-- the moving background: engine parts turning behind frosted water (landing-fx.js).
-         To play a filmed clip instead, put the file next to index.html and set data-video="your-clip.mp4". -->
-    <div class="lq-bg" aria-hidden="true" data-video="">
-      <canvas class="lq-engine"></canvas>
-      <canvas class="lq-water"></canvas>
-      <div class="lq-blob b1"></div><div class="lq-blob b2"></div><div class="lq-blob b3"></div>
-      <div class="lq-tint"></div>
+    <!-- the shop film: busy truck repair footage playing behind the whole landing page (landing.js).
+         relay-shop.mp4 / .webm on computers, relay-shop-640.mp4 on phones, relay-shop.jpg as the still
+         (data saver, reduced motion, or before it loads). Footage: Pexels (free licence), cut into one 19-second loop. -->
+    <div class="lq-bg" aria-hidden="true" data-video="relay-shop.mp4" data-webm="relay-shop.webm" data-small="relay-shop-640.mp4" data-poster="relay-shop.jpg">
+      <img class="lq-still" src="relay-shop.jpg" alt="" decoding="async">
+      <i class="lq-grain"></i>
     </div>
-
     <section class="lq-hero" aria-labelledby="rlH1">
+      <div class="lq-hero-fx" aria-hidden="true">
+        <i class="lq-shade"></i>
+        <i class="lq-aurora a"></i><i class="lq-aurora b"></i><i class="lq-aurora c"></i>
+        <div class="lq-lines"><i class="lq-grid"></i><i class="lq-spot"></i>
+          <i class="lq-beam x" style="--r:3;--s:9s;--d:-1s"></i><i class="lq-beam x" style="--r:8;--s:11s;--d:-6s"></i>
+          <i class="lq-beam y" style="--k:-6;--s:8s;--d:-2s"></i><i class="lq-beam y" style="--k:5;--s:10s;--d:-5s"></i></div>
+      </div>
       <div class="lq-wrap lq-hero-in">
         <div class="lq-hero-copy">
           <p class="lq-kicker"><span class="lq-pulse" aria-hidden="true"></span>Shop management for truck and trailer repair</p>
@@ -181,7 +186,6 @@
           <figcaption>Live example. Work orders move as they would in your shop.</figcaption>
         </figure>
       </div>
-      <div class="lq-drop d1" aria-hidden="true"></div><div class="lq-drop d2" aria-hidden="true"></div><div class="lq-drop d3" aria-hidden="true"></div><div class="lq-drop d4" aria-hidden="true"></div>
 
       <div class="lq-wrap">
         <dl class="lq-facts">
@@ -195,11 +199,11 @@
     <!-- product: five animated scenes of the real workflow -->
     <section class="lq-sec" id="lxFeatures" aria-labelledby="rlProductH">
       <div class="lq-wrap">
-        <header class="lq-head lq-rv">
+        <header class="lq-head">
           <h2 id="rlProductH">The whole shop, moving on one screen.</h2>
           <p>Built for heavy-duty work: units, VINs, road calls, core charges and fleet billing are part of the product, not add-ons.</p>
         </header>
-        <div class="lq-tour lq-rv">
+        <div class="lq-tour">
           <div class="lq-tabs" role="tablist" aria-label="Relay in action">
             <button type="button" role="tab" class="lq-tab is-on" aria-selected="true" data-s="0"><b>Work orders</b><span>Complaint, cause and correction, labor timers and parts, on one job.</span><i class="lq-prog"></i></button>
             <button type="button" role="tab" class="lq-tab" aria-selected="false" data-s="1"><b>Dispatch</b><span>Road calls sent to a mechanic's phone, with live location and arrival time.</span><i class="lq-prog"></i></button>
@@ -307,10 +311,10 @@
     </section>
 
     <!-- the flow, with a drop running through the five steps -->
-    <section class="lq-sec lq-flow" aria-labelledby="rlFlowH">
+    <section class="lq-sec lq-flow lq-band" aria-labelledby="rlFlowH">
       <div class="lq-wrap">
-        <header class="lq-head lq-rv"><h2 id="rlFlowH">From the first call to the paid invoice.</h2></header>
-        <div class="lq-pipe lq-rv">
+        <header class="lq-head"><h2 id="rlFlowH">From the first call to the paid invoice.</h2></header>
+        <div class="lq-pipe">
           <div class="lq-pipe-line" aria-hidden="true"><i class="lq-runner"></i></div>
           <ol class="rl-steps lq-steps">
             <li><i aria-hidden="true">1</i><b>Request</b><span>From your request link, the AI phone line or a call to the office. It is on the board straight away.</span></li>
@@ -326,7 +330,7 @@
     <!-- AI phone line: a call that plays out -->
     <section class="lq-sec" id="lxPhone" aria-labelledby="rlPhoneH">
       <div class="lq-wrap lq-split">
-        <div class="lq-split-copy lq-rv">
+        <div class="lq-split-copy">
           <h2 id="rlPhoneH">An AI receptionist on your shop's number.</h2>
           <p>Relay's AI phone line answers when the office can't: nights, weekends and busy mornings. It collects what a dispatcher needs and opens the work order for you.</p>
           <ul class="lq-list">
@@ -337,7 +341,7 @@
           </ul>
           <p class="lq-fine">A local number for your shop, added to your plan when you turn it on.</p>
         </div>
-        <figure class="lq-call lq-glass lq-rv" id="lqCall" aria-label="Example of a call answered by the AI phone line">
+        <figure class="lq-call lq-glass" id="lqCall" aria-label="Example of a call answered by the AI phone line">
           <div class="call-head"><span class="call-ring" aria-hidden="true"></span><div><b>Call answered</b><span>(407) 555‑0142 · 1:47 AM</span></div><div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
           <dl class="call-log">
             <div><dt>Relay</dt><dd>Relay Truck Repair, how can I help?</dd></div>
@@ -355,7 +359,7 @@
     <!-- fleet portal: statuses that change -->
     <section class="lq-sec" id="lxFleets" aria-labelledby="rlFleetH">
       <div class="lq-wrap lq-split lq-split-rev">
-        <figure class="lq-portal lq-glass lq-rv" id="lqPortal" aria-label="Example of the fleet customer portal">
+        <figure class="lq-portal lq-glass" id="lqPortal" aria-label="Example of the fleet customer portal">
           <div class="portal-head"><b>One Cargo</b><span>Customer portal</span></div>
           <table>
             <thead><tr><th>Unit</th><th>Job</th><th>Status</th></tr></thead>
@@ -367,7 +371,7 @@
           </table>
           <figcaption>Example portal.</figcaption>
         </figure>
-        <div class="lq-split-copy lq-rv">
+        <div class="lq-split-copy">
           <h2 id="rlFleetH">A customer portal for your fleet accounts.</h2>
           <p>Fleet managers request service, follow repairs and approve work without calling the office. There is no charge to them, and nothing extra for you to maintain.</p>
           <ul class="lq-list">
@@ -382,24 +386,24 @@
 
     <section class="lq-sec" aria-labelledby="rlAllH">
       <div class="lq-wrap">
-        <header class="lq-head lq-rv"><h2 id="rlAllH">Included with every Relay shop.</h2></header>
+        <header class="lq-head"><h2 id="rlAllH">Included with every Relay shop.</h2></header>
         <div class="rl-spec lq-spec">
-          <div class="lq-glass lq-rv"><h3>Shop floor</h3><ul><li>Live shop board and work orders</li><li>Schedule by technician and bay</li><li>Labor timers and time clock</li><li>DOT annual inspection (FMCSA 396.17)</li><li>Mechanics with or without a login</li></ul></div>
-          <div class="lq-glass lq-rv"><h3>Road service</h3><ul><li>Dispatch to mechanics' phones</li><li>Live location and arrival times</li><li>Customer tracking link</li><li>Mechanic app that works offline</li><li>AI phone line, when you add it</li></ul></div>
-          <div class="lq-glass lq-rv"><h3>Parts and billing</h3><ul><li>Inventory per location and per truck</li><li>Barcode scanning and VIN lookup</li><li>Estimates with approval links</li><li>Invoices, payments and printing</li><li>QuickBooks Online export</li></ul></div>
-          <div class="lq-glass lq-rv"><h3>The business</h3><ul><li>Several locations, side by side</li><li>Reports on revenue and margins</li><li>Roles for owner, office and mechanic</li><li>Natasha, the built-in assistant</li><li>English, Español, Português, Français, Русский</li></ul></div>
+          <div class="lq-glass"><h3>Shop floor</h3><ul><li>Live shop board and work orders</li><li>Schedule by technician and bay</li><li>Labor timers and time clock</li><li>DOT annual inspection (FMCSA 396.17)</li><li>Mechanics with or without a login</li></ul></div>
+          <div class="lq-glass"><h3>Road service</h3><ul><li>Dispatch to mechanics' phones</li><li>Live location and arrival times</li><li>Customer tracking link</li><li>Mechanic app that works offline</li><li>AI phone line, when you add it</li></ul></div>
+          <div class="lq-glass"><h3>Parts and billing</h3><ul><li>Inventory per location and per truck</li><li>Barcode scanning and VIN lookup</li><li>Estimates with approval links</li><li>Invoices, payments and printing</li><li>QuickBooks Online export</li></ul></div>
+          <div class="lq-glass"><h3>The business</h3><ul><li>Several locations, side by side</li><li>Reports on revenue and margins</li><li>Roles for owner, office and mechanic</li><li>Natasha, the built-in assistant</li><li>English, Español, Português, Français, Русский</li></ul></div>
         </div>
       </div>
     </section>
 
     <section class="lq-sec" id="lxSwitch" aria-labelledby="rlSwitchH">
       <div class="lq-wrap lq-two">
-        <div class="lq-glass lq-rv">
+        <div class="lq-glass">
           <h2 id="rlSwitchH">Moving from another system.</h2>
           <p>Export customers, units and parts from Fullbay, Shopmonkey, Tekmetric, Mitchell 1 or a spreadsheet. Relay reads each file, matches the columns and imports everything in the right order, without duplicates.</p>
           <button type="button" class="lq-link" data-contact>Send us your files</button>
         </div>
-        <div class="lq-glass lq-rv">
+        <div class="lq-glass">
           <h2 id="rlTrustH">Your data stays yours.</h2>
           <p>Each shop's records are kept separate and visible only to its own team, with access set by role. Fleet customers see only their own units and jobs. You can export your customers, invoices and payments at any time.</p>
         </div>
@@ -408,14 +412,14 @@
 
     <section class="lq-sec" id="lxFaq" aria-labelledby="rlFaqH">
       <div class="lq-wrap lq-faq">
-        <header class="lq-head lq-rv"><h2 id="rlFaqH">Questions</h2><p>Something else? <button type="button" class="lq-link" id="faqContact">Get in touch</button></p></header>
+        <header class="lq-head"><h2 id="rlFaqH">Questions</h2><p>Something else? <button type="button" class="lq-link" id="faqContact">Get in touch</button></p></header>
         <div class="lq-faq-list"><details class="rl-faq-item"><summary>What is Relay?</summary><p>Relay is shop and road service software for truck and trailer repair. Every repair lives on one work order — from the call or request, through dispatch, the mechanic on site, the estimate and the customer's approval, to the invoice and payment — and your office, your mechanics and your fleet customers all see the same job, live.</p></details><details class="rl-faq-item"><summary>Who is it for?</summary><p>Truck and trailer repair shops, mobile mechanics and roadside service businesses — from a two-mechanic shop with no dispatcher to companies running several locations.</p></details><details class="rl-faq-item"><summary>Do mechanics need special devices?</summary><p>No. Mechanics use Relay on their own phones (iPhone or Android). They accept road calls, navigate, run timers, add parts and photos, and can use voice commands. Relay can be installed on the home screen like an app — no app store needed.</p></details><details class="rl-faq-item"><summary>How does live tracking work?</summary><p>When a mechanic is on a road call and sharing location, the office sees them on the dispatch map and the fleet customer sees the ETA. Mechanics control when they share, and location is only visible to their own shop and the customer on that job. Phones pause location while an app is closed or the screen is locked, so the ETA updates while Relay is open on the mechanic's phone.</p></details><details class="rl-faq-item"><summary>Can our fleet customers use it?</summary><p>Yes. Fleet customers get their own portal: they request service, follow the mechanic's ETA, approve estimates, see photos and invoices, and look up every unit's repair history.</p></details><details class="rl-faq-item"><summary>We use Fullbay, Shopmonkey or spreadsheets today. Can we bring our data?</summary><p>Yes. Export your customers, vehicles and parts as CSV or Excel files and add them all at once — Relay recognises each file, matches the columns, and imports everything in the right order. Nothing is duplicated.</p></details><details class="rl-faq-item"><summary>Does it work with QuickBooks?</summary><p>Relay exports your customers, invoices, payments, products and vendors in the format QuickBooks Online imports.</p></details><details class="rl-faq-item"><summary>Can we run more than one location?</summary><p>Yes. Each location keeps its own customers, work orders, invoices, stock and mechanics, with its own name and details on its documents. The owner switches between them in a tap and compares them side by side in Reports.</p></details><details class="rl-faq-item"><summary>Is our data private?</summary><p>Each shop's data is kept separate and is only visible to that shop's team, with access by role (owner, office staff, mechanic) — and to fleet customers only for their own vehicles and jobs.</p></details><details class="rl-faq-item"><summary>How do we get started?</summary><p>Book a demo call and we will walk you through Relay with your own kind of work. Or set up your company yourself in a few minutes, invite your mechanics with your shop code, and add or import your customers.</p></details></div>
       </div>
     </section>
 
-    <section class="lq-sec lq-close" id="nxClose" aria-labelledby="nxCloseH">
+    <section class="lq-sec lq-close lq-band" id="nxClose" aria-labelledby="nxCloseH">
       <div class="lq-wrap">
-        <div class="lq-close-in lq-glass lq-rv">
+        <div class="lq-close-in lq-glass">
           <div>
             <h2 id="nxCloseH">See Relay with your own work.</h2>
             <p>A 30-minute call with your kind of jobs on screen. Leave a name and a number or email and we will set a time.</p>
@@ -1343,7 +1347,7 @@
 <script src="lang.js?v=70e1770f2a" defer></script>
 <script src="natasha.js?v=f224fb953e" defer></script>
 <script src="plans.js?v=cab7a04338" defer></script>
-<script src="landing.js?v=694741e4c5" defer></script>
+<script src="landing.js?v=5c8a35ab04" defer></script>
 <script src="pwa.js?v=d2673f834b" defer></script>
 
 </body>
