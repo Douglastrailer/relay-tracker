@@ -18,60 +18,8 @@ async function renderSubscriptions(){
 }
 const subsChanged = () => (typeof refreshShopTables === 'function' ? refreshShopTables() : renderSubscriptions());
 
-// ---------- A shop's billing sheet: summary, every invoice, and the actions on each ----------
-async function openShopBilling(orgId){
-  const shop = subState.rows.find(r => r.org_id === orgId); if(!shop) return;
-  const { data: h, error } = await sb.rpc('shop_billing_history', { p_org: orgId });
-  if(error || !h){ recordsToast(error ? error.message : 'Could not load this shop.'); return; }
-  subState.history[orgId] = h;
-  const body = document.createElement('div');
-  body.innerHTML = `<div class="card rec-form">
-    <div class="rec-form-head"><h3>${esc(shop.name)}</h3></div>
-    <div class="kpi-grid">
-      <div class="kpi"><em>Price per month</em><b>${h.monthly_price == null ? 'Not set' : subMoney(h.monthly_price)}</b></div>
-      <div class="kpi"><em>Paid through</em><b>${h.paid_through ? subDate(h.paid_through) : '—'}</b></div>
-      <div class="kpi"><em>Active</em><b>${h.active ? 'Yes' : 'No'}</b><span class="meta">${esc(h.billing_status || '')}</span></div>
-      <div class="kpi"><em>Months paid</em><b>${esc(String(h.months_paid))}</b><span class="meta">${h.first_period ? 'since ' + subDate(h.first_period) : 'no payments yet'}</span></div>
-      <div class="kpi"><em>Total paid</em><b>${subMoney(h.total_paid)}</b></div>
-      <div class="kpi${Number(h.owed) ? ' bad' : ''}"><em>Owed now</em><b>${subMoney(h.owed)}</b></div>
-    </div>
-    <div class="job-actions" style="margin-top:12px;"><button type="button" id="sbNew">New invoice</button></div>
-    <p class="form-error" id="sbErr"></p>
-    ${(h.invoices || []).length ? `<div class="cw-wrap"><table class="cw-table"><thead><tr><th>Invoice</th><th>Period</th><th class="num">Amount</th><th>Status</th><th>Due</th><th>Paid</th><th></th></tr></thead><tbody>
-      ${h.invoices.map(i => `<tr>
-        <td class="mono"><b>${esc(i.number)}</b>${i.sent_at ? '<div class="meta">emailed</div>' : ''}</td>
-        <td>${subDate(i.period_start)} – ${subDate(i.period_end)}</td>
-        <td class="num">${subMoney(i.amount)}</td>
-        <td><span class="badge ${i.status === 'paid' ? 'arrived' : i.status === 'void' ? 'offline' : 'waiting'}"><span class="bd"></span>${esc(INV_STATUS_LABEL[i.status] || i.status)}</span></td>
-        <td>${subDate(i.due_date)}</td><td>${i.paid_on ? subDate(i.paid_on) : '—'}</td>
-        <td class="cw-acts">
-          <button type="button" class="text-btn" data-view="${i.id}">View</button>
-          <button type="button" class="text-btn" data-pdf="${i.id}">PDF</button>
-          ${i.status !== 'void' ? `<button type="button" class="text-btn" data-edit="${i.id}">Edit</button>` : ''}
-          ${i.status === 'unpaid' ? `<button type="button" class="text-btn" data-paid="${i.id}">Mark paid</button><button type="button" class="text-btn" data-email="${i.id}">Email</button><button type="button" class="text-btn danger" data-void="${i.id}">Void</button>` : ''}
-        </td></tr>`).join('')}
-      </tbody></table></div>` : '<div class="empty-note">No invoices yet for this shop.</div>'}
-  </div>`;
-  if(typeof openFormSheet === 'function') openFormSheet(`${shop.name} — billing`, [body]);
-  const reload = async () => { if(typeof closeFormSheet === 'function') closeFormSheet(); await subsChanged(); openShopBilling(orgId); };
-  body.querySelector('#sbNew').onclick = () => openSubInvoiceForm(orgId, reload);
-  body.querySelectorAll('[data-view]').forEach(b => b.onclick = () => openInvoiceView(Number(b.dataset.view), orgId));
-  body.querySelectorAll('[data-pdf]').forEach(b => b.onclick = () => downloadSubscriptionPdf(Number(b.dataset.pdf)));
-  body.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openEditInvoice(Number(b.dataset.edit), h.invoices.find(x => x.id === Number(b.dataset.edit)), reload));
-  body.querySelectorAll('[data-email]').forEach(b => b.onclick = () => emailSubInvoice(Number(b.dataset.email), orgId, body.querySelector('#sbErr')));
-  body.querySelectorAll('[data-paid]').forEach(b => b.onclick = async () => {
-    if(!(await relayConfirm({ message: 'Mark this invoice as paid? The shop\'s paid-through date moves to the end of its period.' }))) return;
-    const { error: e2 } = await sb.rpc('mark_subscription_paid', { p_invoice: Number(b.dataset.paid), p_paid_on: null });
-    if(e2){ body.querySelector('#sbErr').textContent = e2.message; return; }
-    recordsToast('Marked paid'); reload();
-  });
-  body.querySelectorAll('[data-void]').forEach(b => b.onclick = async () => {
-    if(!(await relayConfirm({ message: 'Void this invoice? Use this when it was raised by mistake. It stays in the history, marked void.' }))) return;
-    const { error: e2 } = await sb.rpc('void_subscription_invoice', { p_invoice: Number(b.dataset.void) });
-    if(e2){ body.querySelector('#sbErr').textContent = e2.message; return; }
-    recordsToast('Voided'); reload();
-  });
-}
+// ---------- A shop's billing: the panel in admin-shops.js (plan, AI line pricing, this month, invoices) ----------
+function openShopBilling(orgId){ if(typeof openBillingPanel === 'function') return openBillingPanel(orgId); }
 
 // ---------- Creating an invoice ----------
 function openSubInvoiceForm(orgId, onDone){

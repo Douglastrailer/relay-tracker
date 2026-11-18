@@ -148,52 +148,112 @@ body.has-sidebar.nav-collapsed #adminView .nav-group{ font-size:0; height:1px; p
 #adminView .acct-ctl{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-end; flex:1 1 360px; }
 #adminView .acct-ctl select, #adminView .acct-ctl input{ max-width:170px; }
 
-/* ---------- Shops & subscriptions table (admin-shops.js) ---------- */
-#adminView .ast-kpis{ display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin:6px 0 16px; }
-#adminView .ast-kpi{ display:flex; flex-direction:column; gap:2px; padding:14px 16px; border-radius:16px; background:var(--glass); border:1px solid var(--glass-line); box-shadow:var(--shadow); }
-#adminView .ast-kpi em{ font-style:normal; font-size:.74rem; color:var(--ink-faint); font-weight:600; }
-#adminView .ast-kpi b{ font-size:1.45rem; font-weight:700; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
-#adminView .ast-kpi span{ font-size:.78rem; color:var(--ink-soft); }
-#adminView .ast-kpi.bad b{ color:var(--red); } #adminView .ast-kpi.warn b{ color:var(--amber); }
-#adminView .ast-tools{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; margin-bottom:12px; }
-#adminView .ast-search{ flex:0 1 320px; min-width:220px; min-height:40px; padding:8px 14px; border-radius:12px; border:1px solid var(--line-strong); background:var(--glass-strong); font:inherit; }
-#adminView .ast-filters{ display:flex; flex-wrap:wrap; gap:6px; margin:0; }
-#adminView .ast-filters .fd-chip{ min-height:32px; padding:3px 11px; font-size:.82rem; }
-#adminView .ast-count{ display:inline-block; min-width:1.4em; margin-left:2px; padding:0 6px; border-radius:999px; background:rgba(0,0,0,.06); font-size:.75rem; text-align:center; }
-#adminView .fd-chip.active .ast-count{ background:rgba(255,255,255,.25); }
-#adminView .ast-table{ min-width:1000px; table-layout:auto; }
-#adminView .ast-table th, #adminView .ast-table td{ padding:10px 10px; vertical-align:middle; }
-#adminView .ast-table .badge{ text-transform:none; }
-#adminView .ast-table td.num, #adminView .ast-table th.num{ text-align:right; }
-#adminView .ast-sort{ all:unset; cursor:pointer; font:inherit; color:inherit; letter-spacing:inherit; text-transform:inherit; }
-#adminView .ast-sort.on{ color:var(--ink); }
-#adminView .ast-sort:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
-#adminView .ast-shop{ width:270px; max-width:270px; }
-#adminView .ast-contact, #adminView .ast-facts{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:270px; }
-#adminView .ast-name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:270px; }
-#adminView .ast-shop b{ font-size:.95rem; }
-#adminView .ast-facts{ font-size:.75rem; }
-#adminView .ast-tag{ display:inline-block; margin-left:4px; padding:1px 7px; border-radius:999px; background:var(--blue-soft); color:var(--blue); font-size:.7rem; font-weight:600; vertical-align:middle; }
-#adminView .ast-state .badge{ white-space:nowrap; }
-#adminView .ast-in{ min-height:34px; padding:5px 8px; border-radius:10px; border:1px solid var(--line-strong); background:var(--glass-strong); font:inherit; font-size:.86rem; color:var(--ink); }
-#adminView .ast-in:focus{ outline:2px solid var(--accent); outline-offset:1px; }
-#adminView .ast-in:disabled{ opacity:.55; }
-#adminView select.ast-in{ max-width:128px; } #adminView select.ast-plan{ max-width:148px; }
-#adminView .ast-price{ display:inline-flex; align-items:center; gap:4px; color:var(--ink-faint); }
-#adminView .ast-price-in{ width:72px; text-align:right; font-variant-numeric:tabular-nums; }
-#adminView .ast-paid{ display:flex; align-items:center; gap:6px; white-space:nowrap; }
-#adminView .ast-paid-in{ width:136px; }
-#adminView .ast-plus{ min-height:30px; padding:2px 9px; border-radius:9px; border:1px solid var(--line-strong); background:var(--glass); color:var(--blue); font:inherit; font-size:.78rem; font-weight:700; cursor:pointer; }
-#adminView .ast-plus:hover{ border-color:var(--accent); } #adminView .ast-plus:disabled{ opacity:.5; cursor:default; }
-#adminView .ast-inv.owes{ color:var(--red); border-color:rgba(224,70,60,.45); font-weight:700; }
-#adminView .ast-acts{ white-space:nowrap; text-align:right; }
-#adminView .ast-acts .ghost-btn{ min-height:32px; padding:4px 12px; font-size:.82rem; }
-#adminView .ast-row[data-state="archived"] td{ opacity:.7; }
-#adminView .ast-row[data-state="past_due"] td:first-child{ box-shadow:inset 3px 0 0 var(--red); }
-#adminView .ast-row[data-state="due_soon"] td:first-child{ box-shadow:inset 3px 0 0 var(--amber); }
-#adminView .ast-row[data-state="pending"] td:first-child{ box-shadow:inset 3px 0 0 var(--amber); }
-#adminView .ast-help{ margin-top:10px; max-width:860px; }
-/* the actions stay in view when the table scrolls sideways on a smaller screen */
-#adminView .ast-table td.ast-acts, #adminView .ast-table th:last-child{ position:sticky; right:0; z-index:2; background:rgba(var(--g-rgb), .92); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); box-shadow:-8px 0 12px -10px rgba(0,0,0,.25); }
-#adminView .ast-table td.ast-acts .row-more[open]{ z-index:5; }
-#adminView .ast-acts .row-menu[style*="fixed"]{ z-index:200; }
+
+/* ---------- Shops and Subscriptions (admin-shops.js) ----------
+   One glass surface per screen, rows to read, a panel to change things.
+   Status is a coloured dot and words; money is right-aligned in tabular figures. */
+#adminView .as-head{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin:0 0 14px; }
+#adminView .as-head h2{ margin:0; font-size:1.25rem; font-weight:700; letter-spacing:-.01em; }
+#adminView .as-search{ flex:0 1 300px; margin-left:auto; min-height:40px; padding:8px 14px; border-radius:12px; border:1px solid var(--line-strong); background:var(--glass-strong); font:inherit; color:var(--ink); }
+#adminView .as-search:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+#adminView .as-intro{ margin:-4px 0 14px; color:var(--ink-soft); }
+#adminView .as-intro b{ color:var(--amber); font-weight:600; }
+
+#adminView .as-ledger{ display:flex; align-items:flex-end; gap:20px 44px; flex-wrap:wrap; padding:18px 22px; margin:0 0 16px;
+  border-radius:18px; background:var(--glass); border:1px solid var(--glass-line); box-shadow:var(--shadow); }
+#adminView .as-lead{ display:flex; flex-direction:column; gap:2px; }
+#adminView .as-lead span{ color:var(--ink-soft); font-size:.86rem; }
+#adminView .as-lead b{ font-size:2.1rem; line-height:1.1; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+#adminView .as-ledger dl{ display:flex; flex-wrap:wrap; gap:14px 0; margin:0 0 4px; }
+#adminView .as-ledger dl > div{ padding:0 22px; border-left:1px solid var(--line); }
+#adminView .as-ledger dt{ font-size:.78rem; color:var(--ink-faint); }
+#adminView .as-ledger dd{ margin:2px 0 0; font-size:1.05rem; font-weight:600; font-variant-numeric:tabular-nums; }
+#adminView .as-ledger .is-bad dd{ color:var(--red); }
+
+#adminView .as-bar{ display:flex; align-items:center; justify-content:space-between; gap:10px 16px; flex-wrap:wrap; margin:0 0 12px; }
+#adminView .as-filters{ display:flex; flex-wrap:wrap; gap:4px; margin:0; }
+#adminView .as-chip{ display:inline-flex; align-items:center; gap:7px; min-height:34px; padding:4px 12px; border:1px solid transparent; border-radius:10px;
+  background:transparent; color:var(--ink-soft); font:inherit; font-size:.86rem; font-weight:500; cursor:pointer; }
+#adminView .as-chip span{ color:var(--ink-faint); font-variant-numeric:tabular-nums; }
+#adminView .as-chip:hover{ background:var(--glass); color:var(--ink); }
+#adminView .as-chip.on{ background:var(--glass-strong); border-color:var(--glass-line); color:var(--ink); font-weight:600; box-shadow:0 1px 3px var(--g-shadow); }
+#adminView .as-chip:focus-visible, #adminView .as-sort:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+#adminView .as-table-wrap{ overflow-x:auto; border-radius:18px; background:var(--glass); border:1px solid var(--glass-line); box-shadow:var(--shadow); }
+#adminView .as-table{ width:100%; border-collapse:collapse; font-size:.9rem; }
+#adminView .as-table th{ text-align:left; padding:12px 16px; font-size:.78rem; font-weight:600; color:var(--ink-faint); border-bottom:1px solid var(--edge); white-space:nowrap; }
+#adminView .as-table td{ padding:14px 16px; border-bottom:1px solid var(--edge); vertical-align:top; }
+#adminView .as-table tbody tr:last-child td{ border-bottom:none; }
+#adminView .as-table .num{ text-align:right; font-variant-numeric:tabular-nums; }
+#adminView .as-table tbody tr[data-org]{ cursor:pointer; transition:background .15s ease; }
+#adminView .as-table tbody tr[data-org]:hover td, #adminView .as-table tbody tr[data-org]:focus-visible td{ background:rgba(255,255,255,.5); }
+#adminView .as-table tbody tr[data-org]:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
+#adminView .as-bill tbody tr[data-state="past_due"] td:first-child{ box-shadow:inset 3px 0 0 var(--red); }
+#adminView .as-table tbody tr[data-state="pending"] td:first-child{ box-shadow:inset 3px 0 0 var(--amber); }
+#adminView .as-table tbody tr[data-state="archived"] td{ color:var(--ink-faint); }
+#adminView .as-table tfoot td{ padding:12px 16px; border-top:1px solid var(--line); color:var(--ink-soft); font-weight:600; font-variant-numeric:tabular-nums; }
+#adminView .as-sort{ all:unset; cursor:pointer; color:inherit; font:inherit; }
+#adminView .as-sort.on{ color:var(--ink); }
+#adminView .as-shop b{ font-size:.95rem; font-weight:600; }
+#adminView .as-shop, #adminView .as-owner{ max-width:280px; }
+#adminView .as-sub{ margin-top:2px; font-size:.8rem; color:var(--ink-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#adminView .as-quiet{ color:var(--ink-faint); }
+#adminView .as-total b{ font-size:.98rem; }
+#adminView .as-owed{ color:var(--red); }
+#adminView .as-empty{ padding:28px 16px; text-align:center; color:var(--ink-soft); }
+#adminView .as-note{ margin:12px 2px 0; max-width:760px; color:var(--ink-faint); font-size:.84rem; }
+#adminView .as-approve{ min-height:32px; padding:4px 14px; border:none; border-radius:9px; background:var(--accent); color:#fff; font:inherit; font-size:.84rem; font-weight:600; cursor:pointer; }
+
+/* status: a dot and words, coloured by meaning (used in the table and the panel) */
+.as-status{ display:inline-flex; align-items:center; gap:7px; font-size:.86rem; font-weight:500; white-space:nowrap; }
+.as-status i{ width:8px; height:8px; border-radius:50%; background:currentColor; flex:none; }
+.as-ok{ color:#177A50; } .as-warn{ color:#9A6400; } .as-bad{ color:#C0362C; } .as-info{ color:#2457C5; } .as-muted{ color:#6B7380; }
+
+/* ---------- the shop panel and the billing panel (inside the sheet) ---------- */
+.as-panel{ display:flex; flex-direction:column; gap:0; padding:4px 6px 8px; }
+.as-panel h3{ margin:0 0 4px; font-size:1.3rem; font-weight:700; letter-spacing:-.01em; }
+.as-panel h4{ margin:0 0 10px; font-size:.95rem; font-weight:700; }
+.as-panel .as-quiet{ color:var(--ink-faint); font-size:.86rem; margin-left:6px; }
+.as-p-top{ display:grid; grid-template-columns:1fr; gap:16px; padding:6px 0 18px; border-bottom:1px solid var(--line); }
+.as-p-sec{ padding:18px 0; border-bottom:1px solid var(--line); }
+.as-p-sec:last-child{ border-bottom:none; }
+.as-p-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px; } .as-p-row h4{ margin:0; }
+.as-p-help{ margin:6px 0 0; color:var(--ink-soft); font-size:.86rem; max-width:62ch; }
+.as-p-line{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; margin:0 0 12px; } .as-p-line > span:not(.as-status){ color:var(--ink-soft); }
+.as-p-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.as-p-actions button:not(.ghost-btn){ min-height:40px; padding:8px 18px; border:none; border-radius:10px; background:var(--accent); color:#fff; font:inherit; font-weight:600; cursor:pointer; }
+.as-p-actions button:disabled{ opacity:.5; cursor:default; }
+.as-p-danger h4{ color:#9A2A20; }
+.as-del{ color:#B42318 !important; border-color:rgba(180,35,24,.35) !important; }
+.as-facts{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:12px 20px; margin:0; }
+.as-facts dt{ font-size:.78rem; color:var(--ink-faint); } .as-facts dd{ margin:2px 0 0; font-weight:500; overflow-wrap:anywhere; }
+.as-facts a{ color:inherit; text-decoration:underline; text-decoration-color:var(--line-strong); text-underline-offset:3px; }
+.as-p-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:12px 16px; align-items:end; }
+.as-p-grid label{ display:flex; flex-direction:column; gap:5px; font-size:.82rem; font-weight:600; color:var(--ink-soft); }
+.as-p-grid input, .as-p-grid select{ min-height:40px; padding:7px 10px; border:1px solid var(--line-strong); border-radius:10px; background:var(--panel); font:inherit; font-weight:400; color:var(--ink); width:100%; }
+.as-p-grid .as-check{ flex-direction:row; align-items:center; gap:8px; min-height:40px; font-size:.9rem; color:var(--ink); grid-column:1 / -1; }
+.as-p-grid .as-check input{ width:18px; min-height:0; height:18px; }
+.as-money{ position:relative; display:block; } .as-money i{ position:absolute; left:10px; top:50%; transform:translateY(-50%); font-style:normal; color:var(--ink-faint); font-weight:400; }
+.as-money input{ padding-left:22px !important; font-variant-numeric:tabular-nums; }
+.as-changed{ border-color:var(--accent) !important; box-shadow:0 0 0 3px var(--accent-soft, rgba(36,87,197,.15)); }
+.as-p-quick{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:12px; font-size:.84rem; color:var(--ink-soft); }
+.as-p-quick span{ margin-right:4px; }
+.as-p-quick .as-chip{ min-height:32px; padding:3px 12px; border:1px solid var(--line-strong); border-radius:9px; background:var(--panel); color:var(--accent); font:inherit; font-size:.84rem; font-weight:600; cursor:pointer; }
+.as-p-quick .as-chip:hover{ border-color:var(--accent); }
+/* this month's charge: the plan, the AI line fee, the minutes, the total */
+.as-bill-sum{ padding:14px 16px; border-radius:14px; background:var(--panel-2, rgba(0,0,0,.03)); border:1px solid var(--line); }
+.as-bill-lines > div, .as-bill-total{ display:flex; justify-content:space-between; gap:16px; padding:5px 0; font-variant-numeric:tabular-nums; }
+.as-bill-lines span{ color:var(--ink-soft); } .as-bill-lines em{ font-style:normal; color:var(--ink-faint); }
+.as-bill-total{ margin-top:6px; padding-top:10px; border-top:1px solid var(--line-strong); }
+.as-bill-total span{ font-weight:600; } .as-bill-total b{ font-size:1.35rem; letter-spacing:-.01em; }
+.as-panel .as-table{ width:100%; border-collapse:collapse; font-size:.88rem; }
+.as-panel .as-table th{ text-align:left; padding:8px 8px; font-size:.78rem; color:var(--ink-faint); font-weight:600; border-bottom:1px solid var(--line); }
+.as-panel .as-table td{ padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+.as-panel .as-table .num{ text-align:right; font-variant-numeric:tabular-nums; }
+.as-panel .as-sub{ margin-top:2px; font-size:.78rem; color:var(--ink-faint); }
+.as-inv-acts{ white-space:nowrap; text-align:right; } .as-inv-acts .text-btn{ padding:4px 6px; }
+@media (max-width: 640px){
+  #adminView .as-ledger{ padding:16px; gap:14px; } #adminView .as-lead b{ font-size:1.7rem; }
+  #adminView .as-ledger dl > div{ padding:0 14px 0 0; border-left:none; min-width:45%; }
+  .as-inv-acts{ white-space:normal; }
+}
