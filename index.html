@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="admin-v3.css?v=088182b3db">
 <link rel="stylesheet" href="fmcsa.css?v=4ce216b70d">
 <link rel="stylesheet" href="glass.css?v=9a1209bb09">
-<link rel="stylesheet" href="site.css?v=644d876525">
+<link rel="stylesheet" href="site.css?v=312789a254">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 </style>
@@ -159,32 +159,17 @@
           <p class="lq-note">Already using Relay? <button type="button" class="lq-link" id="landingLogin">Sign in</button></p>
         </div>
 
-        <!-- a live, moving copy of the Relay shop board -->
-        <figure class="lq-app" aria-label="Relay's shop board, moving with example work orders">
-          <div class="lq-app-bar"><i></i><i></i><i></i><span>Relay · Summit Truck &amp; Trailer</span><b class="lq-live-dot">Live</b></div>
-          <div class="lq-app-body">
-            <nav class="lq-app-side" aria-hidden="true">
-              <span class="is-on">Overview</span><span>Work orders</span><span>Schedule</span><span>Dispatch</span><span>Customers</span><span>Parts</span><span>Invoices</span><span>Reports</span>
-            </nav>
-            <div class="lq-app-main">
-              <div class="lq-kpis">
-                <div><b data-kpi="open">8</b><span>Open work orders</span></div>
-                <div><b data-kpi="road">2</b><span>Road calls</span></div>
-                <div><b data-kpi="wait">1</b><span>Waiting for approval</span></div>
-                <div><b data-kpi="rev">$4,180</b><span>Invoiced today</span></div>
-              </div>
-              <div class="lq-board" id="lqBoard">
-                <div class="lq-col" data-col="0"><h4>New</h4><div class="lq-cards"></div></div>
-                <div class="lq-col" data-col="1"><h4>Estimate</h4><div class="lq-cards"></div></div>
-                <div class="lq-col" data-col="2"><h4>Approval</h4><div class="lq-cards"></div></div>
-                <div class="lq-col" data-col="3"><h4>In progress</h4><div class="lq-cards"></div></div>
-                <div class="lq-col" data-col="4"><h4>Done</h4><div class="lq-cards"></div></div>
-              </div>
-            </div>
-          </div>
-          <div class="lq-toast" id="lqToast" role="status"></div>
-          <figcaption>Live example. Work orders move as they would in your shop.</figcaption>
-        </figure>
+        <!-- the shop's day, live: what Relay does, one event at a time (landing.js) -->
+        <aside class="lq-feed" aria-label="Example of a day in Relay: events as they happen">
+          <div class="lq-feed-head"><span class="lq-live-dot">Live</span><span>Summit Truck &amp; Trailer · today</span></div>
+          <ol class="lq-feed-list" id="lqFeed"></ol>
+          <dl class="lq-feed-stats">
+            <div><dt>Open work orders</dt><dd data-kpi="open">8</dd></div>
+            <div><dt>Road calls today</dt><dd data-kpi="road">3</dd></div>
+            <div><dt>Invoiced today</dt><dd data-kpi="rev">$4,180</dd></div>
+          </dl>
+          <p class="lq-feed-cap">Live example. An example shop's day in Relay.</p>
+        </aside>
       </div>
 
       <div class="lq-wrap">
@@ -1347,7 +1332,7 @@
 <script src="lang.js?v=70e1770f2a" defer></script>
 <script src="natasha.js?v=f224fb953e" defer></script>
 <script src="plans.js?v=cab7a04338" defer></script>
-<script src="landing.js?v=5c8a35ab04" defer></script>
+<script src="landing.js?v=3562f50351" defer></script>
 <script src="pwa.js?v=d2673f834b" defer></script>
 
 </body>
