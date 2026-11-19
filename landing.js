@@ -4,7 +4,7 @@
 //    (relay-shop.webm/.mp4 on computers, relay-shop-640.mp4 on phones, relay-shop.jpg as the still for
 //    data saver and reduced motion). It rests while the page is hidden. The hero adds tinted glass,
 //    drifting colour, light beams along a grid and a soft spotlight at the pointer.
-//  - the hero: a live copy of the Relay shop board, work orders moving column to column
+//  - the hero: the shop's day in Relay, one event card at a time (calls, dispatch, approvals, payments)
 //  - the product tour: five short animated scenes that move on by themselves (paused on hover);
 //    once you click a name or use the arrow keys, you are in charge and it stops moving on
 //  - the AI call plays out when it comes into view; fleet portal statuses change
@@ -57,75 +57,54 @@
     }
   }
 
-  // ---------------- hero: the live shop board ----------------
+  // ---------------- hero: the shop's day, one event at a time ----------------
   (function(){
-    const board = document.getElementById('lqBoard'); if(!board) return;
-    const cols = [...board.querySelectorAll('.lq-cards')], toast = document.getElementById('lqToast');
+    const list = document.getElementById('lqFeed'); if(!list) return;
     const kpi = k => home.querySelector('[data-kpi="' + k + '"]');
     const money = n => '$' + Math.round(n).toLocaleString('en-US');
-    let woNo = 4871, revenue = 4180, open = 8;
-    const pool = [
-      ['Trailer 5521', 'Flat tire, I‑4 EB mile 72', 'Road call', 'road', 412],
-      ['Truck 118', 'Check engine light, DEF warning', 'Logan', '', 690],
-      ['Truck SF‑12', 'Brake chamber leaking, left rear', 'Sam', '', 371],
-      ['Truck CF‑7', 'PM service A and DOT inspection', 'Ana', '', 540],
-      ['Truck 96', 'Battery dead, jump and test', 'Road call', 'road', 265],
-      ['Truck MT‑3', 'Replace front shocks, both sides', 'Logan', '', 820],
-      ['Truck GC‑21', 'Turbo actuator fault', 'Sam', '', 1180],
-      ['Trailer 7790', 'ABS light, sensor left rear', 'Ana', '', 310],
-      ['Truck 204', 'Coolant leak at water pump', 'Marcus', '', 760]
+    let open = 8, road = 3, rev = 4180, i = 0;
+    const ICON = {
+      call: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+      truck: '<path d="M3 7h11v8H3zM14 10h4l3 3v2h-7z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>',
+      sign: '<path d="M4 19c3-6 5-9 7-9s-1 7 2 7 3-4 7-6"/><path d="M4 22h16"/>',
+      wrench: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+      paid: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/>'
+    };
+    // a believable day, in order; each event also moves the numbers
+    const day = [
+      ['call', 'AI phone line', 'Road call created', 'WO‑004873 · One Cargo · Trailer 5521 · flat tire, I‑4 EB mile 72', () => { open++; road++; }],
+      ['truck', 'Dispatch', 'Marcus is on the way', 'Trailer 5521 · arriving in 14 min · customer sent a tracking link', null],
+      ['sign', 'Estimate EST‑212', 'Approved and signed', 'Tom Price, One Cargo · $371.00 · job moved to In progress', null],
+      ['wrench', 'Bay 2', 'Labor timer started', 'Truck SF‑12 · brake chamber, left rear · Sam Ortiz', null],
+      ['paid', 'Invoice INV‑4031', 'Paid', 'Gulf Carriers · Truck GC‑21 · turbo actuator', () => { open--; rev += 1180; }],
+      ['call', 'AI phone line', 'Appointment booked', 'Metro Tow · Truck 204 · coolant leak · tomorrow 8:00 AM', () => { open++; }],
+      ['truck', 'Road call', 'Mechanic on site', 'Trailer 5521 · I‑4 EB mile 72 · Marcus', null],
+      ['paid', 'Invoice INV‑4032', 'Paid', 'One Cargo · Trailer 5521 · tire and valve stem', () => { open--; rev += 412; }]
     ];
-    let pi = 0;
-    let newNo = 4872;
-    const make = (ai) => {
-      const p = pool[pi++ % pool.length], c = document.createElement('div');
-      c.className = 'lq-card'; c.dataset.amt = p[4];
-      const em = document.createElement('em'); em.textContent = 'WO‑00' + (ai ? newNo++ : woNo--);
-      const b = document.createElement('b'); b.textContent = p[0];
-      const s = document.createElement('span'); s.textContent = p[1];
-      const chip = document.createElement('span'); chip.className = 'chip ' + (ai ? 'ai' : p[3]); chip.textContent = ai ? 'AI phone line' : p[2];
-      c.append(em, b, s, chip);
-      return c;
+    const card = ev => {
+      const li = document.createElement('li'); li.className = 'lq-ev is-' + ev[0];
+      li.innerHTML = '<i class="lq-ev-ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[ev[0]] + '</svg></i><div><span></span><b></b><em></em></div>';
+      li.querySelector('span').textContent = ev[1]; li.querySelector('b').textContent = ev[2]; li.querySelector('em').textContent = ev[3];
+      return li;
     };
-    // the opening board
-    [[0], [1], [2, 2], [3, 3], [4]].forEach((list, ci) => list.forEach(() => cols[ci].appendChild(make())));
-    const flip = (mutate) => {
-      const cards = [...board.querySelectorAll('.lq-card')], before = new Map(cards.map(c => [c, c.getBoundingClientRect()]));
-      mutate();
-      board.querySelectorAll('.lq-card').forEach(c => {
-        const a = before.get(c); if(!a || typeof c.animate !== 'function') return;
-        const b = c.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top;
-        if(Math.abs(dx) + Math.abs(dy) < 1) return;
-        c.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 750, easing: 'cubic-bezier(.2,.8,.2,1)' });
-      });
-    };
-    const bump = (el, txt) => { if(!el) return; el.textContent = txt; el.classList.add('bump'); setTimeout(() => el.classList.remove('bump'), 900); };
-    const say = (title, line) => { if(!toast) return; toast.textContent = ''; const b = document.createElement('b'); b.textContent = title; toast.append(b, document.createTextNode(line)); toast.classList.add('is-on'); setTimeout(() => toast.classList.remove('is-on'), 2600); };
-    let step = 0, visible = !IO;
-    const tick = () => {
-      if(!shown() || !visible) return;
-      step++;
-      if(step % 4 === 0 && cols[0].children.length < 3){
-        const c = make(true); c.classList.add('is-new');
-        flip(() => cols[0].prepend(c));
-        bump(kpi('open'), String(++open)); bump(kpi('road'), String(2 + (step / 4) % 2));
-        say('AI phone line · road call created', c.querySelector('em').textContent + ' · ' + c.querySelector('b').textContent);
-        return;
+    const set = (k, v) => { const el = kpi(k); if(el && el.textContent !== v){ el.textContent = v; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } };
+    const push = (animate) => {
+      const ev = day[i++ % day.length];
+      if(ev[4]) ev[4]();
+      const items = [...list.children], before = new Map(items.map(el => [el, el.getBoundingClientRect().top]));
+      const li = card(ev); list.prepend(li);
+      if(list.children.length > 4){ const old = list.lastElementChild; old.remove(); }
+      if(animate && typeof li.animate === 'function'){
+        li.animate([{ opacity: 0, transform: 'translateY(-14px) scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: 500, easing: 'cubic-bezier(.2,.8,.2,1)' });
+        [...list.children].forEach(el => { const t = before.get(el); if(t == null) return; const d = t - el.getBoundingClientRect().top;
+          if(d) el.animate([{ transform: `translateY(${d}px)` }, { transform: 'none' }], { duration: 500, easing: 'cubic-bezier(.2,.8,.2,1)' }); });
       }
-      // move one card forward, starting nearest to Done
-      for(let k = 0; k < 4; k++){
-        const ci = 3 - ((step + k) % 4), from = cols[ci], to = cols[ci + 1];
-        if(!from.children.length || (ci + 1 < 4 && to.children.length >= 3)) continue;
-        const card = from.lastElementChild;
-        card.classList.add('is-moving'); setTimeout(() => card.classList.remove('is-moving'), 800);
-        flip(() => { to.prepend(card); if(ci + 1 === 4 && to.children.length > 2) to.lastElementChild.remove(); });
-        if(ci + 1 === 4){ revenue += Number(card.dataset.amt || 300); bump(kpi('rev'), money(revenue)); bump(kpi('open'), String(--open)); say('Invoice sent', card.querySelector('em').textContent + ' · ' + money(card.dataset.amt)); }
-        if(ci + 1 === 2) bump(kpi('wait'), String(cols[2].children.length));
-        break;
-      }
+      set('open', String(open)); set('road', String(road)); set('rev', money(rev));
     };
-    watch(board, v => { visible = v || !IO; }, .2);
-    if(!reduced) setInterval(tick, 2400);
+    for(let k = 0; k < 3; k++) push(false);
+    let visible = !IO;
+    watch(list, v => { visible = v || !IO; }, .2);
+    if(!reduced) setInterval(() => { if(visible && shown()) push(true); }, 3000);
   })();
 
   // ---------------- the product tour ----------------
